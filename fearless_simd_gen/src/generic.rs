@@ -1,7 +1,7 @@
 // Copyright 2025 the Fearless_SIMD Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{ToTokens, quote};
 
 use crate::{
@@ -221,14 +221,14 @@ pub(crate) fn generic_block_split(
     let expr = match (half_ty.n_bits(), max_block_size) {
         (256, 128) => quote! {
             (
-                #half_rust { val: #split_arch_ty([a.val.0[0], a.val.0[1]]), simd: self },
-                #half_rust { val: #split_arch_ty([a.val.0[2], a.val.0[3]]), simd: self },
+                #half_rust { val: #split_arch_ty(crate::support::Pair { a: a.val.0.a, b: a.val.0.b }), simd: self },
+                #half_rust { val: #split_arch_ty(crate::support::Pair { a: a.val.0.c, b: a.val.0.d }), simd: self },
             )
         },
         (128, 128) | (256, 256) => quote! {
             (
-                #half_rust { val: #split_arch_ty(a.val.0[0]), simd: self },
-                #half_rust { val: #split_arch_ty(a.val.0[1]), simd: self },
+                #half_rust { val: #split_arch_ty(a.val.0.a), simd: self },
+                #half_rust { val: #split_arch_ty(a.val.0.b), simd: self },
             )
         },
         _ => unimplemented!(),
@@ -249,10 +249,10 @@ pub(crate) fn generic_block_combine(
     let combined_rust = combined_ty.rust();
     let expr = match (combined_ty.n_bits(), max_block_size) {
         (512, 128) => quote! {
-            #combined_rust {val: #combined_arch_ty([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]), simd: self }
+            #combined_rust {val: #combined_arch_ty(crate::support::Quad { a: a.val.0.a, b: a.val.0.b, c: b.val.0.a, d: b.val.0.b }), simd: self }
         },
         (256, 128) | (512, 256) => quote! {
-            #combined_rust {val: #combined_arch_ty([a.val.0, b.val.0]), simd: self }
+            #combined_rust {val: #combined_arch_ty(crate::support::Pair { a: a.val.0, b: b.val.0 }), simd: self }
         },
         _ => unimplemented!(),
     };
@@ -282,17 +282,37 @@ pub(crate) fn generic_from_array(
 
     let wrapper_ty = vec_ty.aligned_wrapper();
     let load_unaligned = load_unaligned_block(&native_block_ty);
-    let expr = if block_count == 1 {
-        quote! {
-            unsafe { #wrapper_ty(#load_unaligned(val.as_ptr() as *const _)) }
+    let expr = match block_count {
+        1 => {
+            quote! {
+                unsafe { #wrapper_ty(#load_unaligned(val.as_ptr() as *const _)) }
+            }
         }
-    } else {
-        let blocks = (0..block_count).map(|n| n * num_scalars_per_block);
-        quote! {
-            unsafe { #wrapper_ty([
-                #(#load_unaligned(val.as_ptr().add(#blocks) as *const _)),*
-            ]) }
+        2 => {
+            let offset_a = Literal::usize_unsuffixed(0);
+            let offset_b = Literal::usize_unsuffixed(num_scalars_per_block);
+            quote! {
+                unsafe { #wrapper_ty(crate::support::Pair {
+                    a: #load_unaligned(val.as_ptr().add(#offset_a) as *const _),
+                    b: #load_unaligned(val.as_ptr().add(#offset_b) as *const _),
+                }) }
+            }
         }
+        4 => {
+            let offset_a = Literal::usize_unsuffixed(0);
+            let offset_b = Literal::usize_unsuffixed(num_scalars_per_block);
+            let offset_c = Literal::usize_unsuffixed(2 * num_scalars_per_block);
+            let offset_d = Literal::usize_unsuffixed(3 * num_scalars_per_block);
+            quote! {
+                unsafe { #wrapper_ty(crate::support::Quad {
+                    a: #load_unaligned(val.as_ptr().add(#offset_a) as *const _),
+                    b: #load_unaligned(val.as_ptr().add(#offset_b) as *const _),
+                    c: #load_unaligned(val.as_ptr().add(#offset_c) as *const _),
+                    d: #load_unaligned(val.as_ptr().add(#offset_d) as *const _),
+                }) }
+            }
+        }
+        _ => unimplemented!("block_count {} not supported", block_count),
     };
     let vec_rust = vec_ty.rust();
 
@@ -350,23 +370,37 @@ pub(crate) fn generic_store_array(
     );
 
     let store_unaligned = store_unaligned_block(&native_block_ty);
-    let store_expr = if block_count == 1 {
-        quote! {
-            unsafe { #store_unaligned(dest.as_mut_ptr() as *mut _, a.val.0) }
-        }
-    } else {
-        let blocks = (0..block_count).map(|n| {
-            let offset = n * num_scalars_per_block;
-            let block_idx = proc_macro2::Literal::usize_unsuffixed(n);
+    let store_expr = match block_count {
+        1 => {
             quote! {
-                #store_unaligned(dest.as_mut_ptr().add(#offset) as *mut _, a.val.0[#block_idx])
-            }
-        });
-        quote! {
-            unsafe {
-                #(#blocks;)*
+                unsafe { #store_unaligned(dest.as_mut_ptr() as *mut _, a.val.0) }
             }
         }
+        2 => {
+            let offset_a = Literal::usize_unsuffixed(0);
+            let offset_b = Literal::usize_unsuffixed(num_scalars_per_block);
+            quote! {
+                unsafe {
+                    #store_unaligned(dest.as_mut_ptr().add(#offset_a) as *mut _, a.val.0.a);
+                    #store_unaligned(dest.as_mut_ptr().add(#offset_b) as *mut _, a.val.0.b);
+                }
+            }
+        }
+        4 => {
+            let offset_a = Literal::usize_unsuffixed(0);
+            let offset_b = Literal::usize_unsuffixed(num_scalars_per_block);
+            let offset_c = Literal::usize_unsuffixed(2 * num_scalars_per_block);
+            let offset_d = Literal::usize_unsuffixed(3 * num_scalars_per_block);
+            quote! {
+                unsafe {
+                    #store_unaligned(dest.as_mut_ptr().add(#offset_a) as *mut _, a.val.0.a);
+                    #store_unaligned(dest.as_mut_ptr().add(#offset_b) as *mut _, a.val.0.b);
+                    #store_unaligned(dest.as_mut_ptr().add(#offset_c) as *mut _, a.val.0.c);
+                    #store_unaligned(dest.as_mut_ptr().add(#offset_d) as *mut _, a.val.0.d);
+                }
+            }
+        }
+        _ => unimplemented!("block_count {} not supported", block_count),
     };
 
     quote! {

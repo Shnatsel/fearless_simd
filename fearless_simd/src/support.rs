@@ -28,6 +28,32 @@ pub struct Aligned256<T>(pub T);
 /// Wrapper for internal native vector types that gives them 512-bit alignment.
 pub struct Aligned512<T>(pub T);
 
+#[derive(Clone, Copy, Debug)]
+#[repr(C)]
+#[expect(
+    unnameable_types,
+    reason = "This is used internally, but needs to be `pub` as it's used in a sealed interface"
+)]
+/// A pair of values, used to store 2 native vector types.
+pub struct Pair<T> {
+    pub a: T,
+    pub b: T,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(C)]
+#[expect(
+    unnameable_types,
+    reason = "This is used internally, but needs to be `pub` as it's used in a sealed interface"
+)]
+/// A quad of values, used to store 4 native vector types.
+pub struct Quad<T> {
+    pub a: T,
+    pub b: T,
+    pub c: T,
+    pub d: T,
+}
+
 /// The actual `Debug` implementation for all `SimdBase` types. This only needs to be monomorphized once per element
 /// type, rather than once per vector type.
 #[inline(never)]

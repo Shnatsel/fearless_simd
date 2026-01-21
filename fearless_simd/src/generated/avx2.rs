@@ -58,18 +58,18 @@ impl ArchTypes for Avx2 {
     type mask32x8 = crate::support::Aligned256<__m256i>;
     type f64x4 = crate::support::Aligned256<__m256d>;
     type mask64x4 = crate::support::Aligned256<__m256i>;
-    type f32x16 = crate::support::Aligned512<[__m256; 2usize]>;
-    type i8x64 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type u8x64 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type mask8x64 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type i16x32 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type u16x32 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type mask16x32 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type i32x16 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type u32x16 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type mask32x16 = crate::support::Aligned512<[__m256i; 2usize]>;
-    type f64x8 = crate::support::Aligned512<[__m256d; 2usize]>;
-    type mask64x8 = crate::support::Aligned512<[__m256i; 2usize]>;
+    type f32x16 = crate::support::Aligned512<crate::support::Pair<__m256>>;
+    type i8x64 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type u8x64 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type mask8x64 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type i16x32 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type u16x32 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type mask16x32 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type i32x16 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type u32x16 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type mask32x16 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
+    type f64x8 = crate::support::Aligned512<crate::support::Pair<__m256d>>;
+    type mask64x8 = crate::support::Aligned512<crate::support::Pair<__m256i>>;
 }
 impl Simd for Avx2 {
     type f32s = f32x8<Self>;
@@ -2277,7 +2277,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_f32x8(self, a: f32x8<Self>, b: f32x8<Self>) -> f32x16<Self> {
         f32x16 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -2575,7 +2578,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_i8x32(self, a: i8x32<Self>, b: i8x32<Self>) -> i8x64<Self> {
         i8x64 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -2820,7 +2826,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_u8x32(self, a: u8x32<Self>, b: u8x32<Self>) -> u8x64<Self> {
         u8x64 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -2950,7 +2959,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_mask8x32(self, a: mask8x32<Self>, b: mask8x32<Self>) -> mask8x64<Self> {
         mask8x64 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -3150,7 +3162,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_i16x16(self, a: i16x16<Self>, b: i16x16<Self>) -> i16x32<Self> {
         i16x32 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -3372,7 +3387,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_u16x16(self, a: u16x16<Self>, b: u16x16<Self>) -> u16x32<Self> {
         u16x32 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -3509,7 +3527,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_mask16x16(self, a: mask16x16<Self>, b: mask16x16<Self>) -> mask16x32<Self> {
         mask16x32 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -3697,7 +3718,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_i32x8(self, a: i32x8<Self>, b: i32x8<Self>) -> i32x16<Self> {
         i32x16 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -3911,7 +3935,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_u32x8(self, a: u32x8<Self>, b: u32x8<Self>) -> u32x16<Self> {
         u32x16 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -4049,7 +4076,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_mask32x8(self, a: mask32x8<Self>, b: mask32x8<Self>) -> mask32x16<Self> {
         mask32x16 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -4277,7 +4307,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_f64x4(self, a: f64x4<Self>, b: f64x4<Self>) -> f64x8<Self> {
         f64x8 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -4398,7 +4431,10 @@ impl Simd for Avx2 {
     #[inline(always)]
     fn combine_mask64x4(self, a: mask64x4<Self>, b: mask64x4<Self>) -> mask64x8<Self> {
         mask64x8 {
-            val: crate::support::Aligned512([a.val.0, b.val.0]),
+            val: crate::support::Aligned512(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -4420,10 +4456,10 @@ impl Simd for Avx2 {
     fn load_array_f32x16(self, val: [f32; 16usize]) -> f32x16<Self> {
         f32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_ps(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_ps(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_ps(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_ps(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
@@ -4432,31 +4468,35 @@ impl Simd for Avx2 {
     fn load_array_ref_f32x16(self, val: &[f32; 16usize]) -> f32x16<Self> {
         f32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_ps(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_ps(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_ps(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_ps(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_f32x16(self, a: f32x16<Self>) -> [f32; 16usize] {
-        unsafe { core::mem::transmute::<[__m256; 2usize], [f32; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256>, [f32; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_f32x16(self, a: &f32x16<Self>) -> &[f32; 16usize] {
-        unsafe { core::mem::transmute::<&[__m256; 2usize], &[f32; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256>, &[f32; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_f32x16(self, a: &mut f32x16<Self>) -> &mut [f32; 16usize] {
-        unsafe { core::mem::transmute::<&mut [__m256; 2usize], &mut [f32; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256>, &mut [f32; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_f32x16(self, a: f32x16<Self>, dest: &mut [f32; 16usize]) -> () {
         unsafe {
-            _mm256_storeu_ps(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_ps(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_ps(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_ps(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -4665,11 +4705,11 @@ impl Simd for Avx2 {
     fn split_f32x16(self, a: f32x16<Self>) -> (f32x8<Self>, f32x8<Self>) {
         (
             f32x8 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             f32x8 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -4783,10 +4823,10 @@ impl Simd for Avx2 {
     fn load_array_i8x64(self, val: [i8; 64usize]) -> i8x64<Self> {
         i8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(32usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(32) as *const _),
+                })
             },
             simd: self,
         }
@@ -4795,31 +4835,35 @@ impl Simd for Avx2 {
     fn load_array_ref_i8x64(self, val: &[i8; 64usize]) -> i8x64<Self> {
         i8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(32usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(32) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i8x64(self, a: i8x64<Self>) -> [i8; 64usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [i8; 64usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [i8; 64usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i8x64(self, a: &i8x64<Self>) -> &[i8; 64usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[i8; 64usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[i8; 64usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i8x64(self, a: &mut i8x64<Self>) -> &mut [i8; 64usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [i8; 64usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [i8; 64usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i8x64(self, a: i8x64<Self>, dest: &mut [i8; 64usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(32usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(32) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -4980,11 +5024,11 @@ impl Simd for Avx2 {
     fn split_i8x64(self, a: i8x64<Self>) -> (i8x32<Self>, i8x32<Self>) {
         (
             i8x32 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             i8x32 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -5016,10 +5060,10 @@ impl Simd for Avx2 {
     fn load_array_u8x64(self, val: [u8; 64usize]) -> u8x64<Self> {
         u8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(32usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(32) as *const _),
+                })
             },
             simd: self,
         }
@@ -5028,31 +5072,35 @@ impl Simd for Avx2 {
     fn load_array_ref_u8x64(self, val: &[u8; 64usize]) -> u8x64<Self> {
         u8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(32usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(32) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u8x64(self, a: u8x64<Self>) -> [u8; 64usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [u8; 64usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [u8; 64usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u8x64(self, a: &u8x64<Self>) -> &[u8; 64usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[u8; 64usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[u8; 64usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u8x64(self, a: &mut u8x64<Self>) -> &mut [u8; 64usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [u8; 64usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [u8; 64usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u8x64(self, a: u8x64<Self>, dest: &mut [u8; 64usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(32usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(32) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -5213,11 +5261,11 @@ impl Simd for Avx2 {
     fn split_u8x64(self, a: u8x64<Self>) -> (u8x32<Self>, u8x32<Self>) {
         (
             u8x32 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             u8x32 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -5294,10 +5342,10 @@ impl Simd for Avx2 {
     fn load_array_mask8x64(self, val: [i8; 64usize]) -> mask8x64<Self> {
         mask8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(32usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(32) as *const _),
+                })
             },
             simd: self,
         }
@@ -5306,31 +5354,35 @@ impl Simd for Avx2 {
     fn load_array_ref_mask8x64(self, val: &[i8; 64usize]) -> mask8x64<Self> {
         mask8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(32usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(32) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask8x64(self, a: mask8x64<Self>) -> [i8; 64usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [i8; 64usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [i8; 64usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask8x64(self, a: &mask8x64<Self>) -> &[i8; 64usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[i8; 64usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[i8; 64usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask8x64(self, a: &mut mask8x64<Self>) -> &mut [i8; 64usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [i8; 64usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [i8; 64usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask8x64(self, a: mask8x64<Self>, dest: &mut [i8; 64usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(32usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(32) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -5419,11 +5471,11 @@ impl Simd for Avx2 {
     fn split_mask8x64(self, a: mask8x64<Self>) -> (mask8x32<Self>, mask8x32<Self>) {
         (
             mask8x32 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             mask8x32 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -5437,10 +5489,10 @@ impl Simd for Avx2 {
     fn load_array_i16x32(self, val: [i16; 32usize]) -> i16x32<Self> {
         i16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
@@ -5449,31 +5501,35 @@ impl Simd for Avx2 {
     fn load_array_ref_i16x32(self, val: &[i16; 32usize]) -> i16x32<Self> {
         i16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i16x32(self, a: i16x32<Self>) -> [i16; 32usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [i16; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [i16; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i16x32(self, a: &i16x32<Self>) -> &[i16; 32usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[i16; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[i16; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i16x32(self, a: &mut i16x32<Self>) -> &mut [i16; 32usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [i16; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [i16; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i16x32(self, a: i16x32<Self>, dest: &mut [i16; 32usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -5640,11 +5696,11 @@ impl Simd for Avx2 {
     fn split_i16x32(self, a: i16x32<Self>) -> (i16x16<Self>, i16x16<Self>) {
         (
             i16x16 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             i16x16 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -5679,10 +5735,10 @@ impl Simd for Avx2 {
     fn load_array_u16x32(self, val: [u16; 32usize]) -> u16x32<Self> {
         u16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
@@ -5691,31 +5747,35 @@ impl Simd for Avx2 {
     fn load_array_ref_u16x32(self, val: &[u16; 32usize]) -> u16x32<Self> {
         u16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u16x32(self, a: u16x32<Self>) -> [u16; 32usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [u16; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [u16; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u16x32(self, a: &u16x32<Self>) -> &[u16; 32usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[u16; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[u16; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u16x32(self, a: &mut u16x32<Self>) -> &mut [u16; 32usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [u16; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [u16; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u16x32(self, a: u16x32<Self>, dest: &mut [u16; 32usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -5882,11 +5942,11 @@ impl Simd for Avx2 {
     fn split_u16x32(self, a: u16x32<Self>) -> (u16x16<Self>, u16x16<Self>) {
         (
             u16x16 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             u16x16 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -5984,10 +6044,10 @@ impl Simd for Avx2 {
     fn load_array_mask16x32(self, val: [i16; 32usize]) -> mask16x32<Self> {
         mask16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
@@ -5996,31 +6056,35 @@ impl Simd for Avx2 {
     fn load_array_ref_mask16x32(self, val: &[i16; 32usize]) -> mask16x32<Self> {
         mask16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask16x32(self, a: mask16x32<Self>) -> [i16; 32usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [i16; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [i16; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask16x32(self, a: &mask16x32<Self>) -> &[i16; 32usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[i16; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[i16; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask16x32(self, a: &mut mask16x32<Self>) -> &mut [i16; 32usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [i16; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [i16; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask16x32(self, a: mask16x32<Self>, dest: &mut [i16; 32usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -6112,11 +6176,11 @@ impl Simd for Avx2 {
     fn split_mask16x32(self, a: mask16x32<Self>) -> (mask16x16<Self>, mask16x16<Self>) {
         (
             mask16x16 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             mask16x16 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -6130,10 +6194,10 @@ impl Simd for Avx2 {
     fn load_array_i32x16(self, val: [i32; 16usize]) -> i32x16<Self> {
         i32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
@@ -6142,31 +6206,35 @@ impl Simd for Avx2 {
     fn load_array_ref_i32x16(self, val: &[i32; 16usize]) -> i32x16<Self> {
         i32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i32x16(self, a: i32x16<Self>) -> [i32; 16usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [i32; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [i32; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i32x16(self, a: &i32x16<Self>) -> &[i32; 16usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[i32; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[i32; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i32x16(self, a: &mut i32x16<Self>) -> &mut [i32; 16usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [i32; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [i32; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i32x16(self, a: i32x16<Self>, dest: &mut [i32; 16usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -6327,11 +6395,11 @@ impl Simd for Avx2 {
     fn split_i32x16(self, a: i32x16<Self>) -> (i32x8<Self>, i32x8<Self>) {
         (
             i32x8 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             i32x8 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -6368,10 +6436,10 @@ impl Simd for Avx2 {
     fn load_array_u32x16(self, val: [u32; 16usize]) -> u32x16<Self> {
         u32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
@@ -6380,31 +6448,35 @@ impl Simd for Avx2 {
     fn load_array_ref_u32x16(self, val: &[u32; 16usize]) -> u32x16<Self> {
         u32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u32x16(self, a: u32x16<Self>) -> [u32; 16usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [u32; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [u32; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u32x16(self, a: &u32x16<Self>) -> &[u32; 16usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[u32; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[u32; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u32x16(self, a: &mut u32x16<Self>) -> &mut [u32; 16usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [u32; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [u32; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u32x16(self, a: u32x16<Self>, dest: &mut [u32; 16usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -6565,11 +6637,11 @@ impl Simd for Avx2 {
     fn split_u32x16(self, a: u32x16<Self>) -> (u32x8<Self>, u32x8<Self>) {
         (
             u32x8 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             u32x8 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -6638,10 +6710,10 @@ impl Simd for Avx2 {
     fn load_array_mask32x16(self, val: [i32; 16usize]) -> mask32x16<Self> {
         mask32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
@@ -6650,31 +6722,35 @@ impl Simd for Avx2 {
     fn load_array_ref_mask32x16(self, val: &[i32; 16usize]) -> mask32x16<Self> {
         mask32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask32x16(self, a: mask32x16<Self>) -> [i32; 16usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [i32; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [i32; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask32x16(self, a: &mask32x16<Self>) -> &[i32; 16usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[i32; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[i32; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask32x16(self, a: &mut mask32x16<Self>) -> &mut [i32; 16usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [i32; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [i32; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask32x16(self, a: mask32x16<Self>, dest: &mut [i32; 16usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -6763,11 +6839,11 @@ impl Simd for Avx2 {
     fn split_mask32x16(self, a: mask32x16<Self>) -> (mask32x8<Self>, mask32x8<Self>) {
         (
             mask32x8 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             mask32x8 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -6781,10 +6857,10 @@ impl Simd for Avx2 {
     fn load_array_f64x8(self, val: [f64; 8usize]) -> f64x8<Self> {
         f64x8 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_pd(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_pd(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_pd(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_pd(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
@@ -6793,31 +6869,35 @@ impl Simd for Avx2 {
     fn load_array_ref_f64x8(self, val: &[f64; 8usize]) -> f64x8<Self> {
         f64x8 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_pd(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_pd(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_pd(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_pd(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_f64x8(self, a: f64x8<Self>) -> [f64; 8usize] {
-        unsafe { core::mem::transmute::<[__m256d; 2usize], [f64; 8usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256d>, [f64; 8usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_f64x8(self, a: &f64x8<Self>) -> &[f64; 8usize] {
-        unsafe { core::mem::transmute::<&[__m256d; 2usize], &[f64; 8usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256d>, &[f64; 8usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_f64x8(self, a: &mut f64x8<Self>) -> &mut [f64; 8usize] {
-        unsafe { core::mem::transmute::<&mut [__m256d; 2usize], &mut [f64; 8usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256d>, &mut [f64; 8usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_f64x8(self, a: f64x8<Self>, dest: &mut [f64; 8usize]) -> () {
         unsafe {
-            _mm256_storeu_pd(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_pd(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_pd(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_pd(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -7026,11 +7106,11 @@ impl Simd for Avx2 {
     fn split_f64x8(self, a: f64x8<Self>) -> (f64x4<Self>, f64x4<Self>) {
         (
             f64x4 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             f64x4 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )
@@ -7052,10 +7132,10 @@ impl Simd for Avx2 {
     fn load_array_mask64x8(self, val: [i64; 8usize]) -> mask64x8<Self> {
         mask64x8 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
@@ -7064,31 +7144,35 @@ impl Simd for Avx2 {
     fn load_array_ref_mask64x8(self, val: &[i64; 8usize]) -> mask64x8<Self> {
         mask64x8 {
             val: unsafe {
-                crate::support::Aligned512([
-                    _mm256_loadu_si256(val.as_ptr().add(0usize) as *const _),
-                    _mm256_loadu_si256(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Pair {
+                    a: _mm256_loadu_si256(val.as_ptr().add(0) as *const _),
+                    b: _mm256_loadu_si256(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask64x8(self, a: mask64x8<Self>) -> [i64; 8usize] {
-        unsafe { core::mem::transmute::<[__m256i; 2usize], [i64; 8usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<__m256i>, [i64; 8usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask64x8(self, a: &mask64x8<Self>) -> &[i64; 8usize] {
-        unsafe { core::mem::transmute::<&[__m256i; 2usize], &[i64; 8usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<__m256i>, &[i64; 8usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask64x8(self, a: &mut mask64x8<Self>) -> &mut [i64; 8usize] {
-        unsafe { core::mem::transmute::<&mut [__m256i; 2usize], &mut [i64; 8usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<__m256i>, &mut [i64; 8usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask64x8(self, a: mask64x8<Self>, dest: &mut [i64; 8usize]) -> () {
         unsafe {
-            _mm256_storeu_si256(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            _mm256_storeu_si256(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            _mm256_storeu_si256(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -7177,11 +7261,11 @@ impl Simd for Avx2 {
     fn split_mask64x8(self, a: mask64x8<Self>) -> (mask64x4<Self>, mask64x4<Self>) {
         (
             mask64x4 {
-                val: crate::support::Aligned256(a.val.0[0]),
+                val: crate::support::Aligned256(a.val.0.a),
                 simd: self,
             },
             mask64x4 {
-                val: crate::support::Aligned256(a.val.0[1]),
+                val: crate::support::Aligned256(a.val.0.b),
                 simd: self,
             },
         )

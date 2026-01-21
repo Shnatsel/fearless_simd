@@ -38,30 +38,30 @@ impl ArchTypes for WasmSimd128 {
     type mask32x4 = crate::support::Aligned128<v128>;
     type f64x2 = crate::support::Aligned128<v128>;
     type mask64x2 = crate::support::Aligned128<v128>;
-    type f32x8 = crate::support::Aligned256<[v128; 2usize]>;
-    type i8x32 = crate::support::Aligned256<[v128; 2usize]>;
-    type u8x32 = crate::support::Aligned256<[v128; 2usize]>;
-    type mask8x32 = crate::support::Aligned256<[v128; 2usize]>;
-    type i16x16 = crate::support::Aligned256<[v128; 2usize]>;
-    type u16x16 = crate::support::Aligned256<[v128; 2usize]>;
-    type mask16x16 = crate::support::Aligned256<[v128; 2usize]>;
-    type i32x8 = crate::support::Aligned256<[v128; 2usize]>;
-    type u32x8 = crate::support::Aligned256<[v128; 2usize]>;
-    type mask32x8 = crate::support::Aligned256<[v128; 2usize]>;
-    type f64x4 = crate::support::Aligned256<[v128; 2usize]>;
-    type mask64x4 = crate::support::Aligned256<[v128; 2usize]>;
-    type f32x16 = crate::support::Aligned512<[v128; 4usize]>;
-    type i8x64 = crate::support::Aligned512<[v128; 4usize]>;
-    type u8x64 = crate::support::Aligned512<[v128; 4usize]>;
-    type mask8x64 = crate::support::Aligned512<[v128; 4usize]>;
-    type i16x32 = crate::support::Aligned512<[v128; 4usize]>;
-    type u16x32 = crate::support::Aligned512<[v128; 4usize]>;
-    type mask16x32 = crate::support::Aligned512<[v128; 4usize]>;
-    type i32x16 = crate::support::Aligned512<[v128; 4usize]>;
-    type u32x16 = crate::support::Aligned512<[v128; 4usize]>;
-    type mask32x16 = crate::support::Aligned512<[v128; 4usize]>;
-    type f64x8 = crate::support::Aligned512<[v128; 4usize]>;
-    type mask64x8 = crate::support::Aligned512<[v128; 4usize]>;
+    type f32x8 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type i8x32 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type u8x32 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type mask8x32 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type i16x16 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type u16x16 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type mask16x16 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type i32x8 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type u32x8 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type mask32x8 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type f64x4 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type mask64x4 = crate::support::Aligned256<crate::support::Pair<v128>>;
+    type f32x16 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type i8x64 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type u8x64 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type mask8x64 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type i16x32 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type u16x32 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type mask16x32 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type i32x16 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type u32x16 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type mask32x16 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type f64x8 = crate::support::Aligned512<crate::support::Quad<v128>>;
+    type mask64x8 = crate::support::Aligned512<crate::support::Quad<v128>>;
 }
 impl Simd for WasmSimd128 {
     type f32s = f32x4<Self>;
@@ -297,7 +297,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x8<Self> {
         f32x8 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -517,7 +520,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x32<Self> {
         i8x32 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -703,7 +709,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x32<Self> {
         u8x32 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -824,7 +833,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_mask8x16(self, a: mask8x16<Self>, b: mask8x16<Self>) -> mask8x32<Self> {
         mask8x32 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -982,7 +994,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x16<Self> {
         i16x16 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -1152,7 +1167,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x16<Self> {
         u16x16 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -1271,7 +1289,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_mask16x8(self, a: mask16x8<Self>, b: mask16x8<Self>) -> mask16x16<Self> {
         mask16x16 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -1429,7 +1450,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x8<Self> {
         i32x8 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -1603,7 +1627,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x8<Self> {
         u32x8 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -1722,7 +1749,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_mask32x4(self, a: mask32x4<Self>, b: mask32x4<Self>) -> mask32x8<Self> {
         mask32x8 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -1939,7 +1969,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x4<Self> {
         f64x4 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -2054,7 +2087,10 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_mask64x2(self, a: mask64x2<Self>, b: mask64x2<Self>) -> mask64x4<Self> {
         mask64x4 {
-            val: crate::support::Aligned256([a.val.0, b.val.0]),
+            val: crate::support::Aligned256(crate::support::Pair {
+                a: a.val.0,
+                b: b.val.0,
+            }),
             simd: self,
         }
     }
@@ -2067,10 +2103,10 @@ impl Simd for WasmSimd128 {
     fn load_array_f32x8(self, val: [f32; 8usize]) -> f32x8<Self> {
         f32x8 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
@@ -2079,31 +2115,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_f32x8(self, val: &[f32; 8usize]) -> f32x8<Self> {
         f32x8 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_f32x8(self, a: f32x8<Self>) -> [f32; 8usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [f32; 8usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [f32; 8usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_f32x8(self, a: &f32x8<Self>) -> &[f32; 8usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[f32; 8usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[f32; 8usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_f32x8(self, a: &mut f32x8<Self>) -> &mut [f32; 8usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [f32; 8usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [f32; 8usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_f32x8(self, a: f32x8<Self>, dest: &mut [f32; 8usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -2311,7 +2351,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_f32x8(self, a: f32x8<Self>, b: f32x8<Self>) -> f32x16<Self> {
         f32x16 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -2319,11 +2364,11 @@ impl Simd for WasmSimd128 {
     fn split_f32x8(self, a: f32x8<Self>) -> (f32x4<Self>, f32x4<Self>) {
         (
             f32x4 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             f32x4 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -2392,10 +2437,10 @@ impl Simd for WasmSimd128 {
     fn load_array_i8x32(self, val: [i8; 32usize]) -> i8x32<Self> {
         i8x32 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
@@ -2404,31 +2449,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_i8x32(self, val: &[i8; 32usize]) -> i8x32<Self> {
         i8x32 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i8x32(self, a: i8x32<Self>) -> [i8; 32usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [i8; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [i8; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i8x32(self, a: &i8x32<Self>) -> &[i8; 32usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[i8; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[i8; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i8x32(self, a: &mut i8x32<Self>) -> &mut [i8; 32usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [i8; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [i8; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i8x32(self, a: i8x32<Self>, dest: &mut [i8; 32usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -2588,7 +2637,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_i8x32(self, a: i8x32<Self>, b: i8x32<Self>) -> i8x64<Self> {
         i8x64 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -2596,11 +2650,11 @@ impl Simd for WasmSimd128 {
     fn split_i8x32(self, a: i8x32<Self>) -> (i8x16<Self>, i8x16<Self>) {
         (
             i8x16 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             i8x16 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -2632,10 +2686,10 @@ impl Simd for WasmSimd128 {
     fn load_array_u8x32(self, val: [u8; 32usize]) -> u8x32<Self> {
         u8x32 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
@@ -2644,31 +2698,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_u8x32(self, val: &[u8; 32usize]) -> u8x32<Self> {
         u8x32 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u8x32(self, a: u8x32<Self>) -> [u8; 32usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [u8; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [u8; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u8x32(self, a: &u8x32<Self>) -> &[u8; 32usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[u8; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[u8; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u8x32(self, a: &mut u8x32<Self>) -> &mut [u8; 32usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [u8; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [u8; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u8x32(self, a: u8x32<Self>, dest: &mut [u8; 32usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -2828,7 +2886,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_u8x32(self, a: u8x32<Self>, b: u8x32<Self>) -> u8x64<Self> {
         u8x64 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -2836,11 +2899,11 @@ impl Simd for WasmSimd128 {
     fn split_u8x32(self, a: u8x32<Self>) -> (u8x16<Self>, u8x16<Self>) {
         (
             u8x16 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             u8x16 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -2867,10 +2930,10 @@ impl Simd for WasmSimd128 {
     fn load_array_mask8x32(self, val: [i8; 32usize]) -> mask8x32<Self> {
         mask8x32 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
@@ -2879,31 +2942,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_mask8x32(self, val: &[i8; 32usize]) -> mask8x32<Self> {
         mask8x32 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask8x32(self, a: mask8x32<Self>) -> [i8; 32usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [i8; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [i8; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask8x32(self, a: &mask8x32<Self>) -> &[i8; 32usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[i8; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[i8; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask8x32(self, a: &mut mask8x32<Self>) -> &mut [i8; 32usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [i8; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [i8; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask8x32(self, a: mask8x32<Self>, dest: &mut [i8; 32usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -2991,7 +3058,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_mask8x32(self, a: mask8x32<Self>, b: mask8x32<Self>) -> mask8x64<Self> {
         mask8x64 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -2999,11 +3071,11 @@ impl Simd for WasmSimd128 {
     fn split_mask8x32(self, a: mask8x32<Self>) -> (mask8x16<Self>, mask8x16<Self>) {
         (
             mask8x16 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             mask8x16 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -3017,10 +3089,10 @@ impl Simd for WasmSimd128 {
     fn load_array_i16x16(self, val: [i16; 16usize]) -> i16x16<Self> {
         i16x16 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
@@ -3029,31 +3101,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_i16x16(self, val: &[i16; 16usize]) -> i16x16<Self> {
         i16x16 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i16x16(self, a: i16x16<Self>) -> [i16; 16usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [i16; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [i16; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i16x16(self, a: &i16x16<Self>) -> &[i16; 16usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[i16; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[i16; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i16x16(self, a: &mut i16x16<Self>) -> &mut [i16; 16usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [i16; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [i16; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i16x16(self, a: i16x16<Self>, dest: &mut [i16; 16usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -3213,7 +3289,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_i16x16(self, a: i16x16<Self>, b: i16x16<Self>) -> i16x32<Self> {
         i16x32 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -3221,11 +3302,11 @@ impl Simd for WasmSimd128 {
     fn split_i16x16(self, a: i16x16<Self>) -> (i16x8<Self>, i16x8<Self>) {
         (
             i16x8 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             i16x8 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -3257,10 +3338,10 @@ impl Simd for WasmSimd128 {
     fn load_array_u16x16(self, val: [u16; 16usize]) -> u16x16<Self> {
         u16x16 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
@@ -3269,31 +3350,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_u16x16(self, val: &[u16; 16usize]) -> u16x16<Self> {
         u16x16 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u16x16(self, a: u16x16<Self>) -> [u16; 16usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [u16; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [u16; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u16x16(self, a: &u16x16<Self>) -> &[u16; 16usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[u16; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[u16; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u16x16(self, a: &mut u16x16<Self>) -> &mut [u16; 16usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [u16; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [u16; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u16x16(self, a: u16x16<Self>, dest: &mut [u16; 16usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -3453,7 +3538,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_u16x16(self, a: u16x16<Self>, b: u16x16<Self>) -> u16x32<Self> {
         u16x32 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -3461,11 +3551,11 @@ impl Simd for WasmSimd128 {
     fn split_u16x16(self, a: u16x16<Self>) -> (u16x8<Self>, u16x8<Self>) {
         (
             u16x8 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             u16x8 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -3501,10 +3591,10 @@ impl Simd for WasmSimd128 {
     fn load_array_mask16x16(self, val: [i16; 16usize]) -> mask16x16<Self> {
         mask16x16 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
@@ -3513,31 +3603,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_mask16x16(self, val: &[i16; 16usize]) -> mask16x16<Self> {
         mask16x16 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask16x16(self, a: mask16x16<Self>) -> [i16; 16usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [i16; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [i16; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask16x16(self, a: &mask16x16<Self>) -> &[i16; 16usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[i16; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[i16; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask16x16(self, a: &mut mask16x16<Self>) -> &mut [i16; 16usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [i16; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [i16; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask16x16(self, a: mask16x16<Self>, dest: &mut [i16; 16usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -3625,7 +3719,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_mask16x16(self, a: mask16x16<Self>, b: mask16x16<Self>) -> mask16x32<Self> {
         mask16x32 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -3633,11 +3732,11 @@ impl Simd for WasmSimd128 {
     fn split_mask16x16(self, a: mask16x16<Self>) -> (mask16x8<Self>, mask16x8<Self>) {
         (
             mask16x8 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             mask16x8 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -3651,10 +3750,10 @@ impl Simd for WasmSimd128 {
     fn load_array_i32x8(self, val: [i32; 8usize]) -> i32x8<Self> {
         i32x8 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
@@ -3663,31 +3762,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_i32x8(self, val: &[i32; 8usize]) -> i32x8<Self> {
         i32x8 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i32x8(self, a: i32x8<Self>) -> [i32; 8usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [i32; 8usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [i32; 8usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i32x8(self, a: &i32x8<Self>) -> &[i32; 8usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[i32; 8usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[i32; 8usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i32x8(self, a: &mut i32x8<Self>) -> &mut [i32; 8usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [i32; 8usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [i32; 8usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i32x8(self, a: i32x8<Self>, dest: &mut [i32; 8usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -3847,7 +3950,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_i32x8(self, a: i32x8<Self>, b: i32x8<Self>) -> i32x16<Self> {
         i32x16 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -3855,11 +3963,11 @@ impl Simd for WasmSimd128 {
     fn split_i32x8(self, a: i32x8<Self>) -> (i32x4<Self>, i32x4<Self>) {
         (
             i32x4 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             i32x4 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -3896,10 +4004,10 @@ impl Simd for WasmSimd128 {
     fn load_array_u32x8(self, val: [u32; 8usize]) -> u32x8<Self> {
         u32x8 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
@@ -3908,31 +4016,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_u32x8(self, val: &[u32; 8usize]) -> u32x8<Self> {
         u32x8 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u32x8(self, a: u32x8<Self>) -> [u32; 8usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [u32; 8usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [u32; 8usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u32x8(self, a: &u32x8<Self>) -> &[u32; 8usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[u32; 8usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[u32; 8usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u32x8(self, a: &mut u32x8<Self>) -> &mut [u32; 8usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [u32; 8usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [u32; 8usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u32x8(self, a: u32x8<Self>, dest: &mut [u32; 8usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -4092,7 +4204,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_u32x8(self, a: u32x8<Self>, b: u32x8<Self>) -> u32x16<Self> {
         u32x16 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -4100,11 +4217,11 @@ impl Simd for WasmSimd128 {
     fn split_u32x8(self, a: u32x8<Self>) -> (u32x4<Self>, u32x4<Self>) {
         (
             u32x4 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             u32x4 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -4128,10 +4245,10 @@ impl Simd for WasmSimd128 {
     fn load_array_mask32x8(self, val: [i32; 8usize]) -> mask32x8<Self> {
         mask32x8 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
@@ -4140,31 +4257,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_mask32x8(self, val: &[i32; 8usize]) -> mask32x8<Self> {
         mask32x8 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask32x8(self, a: mask32x8<Self>) -> [i32; 8usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [i32; 8usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [i32; 8usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask32x8(self, a: &mask32x8<Self>) -> &[i32; 8usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[i32; 8usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[i32; 8usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask32x8(self, a: &mut mask32x8<Self>) -> &mut [i32; 8usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [i32; 8usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [i32; 8usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask32x8(self, a: mask32x8<Self>, dest: &mut [i32; 8usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -4252,7 +4373,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_mask32x8(self, a: mask32x8<Self>, b: mask32x8<Self>) -> mask32x16<Self> {
         mask32x16 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -4260,11 +4386,11 @@ impl Simd for WasmSimd128 {
     fn split_mask32x8(self, a: mask32x8<Self>) -> (mask32x4<Self>, mask32x4<Self>) {
         (
             mask32x4 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             mask32x4 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -4278,10 +4404,10 @@ impl Simd for WasmSimd128 {
     fn load_array_f64x4(self, val: [f64; 4usize]) -> f64x4<Self> {
         f64x4 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(2usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(2) as *const _),
+                })
             },
             simd: self,
         }
@@ -4290,31 +4416,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_f64x4(self, val: &[f64; 4usize]) -> f64x4<Self> {
         f64x4 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(2usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(2) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_f64x4(self, a: f64x4<Self>) -> [f64; 4usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [f64; 4usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [f64; 4usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_f64x4(self, a: &f64x4<Self>) -> &[f64; 4usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[f64; 4usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[f64; 4usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_f64x4(self, a: &mut f64x4<Self>) -> &mut [f64; 4usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [f64; 4usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [f64; 4usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_f64x4(self, a: f64x4<Self>, dest: &mut [f64; 4usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(2usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(2) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -4522,7 +4652,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_f64x4(self, a: f64x4<Self>, b: f64x4<Self>) -> f64x8<Self> {
         f64x8 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -4530,11 +4665,11 @@ impl Simd for WasmSimd128 {
     fn split_f64x4(self, a: f64x4<Self>) -> (f64x2<Self>, f64x2<Self>) {
         (
             f64x2 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             f64x2 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -4556,10 +4691,10 @@ impl Simd for WasmSimd128 {
     fn load_array_mask64x4(self, val: [i64; 4usize]) -> mask64x4<Self> {
         mask64x4 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(2usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(2) as *const _),
+                })
             },
             simd: self,
         }
@@ -4568,31 +4703,35 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_mask64x4(self, val: &[i64; 4usize]) -> mask64x4<Self> {
         mask64x4 {
             val: unsafe {
-                crate::support::Aligned256([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(2usize) as *const _),
-                ])
+                crate::support::Aligned256(crate::support::Pair {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(2) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask64x4(self, a: mask64x4<Self>) -> [i64; 4usize] {
-        unsafe { core::mem::transmute::<[v128; 2usize], [i64; 4usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Pair<v128>, [i64; 4usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask64x4(self, a: &mask64x4<Self>) -> &[i64; 4usize] {
-        unsafe { core::mem::transmute::<&[v128; 2usize], &[i64; 4usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Pair<v128>, &[i64; 4usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask64x4(self, a: &mut mask64x4<Self>) -> &mut [i64; 4usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 2usize], &mut [i64; 4usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Pair<v128>, &mut [i64; 4usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask64x4(self, a: mask64x4<Self>, dest: &mut [i64; 4usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(2usize) as *mut _, a.val.0[1]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(2) as *mut _, a.val.0.b);
         }
     }
     #[inline(always)]
@@ -4680,7 +4819,12 @@ impl Simd for WasmSimd128 {
     #[inline(always)]
     fn combine_mask64x4(self, a: mask64x4<Self>, b: mask64x4<Self>) -> mask64x8<Self> {
         mask64x8 {
-            val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
+            val: crate::support::Aligned512(crate::support::Quad {
+                a: a.val.0.a,
+                b: a.val.0.b,
+                c: b.val.0.a,
+                d: b.val.0.b,
+            }),
             simd: self,
         }
     }
@@ -4688,11 +4832,11 @@ impl Simd for WasmSimd128 {
     fn split_mask64x4(self, a: mask64x4<Self>) -> (mask64x2<Self>, mask64x2<Self>) {
         (
             mask64x2 {
-                val: crate::support::Aligned128(a.val.0[0]),
+                val: crate::support::Aligned128(a.val.0.a),
                 simd: self,
             },
             mask64x2 {
-                val: crate::support::Aligned128(a.val.0[1]),
+                val: crate::support::Aligned128(a.val.0.b),
                 simd: self,
             },
         )
@@ -4706,12 +4850,12 @@ impl Simd for WasmSimd128 {
     fn load_array_f32x16(self, val: [f32; 16usize]) -> f32x16<Self> {
         f32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(12usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                    c: v128_load(val.as_ptr().add(8) as *const _),
+                    d: v128_load(val.as_ptr().add(12) as *const _),
+                })
             },
             simd: self,
         }
@@ -4720,35 +4864,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_f32x16(self, val: &[f32; 16usize]) -> f32x16<Self> {
         f32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(12usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                    c: v128_load(val.as_ptr().add(8) as *const _),
+                    d: v128_load(val.as_ptr().add(12) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_f32x16(self, a: f32x16<Self>) -> [f32; 16usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [f32; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [f32; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_f32x16(self, a: &f32x16<Self>) -> &[f32; 16usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[f32; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[f32; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_f32x16(self, a: &mut f32x16<Self>) -> &mut [f32; 16usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [f32; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [f32; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_f32x16(self, a: f32x16<Self>, dest: &mut [f32; 16usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(12usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(12) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -4957,11 +5105,17 @@ impl Simd for WasmSimd128 {
     fn split_f32x16(self, a: f32x16<Self>) -> (f32x8<Self>, f32x8<Self>) {
         (
             f32x8 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             f32x8 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -5072,12 +5226,12 @@ impl Simd for WasmSimd128 {
     fn load_array_i8x64(self, val: [i8; 64usize]) -> i8x64<Self> {
         i8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(32usize) as *const _),
-                    v128_load(val.as_ptr().add(48usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                    c: v128_load(val.as_ptr().add(32) as *const _),
+                    d: v128_load(val.as_ptr().add(48) as *const _),
+                })
             },
             simd: self,
         }
@@ -5086,35 +5240,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_i8x64(self, val: &[i8; 64usize]) -> i8x64<Self> {
         i8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(32usize) as *const _),
-                    v128_load(val.as_ptr().add(48usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                    c: v128_load(val.as_ptr().add(32) as *const _),
+                    d: v128_load(val.as_ptr().add(48) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i8x64(self, a: i8x64<Self>) -> [i8; 64usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [i8; 64usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [i8; 64usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i8x64(self, a: &i8x64<Self>) -> &[i8; 64usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[i8; 64usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[i8; 64usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i8x64(self, a: &mut i8x64<Self>) -> &mut [i8; 64usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [i8; 64usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [i8; 64usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i8x64(self, a: i8x64<Self>, dest: &mut [i8; 64usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(32usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(48usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(32) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(48) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -5275,11 +5433,17 @@ impl Simd for WasmSimd128 {
     fn split_i8x64(self, a: i8x64<Self>) -> (i8x32<Self>, i8x32<Self>) {
         (
             i8x32 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             i8x32 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -5311,12 +5475,12 @@ impl Simd for WasmSimd128 {
     fn load_array_u8x64(self, val: [u8; 64usize]) -> u8x64<Self> {
         u8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(32usize) as *const _),
-                    v128_load(val.as_ptr().add(48usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                    c: v128_load(val.as_ptr().add(32) as *const _),
+                    d: v128_load(val.as_ptr().add(48) as *const _),
+                })
             },
             simd: self,
         }
@@ -5325,35 +5489,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_u8x64(self, val: &[u8; 64usize]) -> u8x64<Self> {
         u8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(32usize) as *const _),
-                    v128_load(val.as_ptr().add(48usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                    c: v128_load(val.as_ptr().add(32) as *const _),
+                    d: v128_load(val.as_ptr().add(48) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u8x64(self, a: u8x64<Self>) -> [u8; 64usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [u8; 64usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [u8; 64usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u8x64(self, a: &u8x64<Self>) -> &[u8; 64usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[u8; 64usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[u8; 64usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u8x64(self, a: &mut u8x64<Self>) -> &mut [u8; 64usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [u8; 64usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [u8; 64usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u8x64(self, a: u8x64<Self>, dest: &mut [u8; 64usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(32usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(48usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(32) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(48) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -5514,11 +5682,17 @@ impl Simd for WasmSimd128 {
     fn split_u8x64(self, a: u8x64<Self>) -> (u8x32<Self>, u8x32<Self>) {
         (
             u8x32 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             u8x32 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -5606,12 +5780,12 @@ impl Simd for WasmSimd128 {
     fn load_array_mask8x64(self, val: [i8; 64usize]) -> mask8x64<Self> {
         mask8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(32usize) as *const _),
-                    v128_load(val.as_ptr().add(48usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                    c: v128_load(val.as_ptr().add(32) as *const _),
+                    d: v128_load(val.as_ptr().add(48) as *const _),
+                })
             },
             simd: self,
         }
@@ -5620,35 +5794,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_mask8x64(self, val: &[i8; 64usize]) -> mask8x64<Self> {
         mask8x64 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(32usize) as *const _),
-                    v128_load(val.as_ptr().add(48usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(16) as *const _),
+                    c: v128_load(val.as_ptr().add(32) as *const _),
+                    d: v128_load(val.as_ptr().add(48) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask8x64(self, a: mask8x64<Self>) -> [i8; 64usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [i8; 64usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [i8; 64usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask8x64(self, a: &mask8x64<Self>) -> &[i8; 64usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[i8; 64usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[i8; 64usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask8x64(self, a: &mut mask8x64<Self>) -> &mut [i8; 64usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [i8; 64usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [i8; 64usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask8x64(self, a: mask8x64<Self>, dest: &mut [i8; 64usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(32usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(48usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(32) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(48) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -5737,11 +5915,17 @@ impl Simd for WasmSimd128 {
     fn split_mask8x64(self, a: mask8x64<Self>) -> (mask8x32<Self>, mask8x32<Self>) {
         (
             mask8x32 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             mask8x32 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -5755,12 +5939,12 @@ impl Simd for WasmSimd128 {
     fn load_array_i16x32(self, val: [i16; 32usize]) -> i16x32<Self> {
         i16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(24usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                    c: v128_load(val.as_ptr().add(16) as *const _),
+                    d: v128_load(val.as_ptr().add(24) as *const _),
+                })
             },
             simd: self,
         }
@@ -5769,35 +5953,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_i16x32(self, val: &[i16; 32usize]) -> i16x32<Self> {
         i16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(24usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                    c: v128_load(val.as_ptr().add(16) as *const _),
+                    d: v128_load(val.as_ptr().add(24) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i16x32(self, a: i16x32<Self>) -> [i16; 32usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [i16; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [i16; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i16x32(self, a: &i16x32<Self>) -> &[i16; 32usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[i16; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[i16; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i16x32(self, a: &mut i16x32<Self>) -> &mut [i16; 32usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [i16; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [i16; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i16x32(self, a: i16x32<Self>, dest: &mut [i16; 32usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(24usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(24) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -5964,11 +6152,17 @@ impl Simd for WasmSimd128 {
     fn split_i16x32(self, a: i16x32<Self>) -> (i16x16<Self>, i16x16<Self>) {
         (
             i16x16 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             i16x16 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -6003,12 +6197,12 @@ impl Simd for WasmSimd128 {
     fn load_array_u16x32(self, val: [u16; 32usize]) -> u16x32<Self> {
         u16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(24usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                    c: v128_load(val.as_ptr().add(16) as *const _),
+                    d: v128_load(val.as_ptr().add(24) as *const _),
+                })
             },
             simd: self,
         }
@@ -6017,35 +6211,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_u16x32(self, val: &[u16; 32usize]) -> u16x32<Self> {
         u16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(24usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                    c: v128_load(val.as_ptr().add(16) as *const _),
+                    d: v128_load(val.as_ptr().add(24) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u16x32(self, a: u16x32<Self>) -> [u16; 32usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [u16; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [u16; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u16x32(self, a: &u16x32<Self>) -> &[u16; 32usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[u16; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[u16; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u16x32(self, a: &mut u16x32<Self>) -> &mut [u16; 32usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [u16; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [u16; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u16x32(self, a: u16x32<Self>, dest: &mut [u16; 32usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(24usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(24) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -6212,11 +6410,17 @@ impl Simd for WasmSimd128 {
     fn split_u16x32(self, a: u16x32<Self>) -> (u16x16<Self>, u16x16<Self>) {
         (
             u16x16 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             u16x16 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -6293,12 +6497,12 @@ impl Simd for WasmSimd128 {
     fn load_array_mask16x32(self, val: [i16; 32usize]) -> mask16x32<Self> {
         mask16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(24usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                    c: v128_load(val.as_ptr().add(16) as *const _),
+                    d: v128_load(val.as_ptr().add(24) as *const _),
+                })
             },
             simd: self,
         }
@@ -6307,35 +6511,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_mask16x32(self, val: &[i16; 32usize]) -> mask16x32<Self> {
         mask16x32 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(16usize) as *const _),
-                    v128_load(val.as_ptr().add(24usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(8) as *const _),
+                    c: v128_load(val.as_ptr().add(16) as *const _),
+                    d: v128_load(val.as_ptr().add(24) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask16x32(self, a: mask16x32<Self>) -> [i16; 32usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [i16; 32usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [i16; 32usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask16x32(self, a: &mask16x32<Self>) -> &[i16; 32usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[i16; 32usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[i16; 32usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask16x32(self, a: &mut mask16x32<Self>) -> &mut [i16; 32usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [i16; 32usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [i16; 32usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask16x32(self, a: mask16x32<Self>, dest: &mut [i16; 32usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(16usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(24usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(16) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(24) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -6427,11 +6635,17 @@ impl Simd for WasmSimd128 {
     fn split_mask16x32(self, a: mask16x32<Self>) -> (mask16x16<Self>, mask16x16<Self>) {
         (
             mask16x16 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             mask16x16 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -6445,12 +6659,12 @@ impl Simd for WasmSimd128 {
     fn load_array_i32x16(self, val: [i32; 16usize]) -> i32x16<Self> {
         i32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(12usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                    c: v128_load(val.as_ptr().add(8) as *const _),
+                    d: v128_load(val.as_ptr().add(12) as *const _),
+                })
             },
             simd: self,
         }
@@ -6459,35 +6673,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_i32x16(self, val: &[i32; 16usize]) -> i32x16<Self> {
         i32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(12usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                    c: v128_load(val.as_ptr().add(8) as *const _),
+                    d: v128_load(val.as_ptr().add(12) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_i32x16(self, a: i32x16<Self>) -> [i32; 16usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [i32; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [i32; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_i32x16(self, a: &i32x16<Self>) -> &[i32; 16usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[i32; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[i32; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_i32x16(self, a: &mut i32x16<Self>) -> &mut [i32; 16usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [i32; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [i32; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_i32x16(self, a: i32x16<Self>, dest: &mut [i32; 16usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(12usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(12) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -6648,11 +6866,17 @@ impl Simd for WasmSimd128 {
     fn split_i32x16(self, a: i32x16<Self>) -> (i32x8<Self>, i32x8<Self>) {
         (
             i32x8 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             i32x8 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -6689,12 +6913,12 @@ impl Simd for WasmSimd128 {
     fn load_array_u32x16(self, val: [u32; 16usize]) -> u32x16<Self> {
         u32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(12usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                    c: v128_load(val.as_ptr().add(8) as *const _),
+                    d: v128_load(val.as_ptr().add(12) as *const _),
+                })
             },
             simd: self,
         }
@@ -6703,35 +6927,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_u32x16(self, val: &[u32; 16usize]) -> u32x16<Self> {
         u32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(12usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                    c: v128_load(val.as_ptr().add(8) as *const _),
+                    d: v128_load(val.as_ptr().add(12) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_u32x16(self, a: u32x16<Self>) -> [u32; 16usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [u32; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [u32; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_u32x16(self, a: &u32x16<Self>) -> &[u32; 16usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[u32; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[u32; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_u32x16(self, a: &mut u32x16<Self>) -> &mut [u32; 16usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [u32; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [u32; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_u32x16(self, a: u32x16<Self>, dest: &mut [u32; 16usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(12usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(12) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -6892,11 +7120,17 @@ impl Simd for WasmSimd128 {
     fn split_u32x16(self, a: u32x16<Self>) -> (u32x8<Self>, u32x8<Self>) {
         (
             u32x8 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             u32x8 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -6962,12 +7196,12 @@ impl Simd for WasmSimd128 {
     fn load_array_mask32x16(self, val: [i32; 16usize]) -> mask32x16<Self> {
         mask32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(12usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                    c: v128_load(val.as_ptr().add(8) as *const _),
+                    d: v128_load(val.as_ptr().add(12) as *const _),
+                })
             },
             simd: self,
         }
@@ -6976,35 +7210,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_mask32x16(self, val: &[i32; 16usize]) -> mask32x16<Self> {
         mask32x16 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(8usize) as *const _),
-                    v128_load(val.as_ptr().add(12usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(4) as *const _),
+                    c: v128_load(val.as_ptr().add(8) as *const _),
+                    d: v128_load(val.as_ptr().add(12) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask32x16(self, a: mask32x16<Self>) -> [i32; 16usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [i32; 16usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [i32; 16usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask32x16(self, a: &mask32x16<Self>) -> &[i32; 16usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[i32; 16usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[i32; 16usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask32x16(self, a: &mut mask32x16<Self>) -> &mut [i32; 16usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [i32; 16usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [i32; 16usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask32x16(self, a: mask32x16<Self>, dest: &mut [i32; 16usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(8usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(12usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(8) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(12) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -7093,11 +7331,17 @@ impl Simd for WasmSimd128 {
     fn split_mask32x16(self, a: mask32x16<Self>) -> (mask32x8<Self>, mask32x8<Self>) {
         (
             mask32x8 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             mask32x8 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -7111,12 +7355,12 @@ impl Simd for WasmSimd128 {
     fn load_array_f64x8(self, val: [f64; 8usize]) -> f64x8<Self> {
         f64x8 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(2usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(6usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(2) as *const _),
+                    c: v128_load(val.as_ptr().add(4) as *const _),
+                    d: v128_load(val.as_ptr().add(6) as *const _),
+                })
             },
             simd: self,
         }
@@ -7125,35 +7369,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_f64x8(self, val: &[f64; 8usize]) -> f64x8<Self> {
         f64x8 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(2usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(6usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(2) as *const _),
+                    c: v128_load(val.as_ptr().add(4) as *const _),
+                    d: v128_load(val.as_ptr().add(6) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_f64x8(self, a: f64x8<Self>) -> [f64; 8usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [f64; 8usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [f64; 8usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_f64x8(self, a: &f64x8<Self>) -> &[f64; 8usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[f64; 8usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[f64; 8usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_f64x8(self, a: &mut f64x8<Self>) -> &mut [f64; 8usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [f64; 8usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [f64; 8usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_f64x8(self, a: f64x8<Self>, dest: &mut [f64; 8usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(2usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(6usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(2) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(6) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -7362,11 +7610,17 @@ impl Simd for WasmSimd128 {
     fn split_f64x8(self, a: f64x8<Self>) -> (f64x4<Self>, f64x4<Self>) {
         (
             f64x4 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             f64x4 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )
@@ -7388,12 +7642,12 @@ impl Simd for WasmSimd128 {
     fn load_array_mask64x8(self, val: [i64; 8usize]) -> mask64x8<Self> {
         mask64x8 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(2usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(6usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(2) as *const _),
+                    c: v128_load(val.as_ptr().add(4) as *const _),
+                    d: v128_load(val.as_ptr().add(6) as *const _),
+                })
             },
             simd: self,
         }
@@ -7402,35 +7656,39 @@ impl Simd for WasmSimd128 {
     fn load_array_ref_mask64x8(self, val: &[i64; 8usize]) -> mask64x8<Self> {
         mask64x8 {
             val: unsafe {
-                crate::support::Aligned512([
-                    v128_load(val.as_ptr().add(0usize) as *const _),
-                    v128_load(val.as_ptr().add(2usize) as *const _),
-                    v128_load(val.as_ptr().add(4usize) as *const _),
-                    v128_load(val.as_ptr().add(6usize) as *const _),
-                ])
+                crate::support::Aligned512(crate::support::Quad {
+                    a: v128_load(val.as_ptr().add(0) as *const _),
+                    b: v128_load(val.as_ptr().add(2) as *const _),
+                    c: v128_load(val.as_ptr().add(4) as *const _),
+                    d: v128_load(val.as_ptr().add(6) as *const _),
+                })
             },
             simd: self,
         }
     }
     #[inline(always)]
     fn as_array_mask64x8(self, a: mask64x8<Self>) -> [i64; 8usize] {
-        unsafe { core::mem::transmute::<[v128; 4usize], [i64; 8usize]>(a.val.0) }
+        unsafe { core::mem::transmute::<crate::support::Quad<v128>, [i64; 8usize]>(a.val.0) }
     }
     #[inline(always)]
     fn as_array_ref_mask64x8(self, a: &mask64x8<Self>) -> &[i64; 8usize] {
-        unsafe { core::mem::transmute::<&[v128; 4usize], &[i64; 8usize]>(&a.val.0) }
+        unsafe { core::mem::transmute::<&crate::support::Quad<v128>, &[i64; 8usize]>(&a.val.0) }
     }
     #[inline(always)]
     fn as_array_mut_mask64x8(self, a: &mut mask64x8<Self>) -> &mut [i64; 8usize] {
-        unsafe { core::mem::transmute::<&mut [v128; 4usize], &mut [i64; 8usize]>(&mut a.val.0) }
+        unsafe {
+            core::mem::transmute::<&mut crate::support::Quad<v128>, &mut [i64; 8usize]>(
+                &mut a.val.0,
+            )
+        }
     }
     #[inline(always)]
     fn store_array_mask64x8(self, a: mask64x8<Self>, dest: &mut [i64; 8usize]) -> () {
         unsafe {
-            v128_store(dest.as_mut_ptr().add(0usize) as *mut _, a.val.0[0]);
-            v128_store(dest.as_mut_ptr().add(2usize) as *mut _, a.val.0[1]);
-            v128_store(dest.as_mut_ptr().add(4usize) as *mut _, a.val.0[2]);
-            v128_store(dest.as_mut_ptr().add(6usize) as *mut _, a.val.0[3]);
+            v128_store(dest.as_mut_ptr().add(0) as *mut _, a.val.0.a);
+            v128_store(dest.as_mut_ptr().add(2) as *mut _, a.val.0.b);
+            v128_store(dest.as_mut_ptr().add(4) as *mut _, a.val.0.c);
+            v128_store(dest.as_mut_ptr().add(6) as *mut _, a.val.0.d);
         }
     }
     #[inline(always)]
@@ -7519,11 +7777,17 @@ impl Simd for WasmSimd128 {
     fn split_mask64x8(self, a: mask64x8<Self>) -> (mask64x4<Self>, mask64x4<Self>) {
         (
             mask64x4 {
-                val: crate::support::Aligned256([a.val.0[0], a.val.0[1]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.a,
+                    b: a.val.0.b,
+                }),
                 simd: self,
             },
             mask64x4 {
-                val: crate::support::Aligned256([a.val.0[2], a.val.0[3]]),
+                val: crate::support::Aligned256(crate::support::Pair {
+                    a: a.val.0.c,
+                    b: a.val.0.d,
+                }),
                 simd: self,
             },
         )

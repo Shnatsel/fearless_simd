@@ -85,8 +85,8 @@ impl VecType {
         quote! { crate::support::#aligned }
     }
 
-    /// Returns the native vector type wrapped by the `Aligned` wrapper. This could be a single native vector type or an
-    /// array of them.
+    /// Returns the native vector type wrapped by the `Aligned` wrapper. This could be a single native vector type or a
+    /// struct of them (Pair or Quad).
     pub(crate) fn wrapped_native_ty(
         &self,
         arch_ty: impl Fn(&Self) -> TokenStream,
@@ -97,10 +97,11 @@ impl VecType {
         let native_block_ty =
             Self::new(self.scalar, self.scalar_bits, block_size / self.scalar_bits);
         let native_block_ty_ident = arch_ty(&native_block_ty);
-        if self.n_bits() == block_size {
-            quote! { #native_block_ty_ident }
-        } else {
-            quote! { [#native_block_ty_ident; #block_count] }
+        match block_count {
+            1 => quote! { #native_block_ty_ident },
+            2 => quote! { crate::support::Pair<#native_block_ty_ident> },
+            4 => quote! { crate::support::Quad<#native_block_ty_ident> },
+            _ => unimplemented!("block_count {} not supported", block_count),
         }
     }
 
