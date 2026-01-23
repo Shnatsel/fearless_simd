@@ -280,18 +280,17 @@ pub(crate) fn generic_from_array(
         block_size / vec_ty.scalar_bits,
     );
 
-    let wrapper_ty = vec_ty.aligned_wrapper();
     let load_unaligned = load_unaligned_block(&native_block_ty);
     let expr = if block_count == 1 {
         quote! {
-            unsafe { #wrapper_ty(#load_unaligned(val.as_ptr() as *const _)) }
+            unsafe { #load_unaligned(val.as_ptr() as *const _) }
         }
     } else {
         let blocks = (0..block_count).map(|n| n * num_scalars_per_block);
         quote! {
-            unsafe { #wrapper_ty([
+            unsafe { [
                 #(#load_unaligned(val.as_ptr().add(#blocks) as *const _)),*
-            ]) }
+            ] }
         }
     };
     let vec_rust = vec_ty.rust();
