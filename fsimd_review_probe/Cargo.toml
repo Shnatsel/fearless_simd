@@ -1,0 +1,7 @@
+[package]
+name = "fsimd_review_probe"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+fearless_simd = { path = "/home/shnatsel/Code/fearless_simd/fearless_simd" }
