@@ -254,6 +254,7 @@ mod tests {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     mod x86_kernel {
         use crate::Level;
+        use crate::prelude::*;
         #[cfg(target_arch = "x86")]
         use core::arch::x86::{__m256i, _mm_crc32_u32, _mm256_setzero_si256};
         #[cfg(target_arch = "x86_64")]
@@ -263,6 +264,16 @@ mod tests {
             #[inline]
             fn crc32_u32(crc: u32, value: u32) -> u32 {
                 _mm_crc32_u32(crc, value)
+            }
+        }
+
+        crate::sse4_2_kernel! {
+            #[inline]
+            fn generic_identity<S: Simd, T: Copy>(
+                x: crate::f32x4<S>,
+                marker: T,
+            ) -> (crate::f32x4<S>, T) {
+                (x, marker)
             }
         }
 
@@ -278,6 +289,16 @@ mod tests {
             if let Some(sse4_2) = Level::new().as_sse4_2() {
                 let crc = crc32_u32(sse4_2, 0, 42);
                 assert_eq!(crc, crc32_u32(sse4_2, 0, 42));
+            }
+        }
+
+        #[test]
+        fn sse4_2_generic_kernel() {
+            if let Some(sse4_2) = Level::new().as_sse4_2() {
+                let x = crate::f32x4::splat(sse4_2, 1.0);
+                let (x, marker) = generic_identity(sse4_2, x, 7_u8);
+                assert_eq!(<[f32; 4]>::from(x), [1.0; 4]);
+                assert_eq!(marker, 7);
             }
         }
 
