@@ -8,7 +8,8 @@
 /// use platform-specific intrinsics for parts of the computation.
 ///
 /// The first argument must be a SIMD token written as `token: Neon`,
-/// `token: WasmSimd128`, `token: Sse4_2`, or `token: Avx2`.
+/// `token: WasmSimd128`, `token: Sse4_2`, `token: Avx2`, or with the
+/// corresponding `fearless_simd::` path.
 /// The generated wrapper uses the corresponding `$crate::` token type in its
 /// actual signature.
 ///
@@ -29,7 +30,7 @@
 /// use std::arch::x86_64::{__m256i, _mm256_add_epi32};
 ///
 /// fearless_simd::kernel! {
-///     fn add_i32x8(avx2: Avx2, a: __m256i, b: __m256i) -> __m256i {
+///     fn add_i32x8(avx2: fearless_simd::Avx2, a: __m256i, b: __m256i) -> __m256i {
 ///         _mm256_add_epi32(a, b)
 ///     }
 /// }
@@ -55,8 +56,9 @@
 /// The macro only accepts a single plain, safe, non-generic function item with simple named parameters.
 /// However, the body of the function can be as complex as you like.
 ///
-/// The SIMD token type must be written as a bare supported name:
-/// literally `Neon`, `WasmSimd128`, `Sse4_2`, or `Avx2`. No paths or aliases.
+/// The SIMD token type must be written as a supported name or canonical path:
+/// `Neon`, `WasmSimd128`, `Sse4_2`, `Avx2`, or the same names prefixed with
+/// `fearless_simd::`. Aliases are not supported.
 ///
 /// For soundness, this macro only accepts safe functions.
 ///
@@ -67,6 +69,26 @@
 #[macro_export]
 macro_rules! kernel {
     (
+        @with_token_ty $token_ty:ident;
+        $(#[$meta:meta])*
+        $vis:vis fn $name:ident(
+            $token:ident $(, $arg:ident : $arg_ty:ty)* $(,)?
+        ) $(-> $ret:ty)? {
+            $($kernel_body:tt)*
+        }
+    ) => {
+        $crate::__fearless_simd_kernel_dispatch! {
+            $token_ty,
+            $(#[$meta])*
+            $vis fn $name(
+                $token $(, $arg: $arg_ty)*
+            ) $(-> $ret)? {
+                $($kernel_body)*
+            }
+        }
+    };
+
+    (
         $(#[$meta:meta])*
         $vis:vis fn $name:ident(
             $token:ident : $token_ty:ident $(, $arg:ident : $arg_ty:ty)* $(,)?
@@ -74,8 +96,84 @@ macro_rules! kernel {
             $($kernel_body:tt)*
         }
     ) => {
-        $crate::__fearless_simd_kernel_dispatch! {
-            $token_ty,
+        $crate::kernel! {
+            @with_token_ty $token_ty;
+            $(#[$meta])*
+            $vis fn $name(
+                $token $(, $arg: $arg_ty)*
+            ) $(-> $ret)? {
+                $($kernel_body)*
+            }
+        }
+    };
+
+    (
+        $(#[$meta:meta])*
+        $vis:vis fn $name:ident(
+            $token:ident : fearless_simd::Neon $(, $arg:ident : $arg_ty:ty)* $(,)?
+        ) $(-> $ret:ty)? {
+            $($kernel_body:tt)*
+        }
+    ) => {
+        $crate::kernel! {
+            @with_token_ty Neon;
+            $(#[$meta])*
+            $vis fn $name(
+                $token $(, $arg: $arg_ty)*
+            ) $(-> $ret)? {
+                $($kernel_body)*
+            }
+        }
+    };
+
+    (
+        $(#[$meta:meta])*
+        $vis:vis fn $name:ident(
+            $token:ident : fearless_simd::WasmSimd128 $(, $arg:ident : $arg_ty:ty)* $(,)?
+        ) $(-> $ret:ty)? {
+            $($kernel_body:tt)*
+        }
+    ) => {
+        $crate::kernel! {
+            @with_token_ty WasmSimd128;
+            $(#[$meta])*
+            $vis fn $name(
+                $token $(, $arg: $arg_ty)*
+            ) $(-> $ret)? {
+                $($kernel_body)*
+            }
+        }
+    };
+
+    (
+        $(#[$meta:meta])*
+        $vis:vis fn $name:ident(
+            $token:ident : fearless_simd::Sse4_2 $(, $arg:ident : $arg_ty:ty)* $(,)?
+        ) $(-> $ret:ty)? {
+            $($kernel_body:tt)*
+        }
+    ) => {
+        $crate::kernel! {
+            @with_token_ty Sse4_2;
+            $(#[$meta])*
+            $vis fn $name(
+                $token $(, $arg: $arg_ty)*
+            ) $(-> $ret)? {
+                $($kernel_body)*
+            }
+        }
+    };
+
+    (
+        $(#[$meta:meta])*
+        $vis:vis fn $name:ident(
+            $token:ident : fearless_simd::Avx2 $(, $arg:ident : $arg_ty:ty)* $(,)?
+        ) $(-> $ret:ty)? {
+            $($kernel_body:tt)*
+        }
+    ) => {
+        $crate::kernel! {
+            @with_token_ty Avx2;
             $(#[$meta])*
             $vis fn $name(
                 $token $(, $arg: $arg_ty)*
@@ -95,7 +193,8 @@ macro_rules! kernel {
     ) => {
         compile_error!(concat!(
             "fearless_simd::kernel! expects its SIMD token argument type to be written as ",
-            "one of `Neon`, `WasmSimd128`, `Sse4_2`, or `Avx2`; got `",
+            "one of `Neon`, `WasmSimd128`, `Sse4_2`, `Avx2`, or a supported path ",
+            "such as `fearless_simd::Avx2`; got `",
             stringify!($token_ty),
             "`",
         ));
@@ -161,7 +260,8 @@ macro_rules! __fearless_simd_kernel_dispatch {
     ) => {
         compile_error!(concat!(
             "fearless_simd::kernel! expects its SIMD token argument type to be written as ",
-            "one of `Neon`, `WasmSimd128`, `Sse4_2`, or `Avx2`; got `",
+            "one of `Neon`, `WasmSimd128`, `Sse4_2`, `Avx2`, or a supported path ",
+            "such as `fearless_simd::Avx2`; got `",
             stringify!($token_ty),
             "`",
         ));
@@ -240,6 +340,16 @@ mod tests {
         }
     }
 
+    crate::kernel! {
+        fn add_i32x8_avx2_qualified(
+            avx2: fearless_simd::Avx2,
+            a: __m256i,
+            b: __m256i,
+        ) -> __m256i {
+            _mm256_add_epi32(a, b)
+        }
+    }
+
     #[cfg(target_arch = "aarch64")]
     #[test]
     fn kernel_instantiates_for_neon() {
@@ -286,11 +396,18 @@ mod tests {
         let a: crate::i32x8<_> = [1, 2, 3, 4, 5, 6, 7, 8].simd_into(avx2);
         let b: crate::i32x8<_> = [10, 20, 30, 40, 50, 60, 70, 80].simd_into(avx2);
         let sum: crate::i32x8<_> = add_i32x8_avx2(avx2, a.into(), b.into()).simd_into(avx2);
+        let sum_qualified: crate::i32x8<_> =
+            add_i32x8_avx2_qualified(avx2, a.into(), b.into()).simd_into(avx2);
 
         assert_eq!(
             <[i32; 8]>::from(sum),
             [11, 22, 33, 44, 55, 66, 77, 88],
             "`kernel!` should instantiate a working AVX2 kernel"
+        );
+        assert_eq!(
+            <[i32; 8]>::from(sum_qualified),
+            [11, 22, 33, 44, 55, 66, 77, 88],
+            "`kernel!` should instantiate a working AVX2 kernel with a qualified token type"
         );
     }
 }
