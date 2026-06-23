@@ -8,8 +8,10 @@ use crate::arch::x86::{
 };
 use crate::generic::{
     generic_as_array, generic_block_combine, generic_block_split, generic_from_array,
-    generic_from_bytes, generic_mask_set, generic_op_name, generic_store_array, generic_to_bytes,
-    integer_lane_mask_splat_arg, scalar_binary,
+    generic_from_bytes, generic_mask_from_bitmask, generic_mask_set, generic_op_name,
+    generic_store_array, generic_to_bytes, integer_lane_mask_splat_arg, interleaved_load_indices,
+    interleaved_store_indices, scalar_binary, scalar_binary_op, scalar_compare_op, scalar_cvt,
+    scalar_load_interleaved, scalar_store_interleaved, scalar_unary_op, scalar_unzip,
 };
 use crate::level::Level;
 use crate::ops::{Op, OpSig, Quantifier, SlideGranularity, valid_reinterpret};
@@ -19,16 +21,19 @@ use quote::{ToTokens as _, format_ident, quote};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum X86 {
+    Sse2,
     Sse4_2,
     Avx2,
     Avx512,
 }
 
+pub(crate) const SSE2_FEATURES: &str = "fxsr,sse,sse2";
 pub(crate) const AVX512_FEATURES: &str = "adx,aes,avx512bitalg,avx512bw,avx512cd,avx512dq,avx512f,avx512ifma,avx512vbmi,avx512vbmi2,avx512vl,avx512vnni,avx512vpopcntdq,bmi1,bmi2,cmpxchg16b,fma,gfni,lzcnt,movbe,pclmulqdq,popcnt,rdrand,rdseed,sha,vaes,vpclmulqdq,xsave,xsavec,xsaveopt,xsaves";
 
 impl Level for X86 {
     fn name(&self) -> &'static str {
         match self {
+            Self::Sse2 => "Sse2",
             Self::Sse4_2 => "Sse4_2",
             Self::Avx2 => "Avx2",
             Self::Avx512 => "Avx512",
@@ -37,6 +42,7 @@ impl Level for X86 {
 
     fn native_width(&self) -> usize {
         match self {
+            Self::Sse2 => 128,
             Self::Sse4_2 => 128,
             Self::Avx2 => 256,
             Self::Avx512 => 512,
@@ -49,6 +55,7 @@ impl Level for X86 {
 
     fn enabled_target_features(&self) -> Option<&'static str> {
         Some(match self {
+            Self::Sse2 => SSE2_FEATURES,
             Self::Sse4_2 => "sse4.2,cmpxchg16b,popcnt",
             Self::Avx2 => "avx2,bmi1,bmi2,cmpxchg16b,f16c,fma,lzcnt,movbe,popcnt,xsave",
             Self::Avx512 => AVX512_FEATURES,
@@ -83,6 +90,9 @@ impl Level for X86 {
 
     fn token_doc(&self) -> &'static str {
         match self {
+            Self::Sse2 => {
+                "A token for SSE2 intrinsics on `x86` and `x86_64`, representing the x86-64 baseline."
+            }
             Self::Sse4_2 => {
                 "A token for SSE4.2 intrinsics on `x86` and `x86_64`, representing the x86-64-v2 level."
             }
@@ -96,11 +106,65 @@ impl Level for X86 {
     }
 
     fn make_module_prelude(&self) -> TokenStream {
+        let float_ext = if *self == Self::Sse2 {
+            quote! {
+                #[cfg(all(feature = "libm", not(feature = "std")))]
+                trait FloatExt {
+                    fn floor(self) -> Self;
+                    fn ceil(self) -> Self;
+                    fn round_ties_even(self) -> Self;
+                    fn trunc(self) -> Self;
+                }
+                #[cfg(all(feature = "libm", not(feature = "std")))]
+                impl FloatExt for f32 {
+                    #[inline(always)]
+                    fn floor(self) -> f32 {
+                        libm::floorf(self)
+                    }
+                    #[inline(always)]
+                    fn ceil(self) -> f32 {
+                        libm::ceilf(self)
+                    }
+                    #[inline(always)]
+                    fn round_ties_even(self) -> f32 {
+                        libm::rintf(self)
+                    }
+                    #[inline(always)]
+                    fn trunc(self) -> f32 {
+                        libm::truncf(self)
+                    }
+                }
+
+                #[cfg(all(feature = "libm", not(feature = "std")))]
+                impl FloatExt for f64 {
+                    #[inline(always)]
+                    fn floor(self) -> f64 {
+                        libm::floor(self)
+                    }
+                    #[inline(always)]
+                    fn ceil(self) -> f64 {
+                        libm::ceil(self)
+                    }
+                    #[inline(always)]
+                    fn round_ties_even(self) -> f64 {
+                        libm::rint(self)
+                    }
+                    #[inline(always)]
+                    fn trunc(self) -> f64 {
+                        libm::trunc(self)
+                    }
+                }
+            }
+        } else {
+            TokenStream::new()
+        };
+
         quote! {
             #[cfg(target_arch = "x86")]
             use core::arch::x86::*;
             #[cfg(target_arch = "x86_64")]
             use core::arch::x86_64::*;
+            #float_ext
         }
     }
 
@@ -124,7 +188,7 @@ impl Level for X86 {
     fn make_module_footer(&self) -> TokenStream {
         let alignr_helpers = self.dyn_alignr_helpers();
         let slide_helpers = match self {
-            Self::Sse4_2 => Self::sse42_slide_helpers(),
+            Self::Sse2 | Self::Sse4_2 => Self::sse_slide_helpers(self.token()),
             Self::Avx2 => Self::avx2_slide_helpers(),
             Self::Avx512 => TokenStream::new(),
         };
@@ -138,6 +202,22 @@ impl Level for X86 {
     fn make_level_body(&self) -> TokenStream {
         let level_tok = self.token();
         match self {
+            Self::Sse2 => quote! {
+                #[cfg(not(all(
+                    target_feature = "sse4.2",
+                    target_feature = "cmpxchg16b",
+                    target_feature = "popcnt"
+                )))]
+                return Level::#level_tok(self);
+                #[cfg(all(
+                    target_feature = "sse4.2",
+                    target_feature = "cmpxchg16b",
+                    target_feature = "popcnt"
+                ))]
+                {
+                    Level::baseline()
+                }
+            },
             Self::Sse4_2 => quote! {
                 #[cfg(not(all(
                     target_feature = "avx2",
@@ -178,6 +258,10 @@ impl Level for X86 {
     }
 
     fn should_impl_arch_type_conversion(&self, ty: &VecType) -> bool {
+        if *self == Self::Sse4_2 {
+            return false;
+        }
+
         let n_bits = ty.n_bits();
         if *self == Self::Avx512 && ty.scalar == ScalarType::Mask {
             return n_bits <= self.max_block_size();
@@ -220,6 +304,17 @@ impl Level for X86 {
 
     fn make_impl_body(&self) -> TokenStream {
         match self {
+            Self::Sse2 => quote! {
+                /// Create a SIMD token.
+                ///
+                /// # Safety
+                ///
+                /// The `fxsr`, `sse`, and `sse2` CPU features must be available.
+                #[inline]
+                pub const unsafe fn new_unchecked() -> Self {
+                    Self { _private: () }
+                }
+            },
             Self::Sse4_2 => quote! {
                 /// Create a SIMD token.
                 ///
@@ -716,6 +811,105 @@ fn signed_literal(value: u64, bits: u32) -> TokenStream {
     }
 }
 
+fn sse2_not_mask_expr(mask: TokenStream) -> TokenStream {
+    quote! {
+        {
+            let zero = _mm_setzero_si128();
+            let all_ones = _mm_cmpeq_epi8(zero, zero);
+            _mm_xor_si128(#mask, all_ones)
+        }
+    }
+}
+
+fn sse2_cmpgt_expr(vec_ty: &VecType, lhs: TokenStream, rhs: TokenStream) -> TokenStream {
+    let gt = simple_sign_unaware_intrinsic("cmpgt", vec_ty);
+    if vec_ty.scalar != ScalarType::Unsigned {
+        return quote! { #gt(#lhs, #rhs) };
+    }
+
+    let set = set1_intrinsic(vec_ty);
+    let xor = intrinsic_ident("xor", coarse_type(vec_ty), vec_ty.n_bits());
+    let sign = match vec_ty.scalar_bits {
+        8 => quote! { 0x80u8 },
+        16 => quote! { 0x8000u16 },
+        32 => quote! { 0x80000000u32 },
+        _ => unimplemented!(),
+    };
+
+    quote! {
+        {
+            let sign_bit = #set(#sign.cast_signed());
+            let lhs_signed = #xor(#lhs, sign_bit);
+            let rhs_signed = #xor(#rhs, sign_bit);
+            #gt(lhs_signed, rhs_signed)
+        }
+    }
+}
+
+fn sse2_int_compare_expr(method: &str, vec_ty: &VecType) -> TokenStream {
+    match method {
+        "simd_eq" if vec_ty.scalar_bits == 64 => quote! {
+            {
+                let eq32 = _mm_cmpeq_epi32(a.into(), b.into());
+                let swapped = _mm_shuffle_epi32::<0b10_11_00_01>(eq32);
+                _mm_and_si128(eq32, swapped)
+            }
+        },
+        "simd_eq" => {
+            let eq = simple_sign_unaware_intrinsic("cmpeq", vec_ty);
+            quote! { #eq(a.into(), b.into()) }
+        }
+        "simd_lt" => sse2_cmpgt_expr(vec_ty, quote! { b.into() }, quote! { a.into() }),
+        "simd_gt" => sse2_cmpgt_expr(vec_ty, quote! { a.into() }, quote! { b.into() }),
+        "simd_le" => {
+            let gt = sse2_cmpgt_expr(vec_ty, quote! { a.into() }, quote! { b.into() });
+            sse2_not_mask_expr(gt)
+        }
+        "simd_ge" => {
+            let gt = sse2_cmpgt_expr(vec_ty, quote! { b.into() }, quote! { a.into() });
+            sse2_not_mask_expr(gt)
+        }
+        _ => unreachable!(),
+    }
+}
+
+fn sse2_select_expr(
+    vec_ty: &VecType,
+    mask: TokenStream,
+    if_true: TokenStream,
+    if_false: TokenStream,
+) -> TokenStream {
+    let and = intrinsic_ident("and", coarse_type(vec_ty), vec_ty.n_bits());
+    let andnot = intrinsic_ident("andnot", coarse_type(vec_ty), vec_ty.n_bits());
+    let or = intrinsic_ident("or", coarse_type(vec_ty), vec_ty.n_bits());
+
+    quote! {
+        #or(#and(#mask, #if_true), #andnot(#mask, #if_false))
+    }
+}
+
+fn sse2_min_max_expr(method: &str, vec_ty: &VecType) -> TokenStream {
+    match (method, vec_ty.scalar, vec_ty.scalar_bits) {
+        ("min", ScalarType::Unsigned, 8) | ("max", ScalarType::Unsigned, 8) => {
+            let intrinsic = simple_intrinsic(method, vec_ty);
+            quote! { #intrinsic(a.into(), b.into()) }
+        }
+        ("min", ScalarType::Int, 16) | ("max", ScalarType::Int, 16) => {
+            let intrinsic = simple_intrinsic(method, vec_ty);
+            quote! { #intrinsic(a.into(), b.into()) }
+        }
+        ("min" | "max", ScalarType::Int | ScalarType::Unsigned, 8 | 16 | 32) => {
+            let gt = sse2_cmpgt_expr(vec_ty, quote! { a.into() }, quote! { b.into() });
+            if method == "max" {
+                sse2_select_expr(vec_ty, gt, quote! { a.into() }, quote! { b.into() })
+            } else {
+                sse2_select_expr(vec_ty, gt, quote! { b.into() }, quote! { a.into() })
+            }
+        }
+        _ => unimplemented!(),
+    }
+}
+
 fn avx512_mask_register_bits(vec_ty: &VecType) -> usize {
     match vec_ty.len {
         0..=8 => 8,
@@ -897,20 +1091,6 @@ fn avx512_index_vector(vec_ty: &VecType, indices: impl IntoIterator<Item = usize
     }
 }
 
-fn interleaved_load_indices(len: usize, block_count: usize) -> Vec<usize> {
-    let stream_len = len / block_count;
-    (0..block_count)
-        .flat_map(|stream| (0..stream_len).map(move |i| i * block_count + stream))
-        .collect()
-}
-
-fn interleaved_store_indices(len: usize, block_count: usize) -> Vec<usize> {
-    let stream_len = len / block_count;
-    (0..stream_len)
-        .flat_map(|i| (0..block_count).map(move |stream| stream * stream_len + i))
-        .collect()
-}
-
 impl X86 {
     pub(crate) fn handle_splat(&self, op: Op, vec_ty: &VecType) -> TokenStream {
         if *self == Self::Avx512 && vec_ty.scalar == ScalarType::Mask {
@@ -952,7 +1132,10 @@ impl X86 {
     fn has_wide_byte_mask_from_bitmask(&self, vec_ty: &VecType) -> bool {
         // 512-bit byte masks can be constructed directly from one broadcast, avoiding the
         // shift-and-rebroadcast shape from generic split/combine.
-        vec_ty.scalar == ScalarType::Mask && vec_ty.n_bits() == 512 && vec_ty.scalar_bits == 8
+        *self != Self::Sse2
+            && vec_ty.scalar == ScalarType::Mask
+            && vec_ty.n_bits() == 512
+            && vec_ty.scalar_bits == 8
     }
 
     fn has_wide_avx2_mask_from_bitmask(&self, vec_ty: &VecType) -> bool {
@@ -1082,6 +1265,10 @@ impl X86 {
             };
         }
 
+        if *self == Self::Sse2 && matches!(vec_ty.scalar_bits, 8 | 64) {
+            return generic_mask_from_bitmask(op.simd_trait_method_sig(vec_ty), vec_ty);
+        }
+
         if self.has_wide_byte_mask_from_bitmask(vec_ty) {
             return self.kernel_method(op, vec_ty, |token| {
                 mask_from_bitmask_wide_bytes(self.native_width(), vec_ty, token)
@@ -1195,6 +1382,17 @@ impl X86 {
                         quote! { #token },
                     )
                 }
+            });
+        }
+
+        if *self == Self::Sse2 && vec_ty.scalar != ScalarType::Float {
+            if vec_ty.scalar_bits == 64 && method != "simd_eq" {
+                return scalar_compare_op(op.simd_trait_method_sig(vec_ty), method, vec_ty);
+            }
+
+            let expr = sse2_int_compare_expr(method, vec_ty);
+            return self.kernel_method(op, vec_ty, |token| {
+                quote! { #expr.simd_into(#token) }
             });
         }
 
@@ -1332,6 +1530,13 @@ impl X86 {
             }
         }
 
+        if *self == Self::Sse2
+            && vec_ty.scalar == ScalarType::Float
+            && matches!(method, "floor" | "ceil" | "round_ties_even" | "trunc")
+        {
+            return scalar_unary_op(method_sig, method, vec_ty);
+        }
+
         match method {
             "fract" => {
                 let trunc_op = generic_op_name("trunc", vec_ty);
@@ -1426,6 +1631,25 @@ impl X86 {
                             #token.#combine(high, low)
                         }
                     }
+                    (Self::Sse2, 256, 128) => {
+                        assert_eq!(
+                            vec_ty.scalar,
+                            ScalarType::Unsigned,
+                            "only unsigned widen operations are currently generated"
+                        );
+                        assert_eq!(
+                            vec_ty.scalar_bits, 8,
+                            "SSE2 widen only handles u8 to u16"
+                        );
+                        let combine = generic_op_name("combine", &target_ty.block_ty());
+                        quote! {
+                            let raw = a.into();
+                            let zero = _mm_setzero_si128();
+                            let lo = _mm_unpacklo_epi8(raw, zero).simd_into(#token);
+                            let hi = _mm_unpackhi_epi8(raw, zero).simd_into(#token);
+                            #token.#combine(lo, hi)
+                        }
+                    }
                     (Self::Sse4_2, 256, 128) => {
                         let extend = extend_intrinsic(
                             vec_ty.scalar,
@@ -1498,7 +1722,7 @@ impl X86 {
                             result.simd_into(#token)
                         }
                     }
-                    (Self::Sse4_2, 128, 256) => {
+                    (Self::Sse2 | Self::Sse4_2, 128, 256) => {
                         let mask = set1_intrinsic(&VecType::new(
                             vec_ty.scalar,
                             vec_ty.scalar_bits,
@@ -1564,6 +1788,54 @@ impl X86 {
                     #range::<#imm>(a.into(), b.into()).simd_into(#token)
                 }
             });
+        }
+
+        if *self == Self::Sse2
+            && vec_ty.scalar == ScalarType::Float
+            && matches!(method, "min_precise" | "max_precise")
+        {
+            let intrinsic = simple_intrinsic(
+                if method == "max_precise" {
+                    "max"
+                } else {
+                    "min"
+                },
+                vec_ty,
+            );
+            let cmpunord = float_compare_method("unord", vec_ty);
+            return self.kernel_method(op, vec_ty, |token| {
+                let expr = sse2_select_expr(
+                    vec_ty,
+                    quote! { b_is_nan },
+                    quote! { a },
+                    quote! { intermediate },
+                );
+                quote! {
+                    let a = a.into();
+                    let b = b.into();
+                    let intermediate = #intrinsic(a, b);
+                    let b_is_nan = #cmpunord(b, b);
+                    #expr.simd_into(#token)
+                }
+            });
+        }
+
+        if *self == Self::Sse2
+            && matches!(vec_ty.scalar, ScalarType::Int | ScalarType::Unsigned)
+            && matches!(method, "min" | "max")
+        {
+            let expr = sse2_min_max_expr(method, vec_ty);
+            return self.kernel_method(op, vec_ty, |token| {
+                quote! { #expr.simd_into(#token) }
+            });
+        }
+
+        if *self == Self::Sse2
+            && matches!(vec_ty.scalar, ScalarType::Int | ScalarType::Unsigned)
+            && method == "mul"
+            && vec_ty.scalar_bits == 32
+        {
+            return scalar_binary_op(method_sig, method, vec_ty);
         }
 
         match method {
@@ -1838,6 +2110,26 @@ impl X86 {
                 quote! {
                     #blend(a.val, c.into(), b.into()).simd_into(#token)
                 }
+            });
+        }
+
+        if *self == Self::Sse2 {
+            let mask = match vec_ty.scalar {
+                ScalarType::Float => {
+                    let cast = cast_ident(
+                        ScalarType::Mask,
+                        ScalarType::Float,
+                        vec_ty.scalar_bits,
+                        vec_ty.scalar_bits,
+                        vec_ty.n_bits(),
+                    );
+                    quote! { #cast(a.into()) }
+                }
+                _ => quote! { a.into() },
+            };
+            let expr = sse2_select_expr(vec_ty, mask, quote! { b.into() }, quote! { c.into() });
+            return self.kernel_method(op, vec_ty, |token| {
+                quote! { #expr.simd_into(#token) }
             });
         }
 
@@ -2258,6 +2550,17 @@ impl X86 {
             });
         }
 
+        if *self == Self::Sse2
+            && vec_ty.n_bits() == 128
+            && matches!(
+                vec_ty.scalar,
+                ScalarType::Int | ScalarType::Mask | ScalarType::Unsigned
+            )
+            && matches!(vec_ty.scalar_bits, 8 | 16)
+        {
+            return scalar_unzip(op.simd_trait_method_sig(vec_ty), vec_ty, select_even);
+        }
+
         self.kernel_method(op, vec_ty, |token| {
             match (vec_ty.scalar, vec_ty.n_bits(), vec_ty.scalar_bits) {
                 (ScalarType::Float, 128, _) => {
@@ -2430,8 +2733,8 @@ impl X86 {
                 // For WithinBlocks, use elements per 128-bit block; for 128-bit vectors, use total elements
                 format_ident!("dyn_alignr_{}", vec_ty.n_bits())
             }
-            (AcrossBlocks, 256 | 512, Self::Sse4_2) => {
-                // Inter-block shift or rotate in SSE4.2: use cross_block_alignr
+            (AcrossBlocks, 256 | 512, Self::Sse2 | Self::Sse4_2) => {
+                // Inter-block shift or rotate in 128-bit x86 backends: use cross_block_alignr
 
                 format_ident!("cross_block_alignr_128x{}", vec_ty.n_bits() / 128)
             }
@@ -2473,6 +2776,15 @@ impl X86 {
             vec_ty.scalar_bits, target_scalar_bits,
             "we currently only support converting between types of the same width"
         );
+
+        if *self == Self::Sse2
+            && (precise
+                || vec_ty.scalar == ScalarType::Unsigned
+                || target_scalar == ScalarType::Unsigned)
+        {
+            let target_ty = vec_ty.reinterpret(target_scalar, target_scalar_bits);
+            return scalar_cvt(op.simd_trait_method_sig(vec_ty), vec_ty, &target_ty);
+        }
 
         if *self == Self::Avx512
             && vec_ty.scalar == ScalarType::Float
@@ -2866,6 +3178,14 @@ impl X86 {
         if *self == Self::Avx512 && vec_ty.n_bits() == 512 {
             return self.handle_avx512_load_interleaved(op, vec_ty, block_size, block_count);
         }
+        if *self == Self::Sse2 && matches!(vec_ty.scalar_bits, 8 | 16) {
+            return scalar_load_interleaved(
+                op.simd_trait_method_sig(vec_ty),
+                vec_ty,
+                block_size,
+                block_count,
+            );
+        }
         match vec_ty.scalar_bits {
             32 | 16 | 8 => {
                 let block_ty =
@@ -3041,6 +3361,14 @@ impl X86 {
         if *self == Self::Avx512 && vec_ty.n_bits() == 512 {
             return self.handle_avx512_store_interleaved(op, vec_ty, block_size, block_count);
         }
+        if *self == Self::Sse2 && matches!(vec_ty.scalar_bits, 8 | 16) {
+            return scalar_store_interleaved(
+                op.simd_trait_method_sig(vec_ty),
+                vec_ty,
+                block_size,
+                block_count,
+            );
+        }
         match vec_ty.scalar_bits {
             32 | 16 | 8 => {
                 let block_ty =
@@ -3204,7 +3532,7 @@ impl X86 {
         let token_ty = self.token();
 
         let vec_widths: &[usize] = match self {
-            Self::Sse4_2 => &[128],
+            Self::Sse2 | Self::Sse4_2 => &[128],
             Self::Avx2 => &[128, 256],
             Self::Avx512 => &[128, 256, 512],
         };
@@ -3216,10 +3544,21 @@ impl X86 {
             let arch_ty = self.arch_ty(&vec_ty);
 
             let helper_name = format_ident!("dyn_alignr_{}", vec_ty.n_bits());
-            let alignr_intrinsic = simple_sign_unaware_intrinsic("alignr", &vec_ty);
             let shifts = (0_usize..16).map(|shift| {
                 let shift_i32 = i32::try_from(shift).unwrap();
-                quote! { #shift => #alignr_intrinsic::<#shift_i32>(a, b) }
+                if *self == Self::Sse2 {
+                    let inverse_shift_i32 = i32::try_from(16 - shift).unwrap();
+                    quote! {
+                        #shift => {
+                            let lo = _mm_srli_si128::<#shift_i32>(b);
+                            let hi = _mm_slli_si128::<#inverse_shift_i32>(a);
+                            _mm_or_si128(lo, hi)
+                        }
+                    }
+                } else {
+                    let alignr_intrinsic = simple_sign_unaware_intrinsic("alignr", &vec_ty);
+                    quote! { #shift => #alignr_intrinsic::<#shift_i32>(a, b) }
+                }
             });
 
             fns.push(quote! {
@@ -3241,7 +3580,7 @@ impl X86 {
         quote! { #( #fns )* }
     }
 
-    fn sse42_slide_helpers() -> TokenStream {
+    fn sse_slide_helpers(token_ty: Ident) -> TokenStream {
         let mut fns = vec![];
 
         for num_blocks in [2_usize, 4_usize] {
@@ -3255,7 +3594,7 @@ impl X86 {
                     /// Concatenates `b` and `a` (each N blocks) and extracts N blocks starting at byte offset `shift_bytes`.
                     /// Extracts from [b : a] (b in low bytes, a in high bytes), matching `alignr` semantics.
                     #[inline(always)]
-                    fn #helper_name(token: Sse4_2, a: [__m128i; #num_blocks], b: [__m128i; #num_blocks], shift_bytes: usize) -> [__m128i; #num_blocks] {
+                    fn #helper_name(token: #token_ty, a: [__m128i; #num_blocks], b: [__m128i; #num_blocks], shift_bytes: usize) -> [__m128i; #num_blocks] {
                         [#({
                             let [lo, hi] = crate::support::cross_block_slide_blocks_at(&b, &a, #blocks_idx, shift_bytes);
                             dyn_alignr_128(token, hi, lo, shift_bytes % 16)

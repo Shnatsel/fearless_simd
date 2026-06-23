@@ -114,7 +114,7 @@
 //!
 //! # Instruction set support
 //!
-//! - x86/x86-64: [v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels) (SSE4.2), [v3](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels) (AVX2), [Ice Lake](https://en.wikipedia.org/wiki/AVX-512#CPUs_with_AVX-512) (AVX-512, avoiding early slow implementations)
+//! - x86/x86-64: SSE2 baseline, [v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels) (SSE4.2), [v3](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels) (AVX2), [Ice Lake](https://en.wikipedia.org/wiki/AVX-512#CPUs_with_AVX-512) (AVX-512, avoiding early slow implementations)
 //! - Aarch64: Baseline [NEON](https://en.wikipedia.org/wiki/Arm_architecture_family#Advanced_SIMD_(Neon))
 //! - WebAssembly: [128-bit packed SIMD](https://github.com/WebAssembly/spec/blob/main/proposals/simd/SIMD.md), [relaxed SIMD](https://github.com/WebAssembly/relaxed-simd/blob/main/proposals/relaxed-simd/Overview.md)
 //!
@@ -227,6 +227,7 @@ pub mod wasm32 {
 pub mod x86 {
     pub use crate::generated::Avx2;
     pub use crate::generated::Avx512;
+    pub use crate::generated::Sse2;
     pub use crate::generated::Sse4_2;
 }
 
@@ -285,9 +286,9 @@ pub enum Level {
         all(
             any(target_arch = "x86", target_arch = "x86_64"),
             not(all(
-                target_feature = "sse4.2",
-                target_feature = "cmpxchg16b",
-                target_feature = "popcnt"
+                target_feature = "fxsr",
+                target_feature = "sse",
+                target_feature = "sse2"
             ))
         ),
         all(target_arch = "wasm32", not(target_feature = "simd128")),
@@ -306,6 +307,19 @@ pub enum Level {
     /// The SIMD 128 instructions on 32-bit WebAssembly.
     #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
     WasmSimd128(WasmSimd128),
+    /// The SSE2 instruction set on (32 and 64 bit) x86, plus `fxsr` and `sse`.
+    ///
+    /// This is the baseline for x86-64 targets.
+    // We don't need to support this if the compilation target definitely supports something better.
+    #[cfg(all(
+        any(target_arch = "x86", target_arch = "x86_64"),
+        not(all(
+            target_feature = "sse4.2",
+            target_feature = "cmpxchg16b",
+            target_feature = "popcnt"
+        ))
+    ))]
+    Sse2(Sse2),
     /// The SSE4.2 instruction set on (32 and 64 bit) x86, plus `popcnt` and `cmpxchg16b`.
     /// Also known as x86-64-v2.
     ///
@@ -422,6 +436,16 @@ impl Level {
                     target_feature = "xsave"
                 )))]
                 return unsafe { Self::Sse4_2(Sse4_2::new_unchecked()) };
+            } else if std::arch::is_x86_feature_detected!("fxsr")
+                && std::arch::is_x86_feature_detected!("sse")
+                && std::arch::is_x86_feature_detected!("sse2")
+            {
+                #[cfg(not(all(
+                    target_feature = "sse4.2",
+                    target_feature = "cmpxchg16b",
+                    target_feature = "popcnt"
+                )))]
+                return unsafe { Self::Sse2(Sse2::new_unchecked()) };
             }
         }
         #[cfg(any(
@@ -429,9 +453,9 @@ impl Level {
             all(
                 any(target_arch = "x86", target_arch = "x86_64"),
                 not(all(
-                    target_feature = "sse4.2",
-                    target_feature = "cmpxchg16b",
-                    target_feature = "popcnt"
+                    target_feature = "fxsr",
+                    target_feature = "sse",
+                    target_feature = "sse2"
                 ))
             ),
             all(target_arch = "wasm32", not(target_feature = "simd128")),
@@ -481,9 +505,9 @@ impl Level {
             all(
                 any(target_arch = "x86", target_arch = "x86_64"),
                 not(all(
-                    target_feature = "sse4.2",
-                    target_feature = "cmpxchg16b",
-                    target_feature = "popcnt"
+                    target_feature = "fxsr",
+                    target_feature = "sse",
+                    target_feature = "sse2"
                 ))
             ),
             all(target_arch = "wasm32", not(target_feature = "simd128")),
@@ -539,6 +563,55 @@ impl Level {
         )]
         match self {
             Self::WasmSimd128(simd128) => Some(simd128),
+            _ => None,
+        }
+    }
+
+    /// If this is a proof that SSE2 (or better) is available, access that instruction set.
+    ///
+    /// See [`Sse2::new_unchecked`] for the exact list of CPU features this token enables.
+    ///
+    /// This method should be preferred over matching against the `Sse2` variant of self,
+    /// because if the CPU supports a superset of SSE2 (e.g. SSE4.2, AVX2, or AVX-512),
+    /// this method will return the SSE2 token even if that "better" instruction set is available.
+    ///
+    /// This can be used in combination with the [kernel] macro to safely access level-specific
+    /// SIMD intrinsics.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[inline]
+    pub fn as_sse2(self) -> Option<Sse2> {
+        match self {
+            // Safety: The Avx512 struct represents an Ice Lake feature set, which includes the
+            // `fxsr`, `sse`, and `sse2` features required by Sse2.
+            Self::Avx512(_avx512) => unsafe { Some(Sse2::new_unchecked()) },
+            // Safety: The Avx2 struct represents the x86-64-v3 feature set being enabled, which
+            // includes the `fxsr`, `sse`, and `sse2` features required by Sse2.
+            Self::Avx2(_avx2) => unsafe { Some(Sse2::new_unchecked()) },
+            #[cfg(not(all(
+                target_feature = "avx2",
+                target_feature = "bmi1",
+                target_feature = "bmi2",
+                target_feature = "cmpxchg16b",
+                target_feature = "f16c",
+                target_feature = "fma",
+                target_feature = "lzcnt",
+                target_feature = "movbe",
+                target_feature = "popcnt",
+                target_feature = "xsave"
+            )))]
+            // Safety: The Sse4_2 struct represents the x86-64-v2 feature set being enabled, which
+            // includes the `fxsr`, `sse`, and `sse2` features required by Sse2.
+            Self::Sse4_2(_sse42) => unsafe { Some(Sse2::new_unchecked()) },
+            #[cfg(not(all(
+                target_feature = "sse4.2",
+                target_feature = "cmpxchg16b",
+                target_feature = "popcnt"
+            )))]
+            Self::Sse2(sse2) => Some(sse2),
+            #[allow(
+                unreachable_patterns,
+                reason = "This arm is reachable on x86 targets without SSE2."
+            )]
             _ => None,
         }
     }
@@ -769,10 +842,21 @@ impl Level {
                 ))
             ))]
             return unsafe { Self::Sse4_2(Sse4_2::new_unchecked()) };
+            #[cfg(all(
+                target_feature = "fxsr",
+                target_feature = "sse",
+                target_feature = "sse2",
+                not(all(
+                    target_feature = "sse4.2",
+                    target_feature = "cmpxchg16b",
+                    target_feature = "popcnt"
+                ))
+            ))]
+            return unsafe { Self::Sse2(Sse2::new_unchecked()) };
             #[cfg(not(all(
-                target_feature = "sse4.2",
-                target_feature = "cmpxchg16b",
-                target_feature = "popcnt"
+                target_feature = "fxsr",
+                target_feature = "sse",
+                target_feature = "sse2"
             )))]
             return Self::Fallback(Fallback::new());
         }

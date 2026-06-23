@@ -5,6 +5,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::{ToTokens, quote};
 
 use crate::{
+    arch::fallback,
     ops::{Op, OpSig, RefKind, SlideGranularity},
     types::{ScalarType, VecType},
 };
@@ -314,6 +315,181 @@ pub(crate) fn generic_op(op: &Op, ty: &VecType) -> TokenStream {
 
 pub(crate) fn scalar_binary(f: TokenStream) -> TokenStream {
     quote! { core::array::from_fn(|i| #f(a[i], b[i])).simd_into(self) }
+}
+
+pub(crate) fn scalar_unary_op(
+    method_sig: TokenStream,
+    method: &str,
+    vec_ty: &VecType,
+) -> TokenStream {
+    let as_array = generic_op_name("as_array", vec_ty);
+    let scalar = vec_ty.scalar.rust(vec_ty.scalar_bits);
+    let len = vec_ty.len;
+    let args = [quote! { a[i] }];
+    let expr = fallback::expr(method, vec_ty, &args);
+
+    quote! {
+        #method_sig {
+            let a = self.#as_array(a);
+            let lanes: [#scalar; #len] = core::array::from_fn(|i| #expr);
+            lanes.simd_into(self)
+        }
+    }
+}
+
+pub(crate) fn scalar_binary_op(
+    method_sig: TokenStream,
+    method: &str,
+    vec_ty: &VecType,
+) -> TokenStream {
+    let as_array = generic_op_name("as_array", vec_ty);
+    let scalar = vec_ty.scalar.rust(vec_ty.scalar_bits);
+    let len = vec_ty.len;
+    let b_lane = quote! { b[i] };
+    let b = if fallback::translate_op(method, vec_ty.scalar == ScalarType::Float)
+        .map(rhs_reference)
+        .unwrap_or(true)
+    {
+        quote! { &#b_lane }
+    } else {
+        b_lane
+    };
+    let args = [quote! { a[i] }, quote! { #b }];
+    let expr = fallback::expr(method, vec_ty, &args);
+
+    quote! {
+        #method_sig {
+            let a = self.#as_array(a);
+            let b = self.#as_array(b);
+            let lanes: [#scalar; #len] = core::array::from_fn(|i| #expr);
+            lanes.simd_into(self)
+        }
+    }
+}
+
+pub(crate) fn scalar_compare_op(
+    method_sig: TokenStream,
+    method: &str,
+    vec_ty: &VecType,
+) -> TokenStream {
+    let as_array = generic_op_name("as_array", vec_ty);
+    let mask_ty = vec_ty.mask_ty();
+    let mask_scalar = mask_ty.scalar.rust(mask_ty.scalar_bits);
+    let len = vec_ty.len;
+    let args = [quote! { &a[i] }, quote! { &b[i] }];
+    let expr = fallback::expr(method, vec_ty, &args);
+
+    quote! {
+        #method_sig {
+            let a = self.#as_array(a);
+            let b = self.#as_array(b);
+            let lanes: [#mask_scalar; #len] =
+                core::array::from_fn(|i| -(#expr as #mask_scalar));
+            lanes.simd_into(self)
+        }
+    }
+}
+
+pub(crate) fn scalar_cvt(
+    method_sig: TokenStream,
+    vec_ty: &VecType,
+    target_ty: &VecType,
+) -> TokenStream {
+    let as_array = generic_op_name("as_array", vec_ty);
+    let scalar = target_ty.scalar.rust(target_ty.scalar_bits);
+    let len = target_ty.len;
+    quote! {
+        #method_sig {
+            let a = self.#as_array(a);
+            let lanes: [#scalar; #len] = core::array::from_fn(|i| a[i] as #scalar);
+            lanes.simd_into(self)
+        }
+    }
+}
+
+pub(crate) fn scalar_unzip(
+    method_sig: TokenStream,
+    vec_ty: &VecType,
+    select_even: bool,
+) -> TokenStream {
+    let as_array = generic_op_name("as_array", vec_ty);
+    let from_array = generic_op_name("load_array", vec_ty);
+    let offset = usize::from(!select_even);
+    let indices = (0..vec_ty.len / 2)
+        .map(|i| {
+            let idx = i * 2 + offset;
+            quote! { a[#idx] }
+        })
+        .chain((0..vec_ty.len / 2).map(|i| {
+            let idx = i * 2 + offset;
+            quote! { b[#idx] }
+        }));
+
+    quote! {
+        #method_sig {
+            let a = self.#as_array(a);
+            let b = self.#as_array(b);
+            self.#from_array([#(#indices),*])
+        }
+    }
+}
+
+pub(crate) fn scalar_load_interleaved(
+    method_sig: TokenStream,
+    vec_ty: &VecType,
+    block_size: u16,
+    block_count: u16,
+) -> TokenStream {
+    let len = (block_size * block_count) as usize / vec_ty.scalar_bits;
+    let indices = interleaved_load_indices(len, block_count as usize);
+    let lanes = indices.into_iter().map(|idx| quote! { src[#idx] });
+
+    quote! {
+        #method_sig {
+            [#(#lanes),*].simd_into(self)
+        }
+    }
+}
+
+pub(crate) fn scalar_store_interleaved(
+    method_sig: TokenStream,
+    vec_ty: &VecType,
+    block_size: u16,
+    block_count: u16,
+) -> TokenStream {
+    let as_array = generic_op_name("as_array", vec_ty);
+    let len = (block_size * block_count) as usize / vec_ty.scalar_bits;
+    let indices = interleaved_store_indices(len, block_count as usize);
+    let lanes = indices.into_iter().map(|idx| quote! { a[#idx] });
+
+    quote! {
+        #method_sig {
+            let a = self.#as_array(a);
+            *dest = [#(#lanes),*];
+        }
+    }
+}
+
+pub(crate) fn interleaved_load_indices(len: usize, block_count: usize) -> Vec<usize> {
+    let stream_len = len / block_count;
+    (0..block_count)
+        .flat_map(|stream| (0..stream_len).map(move |i| i * block_count + stream))
+        .collect()
+}
+
+pub(crate) fn interleaved_store_indices(len: usize, block_count: usize) -> Vec<usize> {
+    let stream_len = len / block_count;
+    (0..stream_len)
+        .flat_map(|i| (0..block_count).map(move |stream| stream * stream_len + i))
+        .collect()
+}
+
+/// Whether the second argument of the function needs to be passed by reference.
+fn rhs_reference(method: &str) -> bool {
+    !matches!(
+        method,
+        "copysign" | "min" | "max" | "wrapping_sub" | "wrapping_mul" | "wrapping_add"
+    )
 }
 
 pub(crate) fn generic_block_split(

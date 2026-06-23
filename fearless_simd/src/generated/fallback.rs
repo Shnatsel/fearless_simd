@@ -216,33 +216,21 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn abs_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::abs(a[0usize]),
-            f32::abs(a[1usize]),
-            f32::abs(a[2usize]),
-            f32::abs(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::abs(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn neg_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::neg(a[0usize]),
-            f32::neg(a[1usize]),
-            f32::neg(a[2usize]),
-            f32::neg(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::neg(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sqrt_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::sqrt(a[0usize]),
-            f32::sqrt(a[1usize]),
-            f32::sqrt(a[2usize]),
-            f32::sqrt(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::sqrt(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn approximate_recip_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
@@ -250,103 +238,73 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn add_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::add(a[0usize], &b[0usize]),
-            f32::add(a[1usize], &b[1usize]),
-            f32::add(a[2usize], &b[2usize]),
-            f32::add(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::add(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sub_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::sub(a[0usize], &b[0usize]),
-            f32::sub(a[1usize], &b[1usize]),
-            f32::sub(a[2usize], &b[2usize]),
-            f32::sub(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::sub(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::mul(a[0usize], &b[0usize]),
-            f32::mul(a[1usize], &b[1usize]),
-            f32::mul(a[2usize], &b[2usize]),
-            f32::mul(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::mul(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn div_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::div(a[0usize], &b[0usize]),
-            f32::div(a[1usize], &b[1usize]),
-            f32::div(a[2usize], &b[2usize]),
-            f32::div(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::div(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn copysign_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::copysign(a[0usize], b[0usize]),
-            f32::copysign(a[1usize], b[1usize]),
-            f32::copysign(a[2usize], b[2usize]),
-            f32::copysign(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::copysign(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_eq_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> mask32x4<Self> {
-        [
-            -(f32::eq(&a[0usize], &b[0usize]) as i32),
-            -(f32::eq(&a[1usize], &b[1usize]) as i32),
-            -(f32::eq(&a[2usize], &b[2usize]) as i32),
-            -(f32::eq(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(f32::eq(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_lt_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> mask32x4<Self> {
-        [
-            -(f32::lt(&a[0usize], &b[0usize]) as i32),
-            -(f32::lt(&a[1usize], &b[1usize]) as i32),
-            -(f32::lt(&a[2usize], &b[2usize]) as i32),
-            -(f32::lt(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(f32::lt(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_le_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> mask32x4<Self> {
-        [
-            -(f32::le(&a[0usize], &b[0usize]) as i32),
-            -(f32::le(&a[1usize], &b[1usize]) as i32),
-            -(f32::le(&a[2usize], &b[2usize]) as i32),
-            -(f32::le(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(f32::le(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_ge_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> mask32x4<Self> {
-        [
-            -(f32::ge(&a[0usize], &b[0usize]) as i32),
-            -(f32::ge(&a[1usize], &b[1usize]) as i32),
-            -(f32::ge(&a[2usize], &b[2usize]) as i32),
-            -(f32::ge(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(f32::ge(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_gt_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> mask32x4<Self> {
-        [
-            -(f32::gt(&a[0usize], &b[0usize]) as i32),
-            -(f32::gt(&a[1usize], &b[1usize]) as i32),
-            -(f32::gt(&a[2usize], &b[2usize]) as i32),
-            -(f32::gt(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(f32::gt(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn zip_low_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
@@ -358,11 +316,15 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn unzip_low_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [a[0usize], a[2usize], b[0usize], b[2usize]].simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        self.load_array_f32x4([a[0usize], a[2usize], b[0usize], b[2usize]])
     }
     #[inline(always)]
     fn unzip_high_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [a[1usize], a[3usize], b[1usize], b[3usize]].simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        self.load_array_f32x4([a[1usize], a[3usize], b[1usize], b[3usize]])
     }
     #[inline(always)]
     fn interleave_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> (f32x4<Self>, f32x4<Self>) {
@@ -374,43 +336,31 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn max_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::max(a[0usize], b[0usize]),
-            f32::max(a[1usize], b[1usize]),
-            f32::max(a[2usize], b[2usize]),
-            f32::max(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn min_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::min(a[0usize], b[0usize]),
-            f32::min(a[1usize], b[1usize]),
-            f32::min(a[2usize], b[2usize]),
-            f32::min(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn max_precise_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::max(a[0usize], b[0usize]),
-            f32::max(a[1usize], b[1usize]),
-            f32::max(a[2usize], b[2usize]),
-            f32::max(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn min_precise_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::min(a[0usize], b[0usize]),
-            f32::min(a[1usize], b[1usize]),
-            f32::min(a[2usize], b[2usize]),
-            f32::min(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let b = self.as_array_f32x4(b);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_add_f32x4(self, a: f32x4<Self>, b: f32x4<Self>, c: f32x4<Self>) -> f32x4<Self> {
@@ -422,53 +372,33 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn floor_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::floor(a[0usize]),
-            f32::floor(a[1usize]),
-            f32::floor(a[2usize]),
-            f32::floor(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::floor(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn ceil_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::ceil(a[0usize]),
-            f32::ceil(a[1usize]),
-            f32::ceil(a[2usize]),
-            f32::ceil(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::ceil(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn round_ties_even_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::round_ties_even(a[0usize]),
-            f32::round_ties_even(a[1usize]),
-            f32::round_ties_even(a[2usize]),
-            f32::round_ties_even(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::round_ties_even(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn fract_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::fract(a[0usize]),
-            f32::fract(a[1usize]),
-            f32::fract(a[2usize]),
-            f32::fract(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::fract(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn trunc_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::trunc(a[0usize]),
-            f32::trunc(a[1usize]),
-            f32::trunc(a[2usize]),
-            f32::trunc(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::trunc(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn select_f32x4(self, a: mask32x4<Self>, b: f32x4<Self>, c: f32x4<Self>) -> f32x4<Self> {
@@ -521,13 +451,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn cvt_u32_f32x4(self, a: f32x4<Self>) -> u32x4<Self> {
-        [
-            a[0usize] as u32,
-            a[1usize] as u32,
-            a[2usize] as u32,
-            a[3usize] as u32,
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| a[i] as u32);
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn cvt_u32_precise_f32x4(self, a: f32x4<Self>) -> u32x4<Self> {
@@ -535,13 +461,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn cvt_i32_f32x4(self, a: f32x4<Self>) -> i32x4<Self> {
-        [
-            a[0usize] as i32,
-            a[1usize] as i32,
-            a[2usize] as i32,
-            a[3usize] as i32,
-        ]
-        .simd_into(self)
+        let a = self.as_array_f32x4(a);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| a[i] as i32);
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn cvt_i32_precise_f32x4(self, a: f32x4<Self>) -> i32x4<Self> {
@@ -612,157 +534,51 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn add_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::wrapping_add(a[0usize], b[0usize]),
-            i8::wrapping_add(a[1usize], b[1usize]),
-            i8::wrapping_add(a[2usize], b[2usize]),
-            i8::wrapping_add(a[3usize], b[3usize]),
-            i8::wrapping_add(a[4usize], b[4usize]),
-            i8::wrapping_add(a[5usize], b[5usize]),
-            i8::wrapping_add(a[6usize], b[6usize]),
-            i8::wrapping_add(a[7usize], b[7usize]),
-            i8::wrapping_add(a[8usize], b[8usize]),
-            i8::wrapping_add(a[9usize], b[9usize]),
-            i8::wrapping_add(a[10usize], b[10usize]),
-            i8::wrapping_add(a[11usize], b[11usize]),
-            i8::wrapping_add(a[12usize], b[12usize]),
-            i8::wrapping_add(a[13usize], b[13usize]),
-            i8::wrapping_add(a[14usize], b[14usize]),
-            i8::wrapping_add(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::wrapping_add(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sub_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::wrapping_sub(a[0usize], b[0usize]),
-            i8::wrapping_sub(a[1usize], b[1usize]),
-            i8::wrapping_sub(a[2usize], b[2usize]),
-            i8::wrapping_sub(a[3usize], b[3usize]),
-            i8::wrapping_sub(a[4usize], b[4usize]),
-            i8::wrapping_sub(a[5usize], b[5usize]),
-            i8::wrapping_sub(a[6usize], b[6usize]),
-            i8::wrapping_sub(a[7usize], b[7usize]),
-            i8::wrapping_sub(a[8usize], b[8usize]),
-            i8::wrapping_sub(a[9usize], b[9usize]),
-            i8::wrapping_sub(a[10usize], b[10usize]),
-            i8::wrapping_sub(a[11usize], b[11usize]),
-            i8::wrapping_sub(a[12usize], b[12usize]),
-            i8::wrapping_sub(a[13usize], b[13usize]),
-            i8::wrapping_sub(a[14usize], b[14usize]),
-            i8::wrapping_sub(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::wrapping_sub(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::wrapping_mul(a[0usize], b[0usize]),
-            i8::wrapping_mul(a[1usize], b[1usize]),
-            i8::wrapping_mul(a[2usize], b[2usize]),
-            i8::wrapping_mul(a[3usize], b[3usize]),
-            i8::wrapping_mul(a[4usize], b[4usize]),
-            i8::wrapping_mul(a[5usize], b[5usize]),
-            i8::wrapping_mul(a[6usize], b[6usize]),
-            i8::wrapping_mul(a[7usize], b[7usize]),
-            i8::wrapping_mul(a[8usize], b[8usize]),
-            i8::wrapping_mul(a[9usize], b[9usize]),
-            i8::wrapping_mul(a[10usize], b[10usize]),
-            i8::wrapping_mul(a[11usize], b[11usize]),
-            i8::wrapping_mul(a[12usize], b[12usize]),
-            i8::wrapping_mul(a[13usize], b[13usize]),
-            i8::wrapping_mul(a[14usize], b[14usize]),
-            i8::wrapping_mul(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::wrapping_mul(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn and_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::bitand(a[0usize], &b[0usize]),
-            i8::bitand(a[1usize], &b[1usize]),
-            i8::bitand(a[2usize], &b[2usize]),
-            i8::bitand(a[3usize], &b[3usize]),
-            i8::bitand(a[4usize], &b[4usize]),
-            i8::bitand(a[5usize], &b[5usize]),
-            i8::bitand(a[6usize], &b[6usize]),
-            i8::bitand(a[7usize], &b[7usize]),
-            i8::bitand(a[8usize], &b[8usize]),
-            i8::bitand(a[9usize], &b[9usize]),
-            i8::bitand(a[10usize], &b[10usize]),
-            i8::bitand(a[11usize], &b[11usize]),
-            i8::bitand(a[12usize], &b[12usize]),
-            i8::bitand(a[13usize], &b[13usize]),
-            i8::bitand(a[14usize], &b[14usize]),
-            i8::bitand(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::bitor(a[0usize], &b[0usize]),
-            i8::bitor(a[1usize], &b[1usize]),
-            i8::bitor(a[2usize], &b[2usize]),
-            i8::bitor(a[3usize], &b[3usize]),
-            i8::bitor(a[4usize], &b[4usize]),
-            i8::bitor(a[5usize], &b[5usize]),
-            i8::bitor(a[6usize], &b[6usize]),
-            i8::bitor(a[7usize], &b[7usize]),
-            i8::bitor(a[8usize], &b[8usize]),
-            i8::bitor(a[9usize], &b[9usize]),
-            i8::bitor(a[10usize], &b[10usize]),
-            i8::bitor(a[11usize], &b[11usize]),
-            i8::bitor(a[12usize], &b[12usize]),
-            i8::bitor(a[13usize], &b[13usize]),
-            i8::bitor(a[14usize], &b[14usize]),
-            i8::bitor(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::bitxor(a[0usize], &b[0usize]),
-            i8::bitxor(a[1usize], &b[1usize]),
-            i8::bitxor(a[2usize], &b[2usize]),
-            i8::bitxor(a[3usize], &b[3usize]),
-            i8::bitxor(a[4usize], &b[4usize]),
-            i8::bitxor(a[5usize], &b[5usize]),
-            i8::bitxor(a[6usize], &b[6usize]),
-            i8::bitxor(a[7usize], &b[7usize]),
-            i8::bitxor(a[8usize], &b[8usize]),
-            i8::bitxor(a[9usize], &b[9usize]),
-            i8::bitxor(a[10usize], &b[10usize]),
-            i8::bitxor(a[11usize], &b[11usize]),
-            i8::bitxor(a[12usize], &b[12usize]),
-            i8::bitxor(a[13usize], &b[13usize]),
-            i8::bitxor(a[14usize], &b[14usize]),
-            i8::bitxor(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_i8x16(self, a: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::not(a[0usize]),
-            i8::not(a[1usize]),
-            i8::not(a[2usize]),
-            i8::not(a[3usize]),
-            i8::not(a[4usize]),
-            i8::not(a[5usize]),
-            i8::not(a[6usize]),
-            i8::not(a[7usize]),
-            i8::not(a[8usize]),
-            i8::not(a[9usize]),
-            i8::not(a[10usize]),
-            i8::not(a[11usize]),
-            i8::not(a[12usize]),
-            i8::not(a[13usize]),
-            i8::not(a[14usize]),
-            i8::not(a[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shl_i8x16(self, a: i8x16<Self>, shift: u32) -> i8x16<Self> {
@@ -788,25 +604,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shlv_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::shl(a[0usize], &b[0usize]),
-            i8::shl(a[1usize], &b[1usize]),
-            i8::shl(a[2usize], &b[2usize]),
-            i8::shl(a[3usize], &b[3usize]),
-            i8::shl(a[4usize], &b[4usize]),
-            i8::shl(a[5usize], &b[5usize]),
-            i8::shl(a[6usize], &b[6usize]),
-            i8::shl(a[7usize], &b[7usize]),
-            i8::shl(a[8usize], &b[8usize]),
-            i8::shl(a[9usize], &b[9usize]),
-            i8::shl(a[10usize], &b[10usize]),
-            i8::shl(a[11usize], &b[11usize]),
-            i8::shl(a[12usize], &b[12usize]),
-            i8::shl(a[13usize], &b[13usize]),
-            i8::shl(a[14usize], &b[14usize]),
-            i8::shl(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::shl(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shr_i8x16(self, a: i8x16<Self>, shift: u32) -> i8x16<Self> {
@@ -832,135 +633,45 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shrv_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::shr(a[0usize], &b[0usize]),
-            i8::shr(a[1usize], &b[1usize]),
-            i8::shr(a[2usize], &b[2usize]),
-            i8::shr(a[3usize], &b[3usize]),
-            i8::shr(a[4usize], &b[4usize]),
-            i8::shr(a[5usize], &b[5usize]),
-            i8::shr(a[6usize], &b[6usize]),
-            i8::shr(a[7usize], &b[7usize]),
-            i8::shr(a[8usize], &b[8usize]),
-            i8::shr(a[9usize], &b[9usize]),
-            i8::shr(a[10usize], &b[10usize]),
-            i8::shr(a[11usize], &b[11usize]),
-            i8::shr(a[12usize], &b[12usize]),
-            i8::shr(a[13usize], &b[13usize]),
-            i8::shr(a[14usize], &b[14usize]),
-            i8::shr(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::shr(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_eq_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> mask8x16<Self> {
-        [
-            -(i8::eq(&a[0usize], &b[0usize]) as i8),
-            -(i8::eq(&a[1usize], &b[1usize]) as i8),
-            -(i8::eq(&a[2usize], &b[2usize]) as i8),
-            -(i8::eq(&a[3usize], &b[3usize]) as i8),
-            -(i8::eq(&a[4usize], &b[4usize]) as i8),
-            -(i8::eq(&a[5usize], &b[5usize]) as i8),
-            -(i8::eq(&a[6usize], &b[6usize]) as i8),
-            -(i8::eq(&a[7usize], &b[7usize]) as i8),
-            -(i8::eq(&a[8usize], &b[8usize]) as i8),
-            -(i8::eq(&a[9usize], &b[9usize]) as i8),
-            -(i8::eq(&a[10usize], &b[10usize]) as i8),
-            -(i8::eq(&a[11usize], &b[11usize]) as i8),
-            -(i8::eq(&a[12usize], &b[12usize]) as i8),
-            -(i8::eq(&a[13usize], &b[13usize]) as i8),
-            -(i8::eq(&a[14usize], &b[14usize]) as i8),
-            -(i8::eq(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(i8::eq(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_lt_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> mask8x16<Self> {
-        [
-            -(i8::lt(&a[0usize], &b[0usize]) as i8),
-            -(i8::lt(&a[1usize], &b[1usize]) as i8),
-            -(i8::lt(&a[2usize], &b[2usize]) as i8),
-            -(i8::lt(&a[3usize], &b[3usize]) as i8),
-            -(i8::lt(&a[4usize], &b[4usize]) as i8),
-            -(i8::lt(&a[5usize], &b[5usize]) as i8),
-            -(i8::lt(&a[6usize], &b[6usize]) as i8),
-            -(i8::lt(&a[7usize], &b[7usize]) as i8),
-            -(i8::lt(&a[8usize], &b[8usize]) as i8),
-            -(i8::lt(&a[9usize], &b[9usize]) as i8),
-            -(i8::lt(&a[10usize], &b[10usize]) as i8),
-            -(i8::lt(&a[11usize], &b[11usize]) as i8),
-            -(i8::lt(&a[12usize], &b[12usize]) as i8),
-            -(i8::lt(&a[13usize], &b[13usize]) as i8),
-            -(i8::lt(&a[14usize], &b[14usize]) as i8),
-            -(i8::lt(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(i8::lt(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_le_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> mask8x16<Self> {
-        [
-            -(i8::le(&a[0usize], &b[0usize]) as i8),
-            -(i8::le(&a[1usize], &b[1usize]) as i8),
-            -(i8::le(&a[2usize], &b[2usize]) as i8),
-            -(i8::le(&a[3usize], &b[3usize]) as i8),
-            -(i8::le(&a[4usize], &b[4usize]) as i8),
-            -(i8::le(&a[5usize], &b[5usize]) as i8),
-            -(i8::le(&a[6usize], &b[6usize]) as i8),
-            -(i8::le(&a[7usize], &b[7usize]) as i8),
-            -(i8::le(&a[8usize], &b[8usize]) as i8),
-            -(i8::le(&a[9usize], &b[9usize]) as i8),
-            -(i8::le(&a[10usize], &b[10usize]) as i8),
-            -(i8::le(&a[11usize], &b[11usize]) as i8),
-            -(i8::le(&a[12usize], &b[12usize]) as i8),
-            -(i8::le(&a[13usize], &b[13usize]) as i8),
-            -(i8::le(&a[14usize], &b[14usize]) as i8),
-            -(i8::le(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(i8::le(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_ge_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> mask8x16<Self> {
-        [
-            -(i8::ge(&a[0usize], &b[0usize]) as i8),
-            -(i8::ge(&a[1usize], &b[1usize]) as i8),
-            -(i8::ge(&a[2usize], &b[2usize]) as i8),
-            -(i8::ge(&a[3usize], &b[3usize]) as i8),
-            -(i8::ge(&a[4usize], &b[4usize]) as i8),
-            -(i8::ge(&a[5usize], &b[5usize]) as i8),
-            -(i8::ge(&a[6usize], &b[6usize]) as i8),
-            -(i8::ge(&a[7usize], &b[7usize]) as i8),
-            -(i8::ge(&a[8usize], &b[8usize]) as i8),
-            -(i8::ge(&a[9usize], &b[9usize]) as i8),
-            -(i8::ge(&a[10usize], &b[10usize]) as i8),
-            -(i8::ge(&a[11usize], &b[11usize]) as i8),
-            -(i8::ge(&a[12usize], &b[12usize]) as i8),
-            -(i8::ge(&a[13usize], &b[13usize]) as i8),
-            -(i8::ge(&a[14usize], &b[14usize]) as i8),
-            -(i8::ge(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(i8::ge(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_gt_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> mask8x16<Self> {
-        [
-            -(i8::gt(&a[0usize], &b[0usize]) as i8),
-            -(i8::gt(&a[1usize], &b[1usize]) as i8),
-            -(i8::gt(&a[2usize], &b[2usize]) as i8),
-            -(i8::gt(&a[3usize], &b[3usize]) as i8),
-            -(i8::gt(&a[4usize], &b[4usize]) as i8),
-            -(i8::gt(&a[5usize], &b[5usize]) as i8),
-            -(i8::gt(&a[6usize], &b[6usize]) as i8),
-            -(i8::gt(&a[7usize], &b[7usize]) as i8),
-            -(i8::gt(&a[8usize], &b[8usize]) as i8),
-            -(i8::gt(&a[9usize], &b[9usize]) as i8),
-            -(i8::gt(&a[10usize], &b[10usize]) as i8),
-            -(i8::gt(&a[11usize], &b[11usize]) as i8),
-            -(i8::gt(&a[12usize], &b[12usize]) as i8),
-            -(i8::gt(&a[13usize], &b[13usize]) as i8),
-            -(i8::gt(&a[14usize], &b[14usize]) as i8),
-            -(i8::gt(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(i8::gt(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn zip_low_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
@@ -981,21 +692,23 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn unzip_low_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        self.load_array_i8x16([
             a[0usize], a[2usize], a[4usize], a[6usize], a[8usize], a[10usize], a[12usize],
             a[14usize], b[0usize], b[2usize], b[4usize], b[6usize], b[8usize], b[10usize],
             b[12usize], b[14usize],
-        ]
-        .simd_into(self)
+        ])
     }
     #[inline(always)]
     fn unzip_high_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        self.load_array_i8x16([
             a[1usize], a[3usize], a[5usize], a[7usize], a[9usize], a[11usize], a[13usize],
             a[15usize], b[1usize], b[3usize], b[5usize], b[7usize], b[9usize], b[11usize],
             b[13usize], b[15usize],
-        ]
-        .simd_into(self)
+        ])
     }
     #[inline(always)]
     fn interleave_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> (i8x16<Self>, i8x16<Self>) {
@@ -1093,47 +806,17 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn min_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::min(a[0usize], b[0usize]),
-            i8::min(a[1usize], b[1usize]),
-            i8::min(a[2usize], b[2usize]),
-            i8::min(a[3usize], b[3usize]),
-            i8::min(a[4usize], b[4usize]),
-            i8::min(a[5usize], b[5usize]),
-            i8::min(a[6usize], b[6usize]),
-            i8::min(a[7usize], b[7usize]),
-            i8::min(a[8usize], b[8usize]),
-            i8::min(a[9usize], b[9usize]),
-            i8::min(a[10usize], b[10usize]),
-            i8::min(a[11usize], b[11usize]),
-            i8::min(a[12usize], b[12usize]),
-            i8::min(a[13usize], b[13usize]),
-            i8::min(a[14usize], b[14usize]),
-            i8::min(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn max_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::max(a[0usize], b[0usize]),
-            i8::max(a[1usize], b[1usize]),
-            i8::max(a[2usize], b[2usize]),
-            i8::max(a[3usize], b[3usize]),
-            i8::max(a[4usize], b[4usize]),
-            i8::max(a[5usize], b[5usize]),
-            i8::max(a[6usize], b[6usize]),
-            i8::max(a[7usize], b[7usize]),
-            i8::max(a[8usize], b[8usize]),
-            i8::max(a[9usize], b[9usize]),
-            i8::max(a[10usize], b[10usize]),
-            i8::max(a[11usize], b[11usize]),
-            i8::max(a[12usize], b[12usize]),
-            i8::max(a[13usize], b[13usize]),
-            i8::max(a[14usize], b[14usize]),
-            i8::max(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let b = self.as_array_i8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn combine_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x32<Self> {
@@ -1144,25 +827,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn neg_i8x16(self, a: i8x16<Self>) -> i8x16<Self> {
-        [
-            i8::neg(a[0usize]),
-            i8::neg(a[1usize]),
-            i8::neg(a[2usize]),
-            i8::neg(a[3usize]),
-            i8::neg(a[4usize]),
-            i8::neg(a[5usize]),
-            i8::neg(a[6usize]),
-            i8::neg(a[7usize]),
-            i8::neg(a[8usize]),
-            i8::neg(a[9usize]),
-            i8::neg(a[10usize]),
-            i8::neg(a[11usize]),
-            i8::neg(a[12usize]),
-            i8::neg(a[13usize]),
-            i8::neg(a[14usize]),
-            i8::neg(a[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i8x16(a);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::neg(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn reinterpret_u8_i8x16(self, a: i8x16<Self>) -> u8x16<Self> {
@@ -1237,157 +904,51 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn add_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::wrapping_add(a[0usize], b[0usize]),
-            u8::wrapping_add(a[1usize], b[1usize]),
-            u8::wrapping_add(a[2usize], b[2usize]),
-            u8::wrapping_add(a[3usize], b[3usize]),
-            u8::wrapping_add(a[4usize], b[4usize]),
-            u8::wrapping_add(a[5usize], b[5usize]),
-            u8::wrapping_add(a[6usize], b[6usize]),
-            u8::wrapping_add(a[7usize], b[7usize]),
-            u8::wrapping_add(a[8usize], b[8usize]),
-            u8::wrapping_add(a[9usize], b[9usize]),
-            u8::wrapping_add(a[10usize], b[10usize]),
-            u8::wrapping_add(a[11usize], b[11usize]),
-            u8::wrapping_add(a[12usize], b[12usize]),
-            u8::wrapping_add(a[13usize], b[13usize]),
-            u8::wrapping_add(a[14usize], b[14usize]),
-            u8::wrapping_add(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::wrapping_add(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sub_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::wrapping_sub(a[0usize], b[0usize]),
-            u8::wrapping_sub(a[1usize], b[1usize]),
-            u8::wrapping_sub(a[2usize], b[2usize]),
-            u8::wrapping_sub(a[3usize], b[3usize]),
-            u8::wrapping_sub(a[4usize], b[4usize]),
-            u8::wrapping_sub(a[5usize], b[5usize]),
-            u8::wrapping_sub(a[6usize], b[6usize]),
-            u8::wrapping_sub(a[7usize], b[7usize]),
-            u8::wrapping_sub(a[8usize], b[8usize]),
-            u8::wrapping_sub(a[9usize], b[9usize]),
-            u8::wrapping_sub(a[10usize], b[10usize]),
-            u8::wrapping_sub(a[11usize], b[11usize]),
-            u8::wrapping_sub(a[12usize], b[12usize]),
-            u8::wrapping_sub(a[13usize], b[13usize]),
-            u8::wrapping_sub(a[14usize], b[14usize]),
-            u8::wrapping_sub(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::wrapping_sub(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::wrapping_mul(a[0usize], b[0usize]),
-            u8::wrapping_mul(a[1usize], b[1usize]),
-            u8::wrapping_mul(a[2usize], b[2usize]),
-            u8::wrapping_mul(a[3usize], b[3usize]),
-            u8::wrapping_mul(a[4usize], b[4usize]),
-            u8::wrapping_mul(a[5usize], b[5usize]),
-            u8::wrapping_mul(a[6usize], b[6usize]),
-            u8::wrapping_mul(a[7usize], b[7usize]),
-            u8::wrapping_mul(a[8usize], b[8usize]),
-            u8::wrapping_mul(a[9usize], b[9usize]),
-            u8::wrapping_mul(a[10usize], b[10usize]),
-            u8::wrapping_mul(a[11usize], b[11usize]),
-            u8::wrapping_mul(a[12usize], b[12usize]),
-            u8::wrapping_mul(a[13usize], b[13usize]),
-            u8::wrapping_mul(a[14usize], b[14usize]),
-            u8::wrapping_mul(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::wrapping_mul(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn and_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::bitand(a[0usize], &b[0usize]),
-            u8::bitand(a[1usize], &b[1usize]),
-            u8::bitand(a[2usize], &b[2usize]),
-            u8::bitand(a[3usize], &b[3usize]),
-            u8::bitand(a[4usize], &b[4usize]),
-            u8::bitand(a[5usize], &b[5usize]),
-            u8::bitand(a[6usize], &b[6usize]),
-            u8::bitand(a[7usize], &b[7usize]),
-            u8::bitand(a[8usize], &b[8usize]),
-            u8::bitand(a[9usize], &b[9usize]),
-            u8::bitand(a[10usize], &b[10usize]),
-            u8::bitand(a[11usize], &b[11usize]),
-            u8::bitand(a[12usize], &b[12usize]),
-            u8::bitand(a[13usize], &b[13usize]),
-            u8::bitand(a[14usize], &b[14usize]),
-            u8::bitand(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::bitor(a[0usize], &b[0usize]),
-            u8::bitor(a[1usize], &b[1usize]),
-            u8::bitor(a[2usize], &b[2usize]),
-            u8::bitor(a[3usize], &b[3usize]),
-            u8::bitor(a[4usize], &b[4usize]),
-            u8::bitor(a[5usize], &b[5usize]),
-            u8::bitor(a[6usize], &b[6usize]),
-            u8::bitor(a[7usize], &b[7usize]),
-            u8::bitor(a[8usize], &b[8usize]),
-            u8::bitor(a[9usize], &b[9usize]),
-            u8::bitor(a[10usize], &b[10usize]),
-            u8::bitor(a[11usize], &b[11usize]),
-            u8::bitor(a[12usize], &b[12usize]),
-            u8::bitor(a[13usize], &b[13usize]),
-            u8::bitor(a[14usize], &b[14usize]),
-            u8::bitor(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::bitxor(a[0usize], &b[0usize]),
-            u8::bitxor(a[1usize], &b[1usize]),
-            u8::bitxor(a[2usize], &b[2usize]),
-            u8::bitxor(a[3usize], &b[3usize]),
-            u8::bitxor(a[4usize], &b[4usize]),
-            u8::bitxor(a[5usize], &b[5usize]),
-            u8::bitxor(a[6usize], &b[6usize]),
-            u8::bitxor(a[7usize], &b[7usize]),
-            u8::bitxor(a[8usize], &b[8usize]),
-            u8::bitxor(a[9usize], &b[9usize]),
-            u8::bitxor(a[10usize], &b[10usize]),
-            u8::bitxor(a[11usize], &b[11usize]),
-            u8::bitxor(a[12usize], &b[12usize]),
-            u8::bitxor(a[13usize], &b[13usize]),
-            u8::bitxor(a[14usize], &b[14usize]),
-            u8::bitxor(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_u8x16(self, a: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::not(a[0usize]),
-            u8::not(a[1usize]),
-            u8::not(a[2usize]),
-            u8::not(a[3usize]),
-            u8::not(a[4usize]),
-            u8::not(a[5usize]),
-            u8::not(a[6usize]),
-            u8::not(a[7usize]),
-            u8::not(a[8usize]),
-            u8::not(a[9usize]),
-            u8::not(a[10usize]),
-            u8::not(a[11usize]),
-            u8::not(a[12usize]),
-            u8::not(a[13usize]),
-            u8::not(a[14usize]),
-            u8::not(a[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shl_u8x16(self, a: u8x16<Self>, shift: u32) -> u8x16<Self> {
@@ -1413,25 +974,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shlv_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::shl(a[0usize], &b[0usize]),
-            u8::shl(a[1usize], &b[1usize]),
-            u8::shl(a[2usize], &b[2usize]),
-            u8::shl(a[3usize], &b[3usize]),
-            u8::shl(a[4usize], &b[4usize]),
-            u8::shl(a[5usize], &b[5usize]),
-            u8::shl(a[6usize], &b[6usize]),
-            u8::shl(a[7usize], &b[7usize]),
-            u8::shl(a[8usize], &b[8usize]),
-            u8::shl(a[9usize], &b[9usize]),
-            u8::shl(a[10usize], &b[10usize]),
-            u8::shl(a[11usize], &b[11usize]),
-            u8::shl(a[12usize], &b[12usize]),
-            u8::shl(a[13usize], &b[13usize]),
-            u8::shl(a[14usize], &b[14usize]),
-            u8::shl(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::shl(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shr_u8x16(self, a: u8x16<Self>, shift: u32) -> u8x16<Self> {
@@ -1457,135 +1003,45 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shrv_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::shr(a[0usize], &b[0usize]),
-            u8::shr(a[1usize], &b[1usize]),
-            u8::shr(a[2usize], &b[2usize]),
-            u8::shr(a[3usize], &b[3usize]),
-            u8::shr(a[4usize], &b[4usize]),
-            u8::shr(a[5usize], &b[5usize]),
-            u8::shr(a[6usize], &b[6usize]),
-            u8::shr(a[7usize], &b[7usize]),
-            u8::shr(a[8usize], &b[8usize]),
-            u8::shr(a[9usize], &b[9usize]),
-            u8::shr(a[10usize], &b[10usize]),
-            u8::shr(a[11usize], &b[11usize]),
-            u8::shr(a[12usize], &b[12usize]),
-            u8::shr(a[13usize], &b[13usize]),
-            u8::shr(a[14usize], &b[14usize]),
-            u8::shr(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::shr(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_eq_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> mask8x16<Self> {
-        [
-            -(u8::eq(&a[0usize], &b[0usize]) as i8),
-            -(u8::eq(&a[1usize], &b[1usize]) as i8),
-            -(u8::eq(&a[2usize], &b[2usize]) as i8),
-            -(u8::eq(&a[3usize], &b[3usize]) as i8),
-            -(u8::eq(&a[4usize], &b[4usize]) as i8),
-            -(u8::eq(&a[5usize], &b[5usize]) as i8),
-            -(u8::eq(&a[6usize], &b[6usize]) as i8),
-            -(u8::eq(&a[7usize], &b[7usize]) as i8),
-            -(u8::eq(&a[8usize], &b[8usize]) as i8),
-            -(u8::eq(&a[9usize], &b[9usize]) as i8),
-            -(u8::eq(&a[10usize], &b[10usize]) as i8),
-            -(u8::eq(&a[11usize], &b[11usize]) as i8),
-            -(u8::eq(&a[12usize], &b[12usize]) as i8),
-            -(u8::eq(&a[13usize], &b[13usize]) as i8),
-            -(u8::eq(&a[14usize], &b[14usize]) as i8),
-            -(u8::eq(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(u8::eq(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_lt_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> mask8x16<Self> {
-        [
-            -(u8::lt(&a[0usize], &b[0usize]) as i8),
-            -(u8::lt(&a[1usize], &b[1usize]) as i8),
-            -(u8::lt(&a[2usize], &b[2usize]) as i8),
-            -(u8::lt(&a[3usize], &b[3usize]) as i8),
-            -(u8::lt(&a[4usize], &b[4usize]) as i8),
-            -(u8::lt(&a[5usize], &b[5usize]) as i8),
-            -(u8::lt(&a[6usize], &b[6usize]) as i8),
-            -(u8::lt(&a[7usize], &b[7usize]) as i8),
-            -(u8::lt(&a[8usize], &b[8usize]) as i8),
-            -(u8::lt(&a[9usize], &b[9usize]) as i8),
-            -(u8::lt(&a[10usize], &b[10usize]) as i8),
-            -(u8::lt(&a[11usize], &b[11usize]) as i8),
-            -(u8::lt(&a[12usize], &b[12usize]) as i8),
-            -(u8::lt(&a[13usize], &b[13usize]) as i8),
-            -(u8::lt(&a[14usize], &b[14usize]) as i8),
-            -(u8::lt(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(u8::lt(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_le_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> mask8x16<Self> {
-        [
-            -(u8::le(&a[0usize], &b[0usize]) as i8),
-            -(u8::le(&a[1usize], &b[1usize]) as i8),
-            -(u8::le(&a[2usize], &b[2usize]) as i8),
-            -(u8::le(&a[3usize], &b[3usize]) as i8),
-            -(u8::le(&a[4usize], &b[4usize]) as i8),
-            -(u8::le(&a[5usize], &b[5usize]) as i8),
-            -(u8::le(&a[6usize], &b[6usize]) as i8),
-            -(u8::le(&a[7usize], &b[7usize]) as i8),
-            -(u8::le(&a[8usize], &b[8usize]) as i8),
-            -(u8::le(&a[9usize], &b[9usize]) as i8),
-            -(u8::le(&a[10usize], &b[10usize]) as i8),
-            -(u8::le(&a[11usize], &b[11usize]) as i8),
-            -(u8::le(&a[12usize], &b[12usize]) as i8),
-            -(u8::le(&a[13usize], &b[13usize]) as i8),
-            -(u8::le(&a[14usize], &b[14usize]) as i8),
-            -(u8::le(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(u8::le(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_ge_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> mask8x16<Self> {
-        [
-            -(u8::ge(&a[0usize], &b[0usize]) as i8),
-            -(u8::ge(&a[1usize], &b[1usize]) as i8),
-            -(u8::ge(&a[2usize], &b[2usize]) as i8),
-            -(u8::ge(&a[3usize], &b[3usize]) as i8),
-            -(u8::ge(&a[4usize], &b[4usize]) as i8),
-            -(u8::ge(&a[5usize], &b[5usize]) as i8),
-            -(u8::ge(&a[6usize], &b[6usize]) as i8),
-            -(u8::ge(&a[7usize], &b[7usize]) as i8),
-            -(u8::ge(&a[8usize], &b[8usize]) as i8),
-            -(u8::ge(&a[9usize], &b[9usize]) as i8),
-            -(u8::ge(&a[10usize], &b[10usize]) as i8),
-            -(u8::ge(&a[11usize], &b[11usize]) as i8),
-            -(u8::ge(&a[12usize], &b[12usize]) as i8),
-            -(u8::ge(&a[13usize], &b[13usize]) as i8),
-            -(u8::ge(&a[14usize], &b[14usize]) as i8),
-            -(u8::ge(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(u8::ge(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_gt_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> mask8x16<Self> {
-        [
-            -(u8::gt(&a[0usize], &b[0usize]) as i8),
-            -(u8::gt(&a[1usize], &b[1usize]) as i8),
-            -(u8::gt(&a[2usize], &b[2usize]) as i8),
-            -(u8::gt(&a[3usize], &b[3usize]) as i8),
-            -(u8::gt(&a[4usize], &b[4usize]) as i8),
-            -(u8::gt(&a[5usize], &b[5usize]) as i8),
-            -(u8::gt(&a[6usize], &b[6usize]) as i8),
-            -(u8::gt(&a[7usize], &b[7usize]) as i8),
-            -(u8::gt(&a[8usize], &b[8usize]) as i8),
-            -(u8::gt(&a[9usize], &b[9usize]) as i8),
-            -(u8::gt(&a[10usize], &b[10usize]) as i8),
-            -(u8::gt(&a[11usize], &b[11usize]) as i8),
-            -(u8::gt(&a[12usize], &b[12usize]) as i8),
-            -(u8::gt(&a[13usize], &b[13usize]) as i8),
-            -(u8::gt(&a[14usize], &b[14usize]) as i8),
-            -(u8::gt(&a[15usize], &b[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(u8::gt(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn zip_low_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
@@ -1606,21 +1062,23 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn unzip_low_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        self.load_array_u8x16([
             a[0usize], a[2usize], a[4usize], a[6usize], a[8usize], a[10usize], a[12usize],
             a[14usize], b[0usize], b[2usize], b[4usize], b[6usize], b[8usize], b[10usize],
             b[12usize], b[14usize],
-        ]
-        .simd_into(self)
+        ])
     }
     #[inline(always)]
     fn unzip_high_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        self.load_array_u8x16([
             a[1usize], a[3usize], a[5usize], a[7usize], a[9usize], a[11usize], a[13usize],
             a[15usize], b[1usize], b[3usize], b[5usize], b[7usize], b[9usize], b[11usize],
             b[13usize], b[15usize],
-        ]
-        .simd_into(self)
+        ])
     }
     #[inline(always)]
     fn interleave_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> (u8x16<Self>, u8x16<Self>) {
@@ -1718,47 +1176,17 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn min_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::min(a[0usize], b[0usize]),
-            u8::min(a[1usize], b[1usize]),
-            u8::min(a[2usize], b[2usize]),
-            u8::min(a[3usize], b[3usize]),
-            u8::min(a[4usize], b[4usize]),
-            u8::min(a[5usize], b[5usize]),
-            u8::min(a[6usize], b[6usize]),
-            u8::min(a[7usize], b[7usize]),
-            u8::min(a[8usize], b[8usize]),
-            u8::min(a[9usize], b[9usize]),
-            u8::min(a[10usize], b[10usize]),
-            u8::min(a[11usize], b[11usize]),
-            u8::min(a[12usize], b[12usize]),
-            u8::min(a[13usize], b[13usize]),
-            u8::min(a[14usize], b[14usize]),
-            u8::min(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn max_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        [
-            u8::max(a[0usize], b[0usize]),
-            u8::max(a[1usize], b[1usize]),
-            u8::max(a[2usize], b[2usize]),
-            u8::max(a[3usize], b[3usize]),
-            u8::max(a[4usize], b[4usize]),
-            u8::max(a[5usize], b[5usize]),
-            u8::max(a[6usize], b[6usize]),
-            u8::max(a[7usize], b[7usize]),
-            u8::max(a[8usize], b[8usize]),
-            u8::max(a[9usize], b[9usize]),
-            u8::max(a[10usize], b[10usize]),
-            u8::max(a[11usize], b[11usize]),
-            u8::max(a[12usize], b[12usize]),
-            u8::max(a[13usize], b[13usize]),
-            u8::max(a[14usize], b[14usize]),
-            u8::max(a[15usize], b[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let b = self.as_array_u8x16(b);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| u8::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn combine_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x32<Self> {
@@ -1769,25 +1197,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn widen_u8x16(self, a: u8x16<Self>) -> u16x16<Self> {
-        [
-            a[0usize] as u16,
-            a[1usize] as u16,
-            a[2usize] as u16,
-            a[3usize] as u16,
-            a[4usize] as u16,
-            a[5usize] as u16,
-            a[6usize] as u16,
-            a[7usize] as u16,
-            a[8usize] as u16,
-            a[9usize] as u16,
-            a[10usize] as u16,
-            a[11usize] as u16,
-            a[12usize] as u16,
-            a[13usize] as u16,
-            a[14usize] as u16,
-            a[15usize] as u16,
-        ]
-        .simd_into(self)
+        let a = self.as_array_u8x16(a);
+        let lanes: [u16; 16usize] = core::array::from_fn(|i| a[i] as u16);
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn reinterpret_u32_u8x16(self, a: u8x16<Self>) -> u32x4<Self> {
@@ -1841,91 +1253,30 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn and_mask8x16(self, a: mask8x16<Self>, b: mask8x16<Self>) -> mask8x16<Self> {
-        [
-            i8::bitand(a.val.0[0usize], &b.val.0[0usize]),
-            i8::bitand(a.val.0[1usize], &b.val.0[1usize]),
-            i8::bitand(a.val.0[2usize], &b.val.0[2usize]),
-            i8::bitand(a.val.0[3usize], &b.val.0[3usize]),
-            i8::bitand(a.val.0[4usize], &b.val.0[4usize]),
-            i8::bitand(a.val.0[5usize], &b.val.0[5usize]),
-            i8::bitand(a.val.0[6usize], &b.val.0[6usize]),
-            i8::bitand(a.val.0[7usize], &b.val.0[7usize]),
-            i8::bitand(a.val.0[8usize], &b.val.0[8usize]),
-            i8::bitand(a.val.0[9usize], &b.val.0[9usize]),
-            i8::bitand(a.val.0[10usize], &b.val.0[10usize]),
-            i8::bitand(a.val.0[11usize], &b.val.0[11usize]),
-            i8::bitand(a.val.0[12usize], &b.val.0[12usize]),
-            i8::bitand(a.val.0[13usize], &b.val.0[13usize]),
-            i8::bitand(a.val.0[14usize], &b.val.0[14usize]),
-            i8::bitand(a.val.0[15usize], &b.val.0[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask8x16(a);
+        let b = self.as_array_mask8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_mask8x16(self, a: mask8x16<Self>, b: mask8x16<Self>) -> mask8x16<Self> {
-        [
-            i8::bitor(a.val.0[0usize], &b.val.0[0usize]),
-            i8::bitor(a.val.0[1usize], &b.val.0[1usize]),
-            i8::bitor(a.val.0[2usize], &b.val.0[2usize]),
-            i8::bitor(a.val.0[3usize], &b.val.0[3usize]),
-            i8::bitor(a.val.0[4usize], &b.val.0[4usize]),
-            i8::bitor(a.val.0[5usize], &b.val.0[5usize]),
-            i8::bitor(a.val.0[6usize], &b.val.0[6usize]),
-            i8::bitor(a.val.0[7usize], &b.val.0[7usize]),
-            i8::bitor(a.val.0[8usize], &b.val.0[8usize]),
-            i8::bitor(a.val.0[9usize], &b.val.0[9usize]),
-            i8::bitor(a.val.0[10usize], &b.val.0[10usize]),
-            i8::bitor(a.val.0[11usize], &b.val.0[11usize]),
-            i8::bitor(a.val.0[12usize], &b.val.0[12usize]),
-            i8::bitor(a.val.0[13usize], &b.val.0[13usize]),
-            i8::bitor(a.val.0[14usize], &b.val.0[14usize]),
-            i8::bitor(a.val.0[15usize], &b.val.0[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask8x16(a);
+        let b = self.as_array_mask8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_mask8x16(self, a: mask8x16<Self>, b: mask8x16<Self>) -> mask8x16<Self> {
-        [
-            i8::bitxor(a.val.0[0usize], &b.val.0[0usize]),
-            i8::bitxor(a.val.0[1usize], &b.val.0[1usize]),
-            i8::bitxor(a.val.0[2usize], &b.val.0[2usize]),
-            i8::bitxor(a.val.0[3usize], &b.val.0[3usize]),
-            i8::bitxor(a.val.0[4usize], &b.val.0[4usize]),
-            i8::bitxor(a.val.0[5usize], &b.val.0[5usize]),
-            i8::bitxor(a.val.0[6usize], &b.val.0[6usize]),
-            i8::bitxor(a.val.0[7usize], &b.val.0[7usize]),
-            i8::bitxor(a.val.0[8usize], &b.val.0[8usize]),
-            i8::bitxor(a.val.0[9usize], &b.val.0[9usize]),
-            i8::bitxor(a.val.0[10usize], &b.val.0[10usize]),
-            i8::bitxor(a.val.0[11usize], &b.val.0[11usize]),
-            i8::bitxor(a.val.0[12usize], &b.val.0[12usize]),
-            i8::bitxor(a.val.0[13usize], &b.val.0[13usize]),
-            i8::bitxor(a.val.0[14usize], &b.val.0[14usize]),
-            i8::bitxor(a.val.0[15usize], &b.val.0[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask8x16(a);
+        let b = self.as_array_mask8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_mask8x16(self, a: mask8x16<Self>) -> mask8x16<Self> {
-        [
-            i8::not(a.val.0[0usize]),
-            i8::not(a.val.0[1usize]),
-            i8::not(a.val.0[2usize]),
-            i8::not(a.val.0[3usize]),
-            i8::not(a.val.0[4usize]),
-            i8::not(a.val.0[5usize]),
-            i8::not(a.val.0[6usize]),
-            i8::not(a.val.0[7usize]),
-            i8::not(a.val.0[8usize]),
-            i8::not(a.val.0[9usize]),
-            i8::not(a.val.0[10usize]),
-            i8::not(a.val.0[11usize]),
-            i8::not(a.val.0[12usize]),
-            i8::not(a.val.0[13usize]),
-            i8::not(a.val.0[14usize]),
-            i8::not(a.val.0[15usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask8x16(a);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| i8::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn select_mask8x16(
@@ -2020,25 +1371,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn simd_eq_mask8x16(self, a: mask8x16<Self>, b: mask8x16<Self>) -> mask8x16<Self> {
-        [
-            -(i8::eq(&a.val.0[0usize], &b.val.0[0usize]) as i8),
-            -(i8::eq(&a.val.0[1usize], &b.val.0[1usize]) as i8),
-            -(i8::eq(&a.val.0[2usize], &b.val.0[2usize]) as i8),
-            -(i8::eq(&a.val.0[3usize], &b.val.0[3usize]) as i8),
-            -(i8::eq(&a.val.0[4usize], &b.val.0[4usize]) as i8),
-            -(i8::eq(&a.val.0[5usize], &b.val.0[5usize]) as i8),
-            -(i8::eq(&a.val.0[6usize], &b.val.0[6usize]) as i8),
-            -(i8::eq(&a.val.0[7usize], &b.val.0[7usize]) as i8),
-            -(i8::eq(&a.val.0[8usize], &b.val.0[8usize]) as i8),
-            -(i8::eq(&a.val.0[9usize], &b.val.0[9usize]) as i8),
-            -(i8::eq(&a.val.0[10usize], &b.val.0[10usize]) as i8),
-            -(i8::eq(&a.val.0[11usize], &b.val.0[11usize]) as i8),
-            -(i8::eq(&a.val.0[12usize], &b.val.0[12usize]) as i8),
-            -(i8::eq(&a.val.0[13usize], &b.val.0[13usize]) as i8),
-            -(i8::eq(&a.val.0[14usize], &b.val.0[14usize]) as i8),
-            -(i8::eq(&a.val.0[15usize], &b.val.0[15usize]) as i8),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask8x16(a);
+        let b = self.as_array_mask8x16(b);
+        let lanes: [i8; 16usize] = core::array::from_fn(|i| -(i8::eq(&a[i], &b[i]) as i8));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn any_true_mask8x16(self, a: mask8x16<Self>) -> bool {
@@ -2188,101 +1524,51 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn add_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::wrapping_add(a[0usize], b[0usize]),
-            i16::wrapping_add(a[1usize], b[1usize]),
-            i16::wrapping_add(a[2usize], b[2usize]),
-            i16::wrapping_add(a[3usize], b[3usize]),
-            i16::wrapping_add(a[4usize], b[4usize]),
-            i16::wrapping_add(a[5usize], b[5usize]),
-            i16::wrapping_add(a[6usize], b[6usize]),
-            i16::wrapping_add(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::wrapping_add(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sub_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::wrapping_sub(a[0usize], b[0usize]),
-            i16::wrapping_sub(a[1usize], b[1usize]),
-            i16::wrapping_sub(a[2usize], b[2usize]),
-            i16::wrapping_sub(a[3usize], b[3usize]),
-            i16::wrapping_sub(a[4usize], b[4usize]),
-            i16::wrapping_sub(a[5usize], b[5usize]),
-            i16::wrapping_sub(a[6usize], b[6usize]),
-            i16::wrapping_sub(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::wrapping_sub(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::wrapping_mul(a[0usize], b[0usize]),
-            i16::wrapping_mul(a[1usize], b[1usize]),
-            i16::wrapping_mul(a[2usize], b[2usize]),
-            i16::wrapping_mul(a[3usize], b[3usize]),
-            i16::wrapping_mul(a[4usize], b[4usize]),
-            i16::wrapping_mul(a[5usize], b[5usize]),
-            i16::wrapping_mul(a[6usize], b[6usize]),
-            i16::wrapping_mul(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::wrapping_mul(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn and_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::bitand(a[0usize], &b[0usize]),
-            i16::bitand(a[1usize], &b[1usize]),
-            i16::bitand(a[2usize], &b[2usize]),
-            i16::bitand(a[3usize], &b[3usize]),
-            i16::bitand(a[4usize], &b[4usize]),
-            i16::bitand(a[5usize], &b[5usize]),
-            i16::bitand(a[6usize], &b[6usize]),
-            i16::bitand(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::bitor(a[0usize], &b[0usize]),
-            i16::bitor(a[1usize], &b[1usize]),
-            i16::bitor(a[2usize], &b[2usize]),
-            i16::bitor(a[3usize], &b[3usize]),
-            i16::bitor(a[4usize], &b[4usize]),
-            i16::bitor(a[5usize], &b[5usize]),
-            i16::bitor(a[6usize], &b[6usize]),
-            i16::bitor(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::bitxor(a[0usize], &b[0usize]),
-            i16::bitxor(a[1usize], &b[1usize]),
-            i16::bitxor(a[2usize], &b[2usize]),
-            i16::bitxor(a[3usize], &b[3usize]),
-            i16::bitxor(a[4usize], &b[4usize]),
-            i16::bitxor(a[5usize], &b[5usize]),
-            i16::bitxor(a[6usize], &b[6usize]),
-            i16::bitxor(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_i16x8(self, a: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::not(a[0usize]),
-            i16::not(a[1usize]),
-            i16::not(a[2usize]),
-            i16::not(a[3usize]),
-            i16::not(a[4usize]),
-            i16::not(a[5usize]),
-            i16::not(a[6usize]),
-            i16::not(a[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shl_i16x8(self, a: i16x8<Self>, shift: u32) -> i16x8<Self> {
@@ -2300,17 +1586,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shlv_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::shl(a[0usize], &b[0usize]),
-            i16::shl(a[1usize], &b[1usize]),
-            i16::shl(a[2usize], &b[2usize]),
-            i16::shl(a[3usize], &b[3usize]),
-            i16::shl(a[4usize], &b[4usize]),
-            i16::shl(a[5usize], &b[5usize]),
-            i16::shl(a[6usize], &b[6usize]),
-            i16::shl(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::shl(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shr_i16x8(self, a: i16x8<Self>, shift: u32) -> i16x8<Self> {
@@ -2328,87 +1607,45 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shrv_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::shr(a[0usize], &b[0usize]),
-            i16::shr(a[1usize], &b[1usize]),
-            i16::shr(a[2usize], &b[2usize]),
-            i16::shr(a[3usize], &b[3usize]),
-            i16::shr(a[4usize], &b[4usize]),
-            i16::shr(a[5usize], &b[5usize]),
-            i16::shr(a[6usize], &b[6usize]),
-            i16::shr(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::shr(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_eq_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> mask16x8<Self> {
-        [
-            -(i16::eq(&a[0usize], &b[0usize]) as i16),
-            -(i16::eq(&a[1usize], &b[1usize]) as i16),
-            -(i16::eq(&a[2usize], &b[2usize]) as i16),
-            -(i16::eq(&a[3usize], &b[3usize]) as i16),
-            -(i16::eq(&a[4usize], &b[4usize]) as i16),
-            -(i16::eq(&a[5usize], &b[5usize]) as i16),
-            -(i16::eq(&a[6usize], &b[6usize]) as i16),
-            -(i16::eq(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(i16::eq(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_lt_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> mask16x8<Self> {
-        [
-            -(i16::lt(&a[0usize], &b[0usize]) as i16),
-            -(i16::lt(&a[1usize], &b[1usize]) as i16),
-            -(i16::lt(&a[2usize], &b[2usize]) as i16),
-            -(i16::lt(&a[3usize], &b[3usize]) as i16),
-            -(i16::lt(&a[4usize], &b[4usize]) as i16),
-            -(i16::lt(&a[5usize], &b[5usize]) as i16),
-            -(i16::lt(&a[6usize], &b[6usize]) as i16),
-            -(i16::lt(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(i16::lt(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_le_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> mask16x8<Self> {
-        [
-            -(i16::le(&a[0usize], &b[0usize]) as i16),
-            -(i16::le(&a[1usize], &b[1usize]) as i16),
-            -(i16::le(&a[2usize], &b[2usize]) as i16),
-            -(i16::le(&a[3usize], &b[3usize]) as i16),
-            -(i16::le(&a[4usize], &b[4usize]) as i16),
-            -(i16::le(&a[5usize], &b[5usize]) as i16),
-            -(i16::le(&a[6usize], &b[6usize]) as i16),
-            -(i16::le(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(i16::le(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_ge_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> mask16x8<Self> {
-        [
-            -(i16::ge(&a[0usize], &b[0usize]) as i16),
-            -(i16::ge(&a[1usize], &b[1usize]) as i16),
-            -(i16::ge(&a[2usize], &b[2usize]) as i16),
-            -(i16::ge(&a[3usize], &b[3usize]) as i16),
-            -(i16::ge(&a[4usize], &b[4usize]) as i16),
-            -(i16::ge(&a[5usize], &b[5usize]) as i16),
-            -(i16::ge(&a[6usize], &b[6usize]) as i16),
-            -(i16::ge(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(i16::ge(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_gt_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> mask16x8<Self> {
-        [
-            -(i16::gt(&a[0usize], &b[0usize]) as i16),
-            -(i16::gt(&a[1usize], &b[1usize]) as i16),
-            -(i16::gt(&a[2usize], &b[2usize]) as i16),
-            -(i16::gt(&a[3usize], &b[3usize]) as i16),
-            -(i16::gt(&a[4usize], &b[4usize]) as i16),
-            -(i16::gt(&a[5usize], &b[5usize]) as i16),
-            -(i16::gt(&a[6usize], &b[6usize]) as i16),
-            -(i16::gt(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(i16::gt(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn zip_low_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
@@ -2426,17 +1663,19 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn unzip_low_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        self.load_array_i16x8([
             a[0usize], a[2usize], a[4usize], a[6usize], b[0usize], b[2usize], b[4usize], b[6usize],
-        ]
-        .simd_into(self)
+        ])
     }
     #[inline(always)]
     fn unzip_high_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        self.load_array_i16x8([
             a[1usize], a[3usize], a[5usize], a[7usize], b[1usize], b[3usize], b[5usize], b[7usize],
-        ]
-        .simd_into(self)
+        ])
     }
     #[inline(always)]
     fn interleave_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> (i16x8<Self>, i16x8<Self>) {
@@ -2494,31 +1733,17 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn min_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::min(a[0usize], b[0usize]),
-            i16::min(a[1usize], b[1usize]),
-            i16::min(a[2usize], b[2usize]),
-            i16::min(a[3usize], b[3usize]),
-            i16::min(a[4usize], b[4usize]),
-            i16::min(a[5usize], b[5usize]),
-            i16::min(a[6usize], b[6usize]),
-            i16::min(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn max_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::max(a[0usize], b[0usize]),
-            i16::max(a[1usize], b[1usize]),
-            i16::max(a[2usize], b[2usize]),
-            i16::max(a[3usize], b[3usize]),
-            i16::max(a[4usize], b[4usize]),
-            i16::max(a[5usize], b[5usize]),
-            i16::max(a[6usize], b[6usize]),
-            i16::max(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let b = self.as_array_i16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn combine_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x16<Self> {
@@ -2529,17 +1754,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn neg_i16x8(self, a: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::neg(a[0usize]),
-            i16::neg(a[1usize]),
-            i16::neg(a[2usize]),
-            i16::neg(a[3usize]),
-            i16::neg(a[4usize]),
-            i16::neg(a[5usize]),
-            i16::neg(a[6usize]),
-            i16::neg(a[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i16x8(a);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::neg(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn reinterpret_u8_i16x8(self, a: i16x8<Self>) -> u8x16<Self> {
@@ -2614,101 +1831,51 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn add_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::wrapping_add(a[0usize], b[0usize]),
-            u16::wrapping_add(a[1usize], b[1usize]),
-            u16::wrapping_add(a[2usize], b[2usize]),
-            u16::wrapping_add(a[3usize], b[3usize]),
-            u16::wrapping_add(a[4usize], b[4usize]),
-            u16::wrapping_add(a[5usize], b[5usize]),
-            u16::wrapping_add(a[6usize], b[6usize]),
-            u16::wrapping_add(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::wrapping_add(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sub_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::wrapping_sub(a[0usize], b[0usize]),
-            u16::wrapping_sub(a[1usize], b[1usize]),
-            u16::wrapping_sub(a[2usize], b[2usize]),
-            u16::wrapping_sub(a[3usize], b[3usize]),
-            u16::wrapping_sub(a[4usize], b[4usize]),
-            u16::wrapping_sub(a[5usize], b[5usize]),
-            u16::wrapping_sub(a[6usize], b[6usize]),
-            u16::wrapping_sub(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::wrapping_sub(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::wrapping_mul(a[0usize], b[0usize]),
-            u16::wrapping_mul(a[1usize], b[1usize]),
-            u16::wrapping_mul(a[2usize], b[2usize]),
-            u16::wrapping_mul(a[3usize], b[3usize]),
-            u16::wrapping_mul(a[4usize], b[4usize]),
-            u16::wrapping_mul(a[5usize], b[5usize]),
-            u16::wrapping_mul(a[6usize], b[6usize]),
-            u16::wrapping_mul(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::wrapping_mul(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn and_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::bitand(a[0usize], &b[0usize]),
-            u16::bitand(a[1usize], &b[1usize]),
-            u16::bitand(a[2usize], &b[2usize]),
-            u16::bitand(a[3usize], &b[3usize]),
-            u16::bitand(a[4usize], &b[4usize]),
-            u16::bitand(a[5usize], &b[5usize]),
-            u16::bitand(a[6usize], &b[6usize]),
-            u16::bitand(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::bitor(a[0usize], &b[0usize]),
-            u16::bitor(a[1usize], &b[1usize]),
-            u16::bitor(a[2usize], &b[2usize]),
-            u16::bitor(a[3usize], &b[3usize]),
-            u16::bitor(a[4usize], &b[4usize]),
-            u16::bitor(a[5usize], &b[5usize]),
-            u16::bitor(a[6usize], &b[6usize]),
-            u16::bitor(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::bitxor(a[0usize], &b[0usize]),
-            u16::bitxor(a[1usize], &b[1usize]),
-            u16::bitxor(a[2usize], &b[2usize]),
-            u16::bitxor(a[3usize], &b[3usize]),
-            u16::bitxor(a[4usize], &b[4usize]),
-            u16::bitxor(a[5usize], &b[5usize]),
-            u16::bitxor(a[6usize], &b[6usize]),
-            u16::bitxor(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_u16x8(self, a: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::not(a[0usize]),
-            u16::not(a[1usize]),
-            u16::not(a[2usize]),
-            u16::not(a[3usize]),
-            u16::not(a[4usize]),
-            u16::not(a[5usize]),
-            u16::not(a[6usize]),
-            u16::not(a[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shl_u16x8(self, a: u16x8<Self>, shift: u32) -> u16x8<Self> {
@@ -2726,17 +1893,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shlv_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::shl(a[0usize], &b[0usize]),
-            u16::shl(a[1usize], &b[1usize]),
-            u16::shl(a[2usize], &b[2usize]),
-            u16::shl(a[3usize], &b[3usize]),
-            u16::shl(a[4usize], &b[4usize]),
-            u16::shl(a[5usize], &b[5usize]),
-            u16::shl(a[6usize], &b[6usize]),
-            u16::shl(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::shl(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shr_u16x8(self, a: u16x8<Self>, shift: u32) -> u16x8<Self> {
@@ -2754,87 +1914,45 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shrv_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::shr(a[0usize], &b[0usize]),
-            u16::shr(a[1usize], &b[1usize]),
-            u16::shr(a[2usize], &b[2usize]),
-            u16::shr(a[3usize], &b[3usize]),
-            u16::shr(a[4usize], &b[4usize]),
-            u16::shr(a[5usize], &b[5usize]),
-            u16::shr(a[6usize], &b[6usize]),
-            u16::shr(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::shr(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_eq_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> mask16x8<Self> {
-        [
-            -(u16::eq(&a[0usize], &b[0usize]) as i16),
-            -(u16::eq(&a[1usize], &b[1usize]) as i16),
-            -(u16::eq(&a[2usize], &b[2usize]) as i16),
-            -(u16::eq(&a[3usize], &b[3usize]) as i16),
-            -(u16::eq(&a[4usize], &b[4usize]) as i16),
-            -(u16::eq(&a[5usize], &b[5usize]) as i16),
-            -(u16::eq(&a[6usize], &b[6usize]) as i16),
-            -(u16::eq(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(u16::eq(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_lt_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> mask16x8<Self> {
-        [
-            -(u16::lt(&a[0usize], &b[0usize]) as i16),
-            -(u16::lt(&a[1usize], &b[1usize]) as i16),
-            -(u16::lt(&a[2usize], &b[2usize]) as i16),
-            -(u16::lt(&a[3usize], &b[3usize]) as i16),
-            -(u16::lt(&a[4usize], &b[4usize]) as i16),
-            -(u16::lt(&a[5usize], &b[5usize]) as i16),
-            -(u16::lt(&a[6usize], &b[6usize]) as i16),
-            -(u16::lt(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(u16::lt(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_le_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> mask16x8<Self> {
-        [
-            -(u16::le(&a[0usize], &b[0usize]) as i16),
-            -(u16::le(&a[1usize], &b[1usize]) as i16),
-            -(u16::le(&a[2usize], &b[2usize]) as i16),
-            -(u16::le(&a[3usize], &b[3usize]) as i16),
-            -(u16::le(&a[4usize], &b[4usize]) as i16),
-            -(u16::le(&a[5usize], &b[5usize]) as i16),
-            -(u16::le(&a[6usize], &b[6usize]) as i16),
-            -(u16::le(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(u16::le(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_ge_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> mask16x8<Self> {
-        [
-            -(u16::ge(&a[0usize], &b[0usize]) as i16),
-            -(u16::ge(&a[1usize], &b[1usize]) as i16),
-            -(u16::ge(&a[2usize], &b[2usize]) as i16),
-            -(u16::ge(&a[3usize], &b[3usize]) as i16),
-            -(u16::ge(&a[4usize], &b[4usize]) as i16),
-            -(u16::ge(&a[5usize], &b[5usize]) as i16),
-            -(u16::ge(&a[6usize], &b[6usize]) as i16),
-            -(u16::ge(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(u16::ge(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_gt_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> mask16x8<Self> {
-        [
-            -(u16::gt(&a[0usize], &b[0usize]) as i16),
-            -(u16::gt(&a[1usize], &b[1usize]) as i16),
-            -(u16::gt(&a[2usize], &b[2usize]) as i16),
-            -(u16::gt(&a[3usize], &b[3usize]) as i16),
-            -(u16::gt(&a[4usize], &b[4usize]) as i16),
-            -(u16::gt(&a[5usize], &b[5usize]) as i16),
-            -(u16::gt(&a[6usize], &b[6usize]) as i16),
-            -(u16::gt(&a[7usize], &b[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(u16::gt(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn zip_low_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
@@ -2852,17 +1970,19 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn unzip_low_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        self.load_array_u16x8([
             a[0usize], a[2usize], a[4usize], a[6usize], b[0usize], b[2usize], b[4usize], b[6usize],
-        ]
-        .simd_into(self)
+        ])
     }
     #[inline(always)]
     fn unzip_high_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        self.load_array_u16x8([
             a[1usize], a[3usize], a[5usize], a[7usize], b[1usize], b[3usize], b[5usize], b[7usize],
-        ]
-        .simd_into(self)
+        ])
     }
     #[inline(always)]
     fn interleave_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> (u16x8<Self>, u16x8<Self>) {
@@ -2920,31 +2040,17 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn min_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::min(a[0usize], b[0usize]),
-            u16::min(a[1usize], b[1usize]),
-            u16::min(a[2usize], b[2usize]),
-            u16::min(a[3usize], b[3usize]),
-            u16::min(a[4usize], b[4usize]),
-            u16::min(a[5usize], b[5usize]),
-            u16::min(a[6usize], b[6usize]),
-            u16::min(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn max_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::max(a[0usize], b[0usize]),
-            u16::max(a[1usize], b[1usize]),
-            u16::max(a[2usize], b[2usize]),
-            u16::max(a[3usize], b[3usize]),
-            u16::max(a[4usize], b[4usize]),
-            u16::max(a[5usize], b[5usize]),
-            u16::max(a[6usize], b[6usize]),
-            u16::max(a[7usize], b[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x8(a);
+        let b = self.as_array_u16x8(b);
+        let lanes: [u16; 8usize] = core::array::from_fn(|i| u16::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn combine_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x16<Self> {
@@ -3009,59 +2115,30 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn and_mask16x8(self, a: mask16x8<Self>, b: mask16x8<Self>) -> mask16x8<Self> {
-        [
-            i16::bitand(a.val.0[0usize], &b.val.0[0usize]),
-            i16::bitand(a.val.0[1usize], &b.val.0[1usize]),
-            i16::bitand(a.val.0[2usize], &b.val.0[2usize]),
-            i16::bitand(a.val.0[3usize], &b.val.0[3usize]),
-            i16::bitand(a.val.0[4usize], &b.val.0[4usize]),
-            i16::bitand(a.val.0[5usize], &b.val.0[5usize]),
-            i16::bitand(a.val.0[6usize], &b.val.0[6usize]),
-            i16::bitand(a.val.0[7usize], &b.val.0[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask16x8(a);
+        let b = self.as_array_mask16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_mask16x8(self, a: mask16x8<Self>, b: mask16x8<Self>) -> mask16x8<Self> {
-        [
-            i16::bitor(a.val.0[0usize], &b.val.0[0usize]),
-            i16::bitor(a.val.0[1usize], &b.val.0[1usize]),
-            i16::bitor(a.val.0[2usize], &b.val.0[2usize]),
-            i16::bitor(a.val.0[3usize], &b.val.0[3usize]),
-            i16::bitor(a.val.0[4usize], &b.val.0[4usize]),
-            i16::bitor(a.val.0[5usize], &b.val.0[5usize]),
-            i16::bitor(a.val.0[6usize], &b.val.0[6usize]),
-            i16::bitor(a.val.0[7usize], &b.val.0[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask16x8(a);
+        let b = self.as_array_mask16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_mask16x8(self, a: mask16x8<Self>, b: mask16x8<Self>) -> mask16x8<Self> {
-        [
-            i16::bitxor(a.val.0[0usize], &b.val.0[0usize]),
-            i16::bitxor(a.val.0[1usize], &b.val.0[1usize]),
-            i16::bitxor(a.val.0[2usize], &b.val.0[2usize]),
-            i16::bitxor(a.val.0[3usize], &b.val.0[3usize]),
-            i16::bitxor(a.val.0[4usize], &b.val.0[4usize]),
-            i16::bitxor(a.val.0[5usize], &b.val.0[5usize]),
-            i16::bitxor(a.val.0[6usize], &b.val.0[6usize]),
-            i16::bitxor(a.val.0[7usize], &b.val.0[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask16x8(a);
+        let b = self.as_array_mask16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_mask16x8(self, a: mask16x8<Self>) -> mask16x8<Self> {
-        [
-            i16::not(a.val.0[0usize]),
-            i16::not(a.val.0[1usize]),
-            i16::not(a.val.0[2usize]),
-            i16::not(a.val.0[3usize]),
-            i16::not(a.val.0[4usize]),
-            i16::not(a.val.0[5usize]),
-            i16::not(a.val.0[6usize]),
-            i16::not(a.val.0[7usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask16x8(a);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| i16::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn select_mask16x8(
@@ -3116,17 +2193,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn simd_eq_mask16x8(self, a: mask16x8<Self>, b: mask16x8<Self>) -> mask16x8<Self> {
-        [
-            -(i16::eq(&a.val.0[0usize], &b.val.0[0usize]) as i16),
-            -(i16::eq(&a.val.0[1usize], &b.val.0[1usize]) as i16),
-            -(i16::eq(&a.val.0[2usize], &b.val.0[2usize]) as i16),
-            -(i16::eq(&a.val.0[3usize], &b.val.0[3usize]) as i16),
-            -(i16::eq(&a.val.0[4usize], &b.val.0[4usize]) as i16),
-            -(i16::eq(&a.val.0[5usize], &b.val.0[5usize]) as i16),
-            -(i16::eq(&a.val.0[6usize], &b.val.0[6usize]) as i16),
-            -(i16::eq(&a.val.0[7usize], &b.val.0[7usize]) as i16),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask16x8(a);
+        let b = self.as_array_mask16x8(b);
+        let lanes: [i16; 8usize] = core::array::from_fn(|i| -(i16::eq(&a[i], &b[i]) as i16));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn any_true_mask16x8(self, a: mask16x8<Self>) -> bool {
@@ -3244,73 +2314,51 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn add_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::wrapping_add(a[0usize], b[0usize]),
-            i32::wrapping_add(a[1usize], b[1usize]),
-            i32::wrapping_add(a[2usize], b[2usize]),
-            i32::wrapping_add(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::wrapping_add(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sub_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::wrapping_sub(a[0usize], b[0usize]),
-            i32::wrapping_sub(a[1usize], b[1usize]),
-            i32::wrapping_sub(a[2usize], b[2usize]),
-            i32::wrapping_sub(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::wrapping_sub(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::wrapping_mul(a[0usize], b[0usize]),
-            i32::wrapping_mul(a[1usize], b[1usize]),
-            i32::wrapping_mul(a[2usize], b[2usize]),
-            i32::wrapping_mul(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::wrapping_mul(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn and_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::bitand(a[0usize], &b[0usize]),
-            i32::bitand(a[1usize], &b[1usize]),
-            i32::bitand(a[2usize], &b[2usize]),
-            i32::bitand(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::bitor(a[0usize], &b[0usize]),
-            i32::bitor(a[1usize], &b[1usize]),
-            i32::bitor(a[2usize], &b[2usize]),
-            i32::bitor(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::bitxor(a[0usize], &b[0usize]),
-            i32::bitxor(a[1usize], &b[1usize]),
-            i32::bitxor(a[2usize], &b[2usize]),
-            i32::bitxor(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_i32x4(self, a: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::not(a[0usize]),
-            i32::not(a[1usize]),
-            i32::not(a[2usize]),
-            i32::not(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shl_i32x4(self, a: i32x4<Self>, shift: u32) -> i32x4<Self> {
@@ -3324,13 +2372,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shlv_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::shl(a[0usize], &b[0usize]),
-            i32::shl(a[1usize], &b[1usize]),
-            i32::shl(a[2usize], &b[2usize]),
-            i32::shl(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::shl(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shr_i32x4(self, a: i32x4<Self>, shift: u32) -> i32x4<Self> {
@@ -3344,63 +2389,45 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shrv_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::shr(a[0usize], &b[0usize]),
-            i32::shr(a[1usize], &b[1usize]),
-            i32::shr(a[2usize], &b[2usize]),
-            i32::shr(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::shr(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_eq_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> mask32x4<Self> {
-        [
-            -(i32::eq(&a[0usize], &b[0usize]) as i32),
-            -(i32::eq(&a[1usize], &b[1usize]) as i32),
-            -(i32::eq(&a[2usize], &b[2usize]) as i32),
-            -(i32::eq(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(i32::eq(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_lt_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> mask32x4<Self> {
-        [
-            -(i32::lt(&a[0usize], &b[0usize]) as i32),
-            -(i32::lt(&a[1usize], &b[1usize]) as i32),
-            -(i32::lt(&a[2usize], &b[2usize]) as i32),
-            -(i32::lt(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(i32::lt(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_le_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> mask32x4<Self> {
-        [
-            -(i32::le(&a[0usize], &b[0usize]) as i32),
-            -(i32::le(&a[1usize], &b[1usize]) as i32),
-            -(i32::le(&a[2usize], &b[2usize]) as i32),
-            -(i32::le(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(i32::le(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_ge_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> mask32x4<Self> {
-        [
-            -(i32::ge(&a[0usize], &b[0usize]) as i32),
-            -(i32::ge(&a[1usize], &b[1usize]) as i32),
-            -(i32::ge(&a[2usize], &b[2usize]) as i32),
-            -(i32::ge(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(i32::ge(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_gt_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> mask32x4<Self> {
-        [
-            -(i32::gt(&a[0usize], &b[0usize]) as i32),
-            -(i32::gt(&a[1usize], &b[1usize]) as i32),
-            -(i32::gt(&a[2usize], &b[2usize]) as i32),
-            -(i32::gt(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(i32::gt(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn zip_low_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
@@ -3412,11 +2439,15 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn unzip_low_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [a[0usize], a[2usize], b[0usize], b[2usize]].simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        self.load_array_i32x4([a[0usize], a[2usize], b[0usize], b[2usize]])
     }
     #[inline(always)]
     fn unzip_high_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [a[1usize], a[3usize], b[1usize], b[3usize]].simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        self.load_array_i32x4([a[1usize], a[3usize], b[1usize], b[3usize]])
     }
     #[inline(always)]
     fn interleave_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> (i32x4<Self>, i32x4<Self>) {
@@ -3454,23 +2485,17 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn min_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::min(a[0usize], b[0usize]),
-            i32::min(a[1usize], b[1usize]),
-            i32::min(a[2usize], b[2usize]),
-            i32::min(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn max_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::max(a[0usize], b[0usize]),
-            i32::max(a[1usize], b[1usize]),
-            i32::max(a[2usize], b[2usize]),
-            i32::max(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let b = self.as_array_i32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn combine_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x8<Self> {
@@ -3481,13 +2506,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn neg_i32x4(self, a: i32x4<Self>) -> i32x4<Self> {
-        [
-            i32::neg(a[0usize]),
-            i32::neg(a[1usize]),
-            i32::neg(a[2usize]),
-            i32::neg(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::neg(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn reinterpret_u8_i32x4(self, a: i32x4<Self>) -> u8x16<Self> {
@@ -3499,13 +2520,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn cvt_f32_i32x4(self, a: i32x4<Self>) -> f32x4<Self> {
-        [
-            a[0usize] as f32,
-            a[1usize] as f32,
-            a[2usize] as f32,
-            a[3usize] as f32,
-        ]
-        .simd_into(self)
+        let a = self.as_array_i32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| a[i] as f32);
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn splat_u32x4(self, val: u32) -> u32x4<Self> {
@@ -3572,73 +2589,51 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn add_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::wrapping_add(a[0usize], b[0usize]),
-            u32::wrapping_add(a[1usize], b[1usize]),
-            u32::wrapping_add(a[2usize], b[2usize]),
-            u32::wrapping_add(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::wrapping_add(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sub_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::wrapping_sub(a[0usize], b[0usize]),
-            u32::wrapping_sub(a[1usize], b[1usize]),
-            u32::wrapping_sub(a[2usize], b[2usize]),
-            u32::wrapping_sub(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::wrapping_sub(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::wrapping_mul(a[0usize], b[0usize]),
-            u32::wrapping_mul(a[1usize], b[1usize]),
-            u32::wrapping_mul(a[2usize], b[2usize]),
-            u32::wrapping_mul(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::wrapping_mul(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn and_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::bitand(a[0usize], &b[0usize]),
-            u32::bitand(a[1usize], &b[1usize]),
-            u32::bitand(a[2usize], &b[2usize]),
-            u32::bitand(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::bitor(a[0usize], &b[0usize]),
-            u32::bitor(a[1usize], &b[1usize]),
-            u32::bitor(a[2usize], &b[2usize]),
-            u32::bitor(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::bitxor(a[0usize], &b[0usize]),
-            u32::bitxor(a[1usize], &b[1usize]),
-            u32::bitxor(a[2usize], &b[2usize]),
-            u32::bitxor(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_u32x4(self, a: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::not(a[0usize]),
-            u32::not(a[1usize]),
-            u32::not(a[2usize]),
-            u32::not(a[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shl_u32x4(self, a: u32x4<Self>, shift: u32) -> u32x4<Self> {
@@ -3652,13 +2647,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shlv_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::shl(a[0usize], &b[0usize]),
-            u32::shl(a[1usize], &b[1usize]),
-            u32::shl(a[2usize], &b[2usize]),
-            u32::shl(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::shl(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn shr_u32x4(self, a: u32x4<Self>, shift: u32) -> u32x4<Self> {
@@ -3672,63 +2664,45 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn shrv_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::shr(a[0usize], &b[0usize]),
-            u32::shr(a[1usize], &b[1usize]),
-            u32::shr(a[2usize], &b[2usize]),
-            u32::shr(a[3usize], &b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::shr(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_eq_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> mask32x4<Self> {
-        [
-            -(u32::eq(&a[0usize], &b[0usize]) as i32),
-            -(u32::eq(&a[1usize], &b[1usize]) as i32),
-            -(u32::eq(&a[2usize], &b[2usize]) as i32),
-            -(u32::eq(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(u32::eq(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_lt_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> mask32x4<Self> {
-        [
-            -(u32::lt(&a[0usize], &b[0usize]) as i32),
-            -(u32::lt(&a[1usize], &b[1usize]) as i32),
-            -(u32::lt(&a[2usize], &b[2usize]) as i32),
-            -(u32::lt(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(u32::lt(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_le_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> mask32x4<Self> {
-        [
-            -(u32::le(&a[0usize], &b[0usize]) as i32),
-            -(u32::le(&a[1usize], &b[1usize]) as i32),
-            -(u32::le(&a[2usize], &b[2usize]) as i32),
-            -(u32::le(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(u32::le(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_ge_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> mask32x4<Self> {
-        [
-            -(u32::ge(&a[0usize], &b[0usize]) as i32),
-            -(u32::ge(&a[1usize], &b[1usize]) as i32),
-            -(u32::ge(&a[2usize], &b[2usize]) as i32),
-            -(u32::ge(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(u32::ge(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_gt_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> mask32x4<Self> {
-        [
-            -(u32::gt(&a[0usize], &b[0usize]) as i32),
-            -(u32::gt(&a[1usize], &b[1usize]) as i32),
-            -(u32::gt(&a[2usize], &b[2usize]) as i32),
-            -(u32::gt(&a[3usize], &b[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(u32::gt(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn zip_low_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
@@ -3740,11 +2714,15 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn unzip_low_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [a[0usize], a[2usize], b[0usize], b[2usize]].simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        self.load_array_u32x4([a[0usize], a[2usize], b[0usize], b[2usize]])
     }
     #[inline(always)]
     fn unzip_high_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [a[1usize], a[3usize], b[1usize], b[3usize]].simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        self.load_array_u32x4([a[1usize], a[3usize], b[1usize], b[3usize]])
     }
     #[inline(always)]
     fn interleave_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> (u32x4<Self>, u32x4<Self>) {
@@ -3782,23 +2760,17 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn min_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::min(a[0usize], b[0usize]),
-            u32::min(a[1usize], b[1usize]),
-            u32::min(a[2usize], b[2usize]),
-            u32::min(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn max_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        [
-            u32::max(a[0usize], b[0usize]),
-            u32::max(a[1usize], b[1usize]),
-            u32::max(a[2usize], b[2usize]),
-            u32::max(a[3usize], b[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let b = self.as_array_u32x4(b);
+        let lanes: [u32; 4usize] = core::array::from_fn(|i| u32::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn combine_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x8<Self> {
@@ -3813,13 +2785,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn cvt_f32_u32x4(self, a: u32x4<Self>) -> f32x4<Self> {
-        [
-            a[0usize] as f32,
-            a[1usize] as f32,
-            a[2usize] as f32,
-            a[3usize] as f32,
-        ]
-        .simd_into(self)
+        let a = self.as_array_u32x4(a);
+        let lanes: [f32; 4usize] = core::array::from_fn(|i| a[i] as f32);
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn splat_mask32x4(self, val: bool) -> mask32x4<Self> {
@@ -3869,43 +2837,30 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn and_mask32x4(self, a: mask32x4<Self>, b: mask32x4<Self>) -> mask32x4<Self> {
-        [
-            i32::bitand(a.val.0[0usize], &b.val.0[0usize]),
-            i32::bitand(a.val.0[1usize], &b.val.0[1usize]),
-            i32::bitand(a.val.0[2usize], &b.val.0[2usize]),
-            i32::bitand(a.val.0[3usize], &b.val.0[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask32x4(a);
+        let b = self.as_array_mask32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_mask32x4(self, a: mask32x4<Self>, b: mask32x4<Self>) -> mask32x4<Self> {
-        [
-            i32::bitor(a.val.0[0usize], &b.val.0[0usize]),
-            i32::bitor(a.val.0[1usize], &b.val.0[1usize]),
-            i32::bitor(a.val.0[2usize], &b.val.0[2usize]),
-            i32::bitor(a.val.0[3usize], &b.val.0[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask32x4(a);
+        let b = self.as_array_mask32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_mask32x4(self, a: mask32x4<Self>, b: mask32x4<Self>) -> mask32x4<Self> {
-        [
-            i32::bitxor(a.val.0[0usize], &b.val.0[0usize]),
-            i32::bitxor(a.val.0[1usize], &b.val.0[1usize]),
-            i32::bitxor(a.val.0[2usize], &b.val.0[2usize]),
-            i32::bitxor(a.val.0[3usize], &b.val.0[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask32x4(a);
+        let b = self.as_array_mask32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_mask32x4(self, a: mask32x4<Self>) -> mask32x4<Self> {
-        [
-            i32::not(a.val.0[0usize]),
-            i32::not(a.val.0[1usize]),
-            i32::not(a.val.0[2usize]),
-            i32::not(a.val.0[3usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask32x4(a);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| i32::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn select_mask32x4(
@@ -3940,13 +2895,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn simd_eq_mask32x4(self, a: mask32x4<Self>, b: mask32x4<Self>) -> mask32x4<Self> {
-        [
-            -(i32::eq(&a.val.0[0usize], &b.val.0[0usize]) as i32),
-            -(i32::eq(&a.val.0[1usize], &b.val.0[1usize]) as i32),
-            -(i32::eq(&a.val.0[2usize], &b.val.0[2usize]) as i32),
-            -(i32::eq(&a.val.0[3usize], &b.val.0[3usize]) as i32),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask32x4(a);
+        let b = self.as_array_mask32x4(b);
+        let lanes: [i32; 4usize] = core::array::from_fn(|i| -(i32::eq(&a[i], &b[i]) as i32));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn any_true_mask32x4(self, a: mask32x4<Self>) -> bool {
@@ -4036,15 +2988,21 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn abs_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [f64::abs(a[0usize]), f64::abs(a[1usize])].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::abs(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn neg_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [f64::neg(a[0usize]), f64::neg(a[1usize])].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::neg(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sqrt_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [f64::sqrt(a[0usize]), f64::sqrt(a[1usize])].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::sqrt(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn approximate_recip_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
@@ -4052,83 +3010,73 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn add_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::add(a[0usize], &b[0usize]),
-            f64::add(a[1usize], &b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::add(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn sub_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::sub(a[0usize], &b[0usize]),
-            f64::sub(a[1usize], &b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::sub(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::mul(a[0usize], &b[0usize]),
-            f64::mul(a[1usize], &b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::mul(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn div_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::div(a[0usize], &b[0usize]),
-            f64::div(a[1usize], &b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::div(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn copysign_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::copysign(a[0usize], b[0usize]),
-            f64::copysign(a[1usize], b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::copysign(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_eq_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> mask64x2<Self> {
-        [
-            -(f64::eq(&a[0usize], &b[0usize]) as i64),
-            -(f64::eq(&a[1usize], &b[1usize]) as i64),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| -(f64::eq(&a[i], &b[i]) as i64));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_lt_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> mask64x2<Self> {
-        [
-            -(f64::lt(&a[0usize], &b[0usize]) as i64),
-            -(f64::lt(&a[1usize], &b[1usize]) as i64),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| -(f64::lt(&a[i], &b[i]) as i64));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_le_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> mask64x2<Self> {
-        [
-            -(f64::le(&a[0usize], &b[0usize]) as i64),
-            -(f64::le(&a[1usize], &b[1usize]) as i64),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| -(f64::le(&a[i], &b[i]) as i64));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_ge_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> mask64x2<Self> {
-        [
-            -(f64::ge(&a[0usize], &b[0usize]) as i64),
-            -(f64::ge(&a[1usize], &b[1usize]) as i64),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| -(f64::ge(&a[i], &b[i]) as i64));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn simd_gt_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> mask64x2<Self> {
-        [
-            -(f64::gt(&a[0usize], &b[0usize]) as i64),
-            -(f64::gt(&a[1usize], &b[1usize]) as i64),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| -(f64::gt(&a[i], &b[i]) as i64));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn zip_low_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
@@ -4140,11 +3088,15 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn unzip_low_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [a[0usize], b[0usize]].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        self.load_array_f64x2([a[0usize], b[0usize]])
     }
     #[inline(always)]
     fn unzip_high_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [a[1usize], b[1usize]].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        self.load_array_f64x2([a[1usize], b[1usize]])
     }
     #[inline(always)]
     fn interleave_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> (f64x2<Self>, f64x2<Self>) {
@@ -4156,35 +3108,31 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn max_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::max(a[0usize], b[0usize]),
-            f64::max(a[1usize], b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn min_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::min(a[0usize], b[0usize]),
-            f64::min(a[1usize], b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn max_precise_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::max(a[0usize], b[0usize]),
-            f64::max(a[1usize], b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::max(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn min_precise_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::min(a[0usize], b[0usize]),
-            f64::min(a[1usize], b[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let b = self.as_array_f64x2(b);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::min(a[i], b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn mul_add_f64x2(self, a: f64x2<Self>, b: f64x2<Self>, c: f64x2<Self>) -> f64x2<Self> {
@@ -4196,27 +3144,33 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn floor_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [f64::floor(a[0usize]), f64::floor(a[1usize])].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::floor(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn ceil_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [f64::ceil(a[0usize]), f64::ceil(a[1usize])].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::ceil(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn round_ties_even_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [
-            f64::round_ties_even(a[0usize]),
-            f64::round_ties_even(a[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::round_ties_even(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn fract_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [f64::fract(a[0usize]), f64::fract(a[1usize])].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::fract(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn trunc_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [f64::trunc(a[0usize]), f64::trunc(a[1usize])].simd_into(self)
+        let a = self.as_array_f64x2(a);
+        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::trunc(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn select_f64x2(self, a: mask64x2<Self>, b: f64x2<Self>, c: f64x2<Self>) -> f64x2<Self> {
@@ -4293,31 +3247,30 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn and_mask64x2(self, a: mask64x2<Self>, b: mask64x2<Self>) -> mask64x2<Self> {
-        [
-            i64::bitand(a.val.0[0usize], &b.val.0[0usize]),
-            i64::bitand(a.val.0[1usize], &b.val.0[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask64x2(a);
+        let b = self.as_array_mask64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| i64::bitand(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn or_mask64x2(self, a: mask64x2<Self>, b: mask64x2<Self>) -> mask64x2<Self> {
-        [
-            i64::bitor(a.val.0[0usize], &b.val.0[0usize]),
-            i64::bitor(a.val.0[1usize], &b.val.0[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask64x2(a);
+        let b = self.as_array_mask64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| i64::bitor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn xor_mask64x2(self, a: mask64x2<Self>, b: mask64x2<Self>) -> mask64x2<Self> {
-        [
-            i64::bitxor(a.val.0[0usize], &b.val.0[0usize]),
-            i64::bitxor(a.val.0[1usize], &b.val.0[1usize]),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask64x2(a);
+        let b = self.as_array_mask64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| i64::bitxor(a[i], &b[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn not_mask64x2(self, a: mask64x2<Self>) -> mask64x2<Self> {
-        [i64::not(a.val.0[0usize]), i64::not(a.val.0[1usize])].simd_into(self)
+        let a = self.as_array_mask64x2(a);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| i64::not(a[i]));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn select_mask64x2(
@@ -4342,11 +3295,10 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn simd_eq_mask64x2(self, a: mask64x2<Self>, b: mask64x2<Self>) -> mask64x2<Self> {
-        [
-            -(i64::eq(&a.val.0[0usize], &b.val.0[0usize]) as i64),
-            -(i64::eq(&a.val.0[1usize], &b.val.0[1usize]) as i64),
-        ]
-        .simd_into(self)
+        let a = self.as_array_mask64x2(a);
+        let b = self.as_array_mask64x2(b);
+        let lanes: [i64; 2usize] = core::array::from_fn(|i| -(i64::eq(&a[i], &b[i]) as i64));
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn any_true_mask64x2(self, a: mask64x2<Self>) -> bool {
@@ -5882,25 +4834,9 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn narrow_u16x16(self, a: u16x16<Self>) -> u8x16<Self> {
-        [
-            a[0usize] as u8,
-            a[1usize] as u8,
-            a[2usize] as u8,
-            a[3usize] as u8,
-            a[4usize] as u8,
-            a[5usize] as u8,
-            a[6usize] as u8,
-            a[7usize] as u8,
-            a[8usize] as u8,
-            a[9usize] as u8,
-            a[10usize] as u8,
-            a[11usize] as u8,
-            a[12usize] as u8,
-            a[13usize] as u8,
-            a[14usize] as u8,
-            a[15usize] as u8,
-        ]
-        .simd_into(self)
+        let a = self.as_array_u16x16(a);
+        let lanes: [u8; 16usize] = core::array::from_fn(|i| a[i] as u8);
+        lanes.simd_into(self)
     }
     #[inline(always)]
     fn reinterpret_u8_u16x16(self, a: u16x16<Self>) -> u8x32<Self> {
@@ -7442,6 +6378,7 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn store_interleaved_128_f32x16(self, a: f32x16<Self>, dest: &mut [f32; 16usize]) -> () {
+        let a = self.as_array_f32x16(a);
         *dest = [
             a[0usize], a[4usize], a[8usize], a[12usize], a[1usize], a[5usize], a[9usize],
             a[13usize], a[2usize], a[6usize], a[10usize], a[14usize], a[3usize], a[7usize],
@@ -8055,6 +6992,7 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn store_interleaved_128_u8x64(self, a: u8x64<Self>, dest: &mut [u8; 64usize]) -> () {
+        let a = self.as_array_u8x64(a);
         *dest = [
             a[0usize], a[16usize], a[32usize], a[48usize], a[1usize], a[17usize], a[33usize],
             a[49usize], a[2usize], a[18usize], a[34usize], a[50usize], a[3usize], a[19usize],
@@ -8739,6 +7677,7 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn store_interleaved_128_u16x32(self, a: u16x32<Self>, dest: &mut [u16; 32usize]) -> () {
+        let a = self.as_array_u16x32(a);
         *dest = [
             a[0usize], a[8usize], a[16usize], a[24usize], a[1usize], a[9usize], a[17usize],
             a[25usize], a[2usize], a[10usize], a[18usize], a[26usize], a[3usize], a[11usize],
@@ -9408,6 +8347,7 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn store_interleaved_128_u32x16(self, a: u32x16<Self>, dest: &mut [u32; 16usize]) -> () {
+        let a = self.as_array_u32x16(a);
         *dest = [
             a[0usize], a[4usize], a[8usize], a[12usize], a[1usize], a[5usize], a[9usize],
             a[13usize], a[2usize], a[6usize], a[10usize], a[14usize], a[3usize], a[7usize],
