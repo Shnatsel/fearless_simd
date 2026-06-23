@@ -4,7 +4,9 @@
 use crate::arch::fallback;
 use crate::generic::{
     generic_from_bytes, generic_mask_from_bitmask, generic_mask_set, generic_mask_to_bitmask,
-    generic_op_name, generic_to_bytes, integer_lane_mask_splat_arg,
+    generic_op_name, generic_to_bytes, integer_lane_mask_splat_arg, scalar_binary_op,
+    scalar_compare_op, scalar_cvt, scalar_load_interleaved, scalar_store_interleaved,
+    scalar_unary_op, scalar_unzip,
 };
 use crate::level::Level;
 use crate::ops::{Op, OpSig, RefKind, valid_reinterpret};
@@ -156,69 +158,10 @@ impl Level for Fallback {
                     };
                 }
 
-                let items = make_list(
-                    (0..vec_ty.len)
-                        .map(|idx| {
-                            let args = [lane(quote! { a }, vec_ty, idx)];
-                            let expr = fallback::expr(method, vec_ty, &args);
-                            quote! { #expr }
-                        })
-                        .collect::<Vec<_>>(),
-                );
-
-                quote! {
-                    #method_sig {
-                        #items.simd_into(self)
-                    }
-                }
+                scalar_unary_op(method_sig, method, vec_ty)
             }
-            OpSig::WidenNarrow { target_ty } => {
-                let items = make_list(
-                    (0..vec_ty.len)
-                        .map(|idx| {
-                            let scalar_ty = target_ty.scalar.rust(target_ty.scalar_bits);
-                            let a = lane(quote! { a }, vec_ty, idx);
-                            quote! { #a as #scalar_ty }
-                        })
-                        .collect::<Vec<_>>(),
-                );
-
-                quote! {
-                    #method_sig {
-                        #items.simd_into(self)
-                    }
-                }
-            }
-            OpSig::Binary => {
-                let items = make_list(
-                    (0..vec_ty.len)
-                        .map(|idx| {
-                            let b_lane = lane(quote! { b }, vec_ty, idx);
-                            let b = if fallback::translate_op(
-                                method,
-                                vec_ty.scalar == ScalarType::Float,
-                            )
-                            .map(rhs_reference)
-                            .unwrap_or(true)
-                            {
-                                quote! { &#b_lane }
-                            } else {
-                                b_lane
-                            };
-
-                            let args = [lane(quote! { a }, vec_ty, idx), quote! { #b }];
-                            let expr = fallback::expr(method, vec_ty, &args);
-                            quote! { #expr }
-                        })
-                        .collect::<Vec<_>>(),
-                );
-
-                quote! {
-                    #method_sig {
-                        #items.simd_into(self)
-                    }
-                }
-            }
+            OpSig::WidenNarrow { target_ty } => scalar_cvt(method_sig, vec_ty, &target_ty),
+            OpSig::Binary => scalar_binary_op(method_sig, method, vec_ty),
             OpSig::Shift => {
                 let items = make_list(
                     (0..vec_ty.len)
@@ -264,27 +207,7 @@ impl Level for Fallback {
                     }
                 }
             }
-            OpSig::Compare => {
-                let mask_type = vec_ty.cast(ScalarType::Mask);
-                let items = make_list(
-                    (0..vec_ty.len)
-                        .map(|idx: usize| {
-                            let a = lane(quote! { a }, vec_ty, idx);
-                            let b = lane(quote! { b }, vec_ty, idx);
-                            let args = [quote! { &#a }, quote! { &#b }];
-                            let expr = fallback::expr(method, vec_ty, &args);
-                            let mask_ty = mask_type.scalar.rust(vec_ty.scalar_bits);
-                            quote! { -(#expr as #mask_ty) }
-                        })
-                        .collect::<Vec<_>>(),
-                );
-
-                quote! {
-                    #method_sig {
-                        #items.simd_into(self)
-                    }
-                }
-            }
+            OpSig::Compare => scalar_compare_op(method_sig, method, vec_ty),
             OpSig::Select => {
                 let mask_type = vec_ty.mask_ty();
                 let items = make_list(
@@ -360,27 +283,7 @@ impl Level for Fallback {
                     }
                 }
             }
-            OpSig::Unzip { select_even } => {
-                let indices = if select_even {
-                    (0..vec_ty.len).step_by(2)
-                } else {
-                    (1..vec_ty.len).step_by(2)
-                };
-
-                let unzip = make_list(
-                    indices
-                        .clone()
-                        .map(|idx| lane(quote! { a }, vec_ty, idx))
-                        .chain(indices.map(|idx| lane(quote! { b }, vec_ty, idx)))
-                        .collect::<Vec<_>>(),
-                );
-
-                quote! {
-                    #method_sig {
-                        #unzip.simd_into(self)
-                    }
-                }
-            }
+            OpSig::Unzip { select_even } => scalar_unzip(method_sig, vec_ty, select_even),
             OpSig::Slide { .. } => {
                 let n = vec_ty.len;
                 quote! {
@@ -407,20 +310,7 @@ impl Level for Fallback {
                     }
                 } else {
                     let to_ty = vec_ty.reinterpret(target_ty, scalar_bits);
-                    let scalar = to_ty.scalar.rust(scalar_bits);
-                    let items = make_list(
-                        (0..vec_ty.len)
-                            .map(|idx| {
-                                let a = lane(quote! { a }, vec_ty, idx);
-                                quote! { #a as #scalar }
-                            })
-                            .collect::<Vec<_>>(),
-                    );
-                    quote! {
-                        #method_sig {
-                            #items.simd_into(self)
-                        }
-                    }
+                    scalar_cvt(method_sig, vec_ty, &to_ty)
                 }
             }
             OpSig::Reinterpret {
@@ -470,31 +360,11 @@ impl Level for Fallback {
             OpSig::LoadInterleaved {
                 block_size,
                 block_count,
-            } => {
-                let len = (block_size * block_count) as usize / vec_ty.scalar_bits;
-                let items =
-                    interleave_indices(len, block_count as usize, |idx| quote! { src[#idx] });
-
-                quote! {
-                    #method_sig {
-                        #items.simd_into(self)
-                    }
-                }
-            }
+            } => scalar_load_interleaved(method_sig, vec_ty, block_size, block_count),
             OpSig::StoreInterleaved {
                 block_size,
                 block_count,
-            } => {
-                let len = (block_size * block_count) as usize / vec_ty.scalar_bits;
-                let items =
-                    interleave_indices(len, len / block_count as usize, |idx| quote! { a[#idx] });
-
-                quote! {
-                    #method_sig {
-                        *dest = #items;
-                    }
-                }
-            }
+            } => scalar_store_interleaved(method_sig, vec_ty, block_size, block_count),
             OpSig::FromArray { kind } => {
                 let vec_rust = vec_ty.rust();
                 let wrapper = vec_ty.aligned_wrapper();
@@ -551,19 +421,6 @@ impl Level for Fallback {
     }
 }
 
-fn interleave_indices(
-    len: usize,
-    stride: usize,
-    func: impl FnMut(usize) -> TokenStream,
-) -> TokenStream {
-    let indices = {
-        let indices = (0..len).collect::<Vec<_>>();
-        interleave(&indices, stride)
-    };
-
-    make_list(indices.into_iter().map(func).collect::<Vec<_>>())
-}
-
 fn lane(value: TokenStream, vec_ty: &VecType, idx: usize) -> TokenStream {
     if vec_ty.scalar == ScalarType::Mask {
         quote! { #value.val.0[#idx] }
@@ -572,26 +429,6 @@ fn lane(value: TokenStream, vec_ty: &VecType, idx: usize) -> TokenStream {
     }
 }
 
-/// Whether the second argument of the function needs to be passed by reference.
-fn rhs_reference(method: &str) -> bool {
-    !matches!(
-        method,
-        "copysign" | "min" | "max" | "wrapping_sub" | "wrapping_mul" | "wrapping_add"
-    )
-}
-
 fn make_list(items: Vec<TokenStream>) -> TokenStream {
     quote!([#( #items, )*])
-}
-
-fn interleave(input: &[usize], width: usize) -> Vec<usize> {
-    let height = input.len() / width;
-
-    let mut output = Vec::with_capacity(input.len());
-    for col in 0..width {
-        for row in 0..height {
-            output.push(input[row * width + col]);
-        }
-    }
-    output
 }

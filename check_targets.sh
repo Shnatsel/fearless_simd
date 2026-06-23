@@ -14,7 +14,7 @@ RUSTFLAGS=-Ctarget-feature=-neon cargo check -p fearless_simd --target aarch64-l
 cargo check -p fearless_simd --target aarch64-linux-android  --features force_support_fallback
 cargo check -p fearless_simd --target aarch64-linux-android
 
-# x86_64, at all supported static SIMD levels.
+# x86_64, at all supported static SIMD levels. The default x86_64 target is the SSE2 baseline.
 RUSTFLAGS=-Ctarget-cpu=icelake-server cargo check -p fearless_simd --target x86_64-unknown-linux-gnu
 RUSTFLAGS=-Ctarget-cpu=icelake-server cargo check -p fearless_simd --target x86_64-unknown-linux-gnu --features force_support_fallback
 RUSTFLAGS=-Ctarget-cpu=x86-64-v3 cargo check -p fearless_simd --target x86_64-unknown-linux-gnu
@@ -29,6 +29,8 @@ RUSTFLAGS=-Ctarget-cpu=x86-64-v3 cargo check -p fearless_simd --target i686-pc-w
 RUSTFLAGS=-Ctarget-cpu=x86-64-v3 cargo check -p fearless_simd --target i686-pc-windows-msvc --features force_support_fallback
 RUSTFLAGS=-Ctarget-cpu=x86-64-v2 cargo check -p fearless_simd --target i686-pc-windows-msvc
 RUSTFLAGS=-Ctarget-cpu=x86-64-v2 cargo check -p fearless_simd --target i686-pc-windows-msvc  --features force_support_fallback
+RUSTFLAGS=-Ctarget-feature=+fxsr,+sse,+sse2 cargo check -p fearless_simd --target i686-pc-windows-msvc
+RUSTFLAGS=-Ctarget-feature=+fxsr,+sse,+sse2 cargo check -p fearless_simd --target i686-pc-windows-msvc --features force_support_fallback
 cargo check -p fearless_simd --target i686-pc-windows-msvc
 cargo check -p fearless_simd --target i686-pc-windows-msvc  --features force_support_fallback
 

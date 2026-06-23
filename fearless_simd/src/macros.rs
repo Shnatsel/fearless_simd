@@ -82,6 +82,23 @@ macro_rules! dispatch {
             #[cfg(all(
                 any(target_arch = "x86", target_arch = "x86_64"),
                 not(all(
+                    target_feature = "sse4.2",
+                    target_feature = "cmpxchg16b",
+                    target_feature = "popcnt"
+                ))
+            ))]
+            $crate::Level::Sse2(sse2) => {
+                let $simd = launder(sse2);
+                $crate::Simd::vectorize(
+                    sse2,
+                    #[inline(always)]
+                    || $op,
+                )
+            }
+            // This fallthrough logic is documented at the definition site of `Level`.
+            #[cfg(all(
+                any(target_arch = "x86", target_arch = "x86_64"),
+                not(all(
                     target_feature = "avx2",
                     target_feature = "bmi1",
                     target_feature = "bmi2",
@@ -125,9 +142,9 @@ macro_rules! dispatch {
                 all(
                     any(target_arch = "x86", target_arch = "x86_64"),
                     not(all(
-                        target_feature = "sse4.2",
-                        target_feature = "cmpxchg16b",
-                        target_feature = "popcnt"
+                        target_feature = "fxsr",
+                        target_feature = "sse",
+                        target_feature = "sse2"
                     ))
                 ),
                 all(target_arch = "wasm32", not(target_feature = "simd128")),
