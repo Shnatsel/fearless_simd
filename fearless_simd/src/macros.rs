@@ -47,53 +47,151 @@
 /// [`Simd`]: crate::Simd
 #[macro_export]
 macro_rules! dispatch {
-    // This falls through to the next branch, but with `forced_fallback_arm` turned into a boolean literal
-    // indicating whether or not the `force_support_fallback` crate feature is enabled.
-    ($level:expr, $simd:pat => $op:expr) => {{ $crate::internal_unstable_dispatch_inner!($level, $simd => $op) }};
-    (@impl $level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        $crate::__fearless_simd_dispatch_impl!($level, $simd => $op; $forced_fallback_arm)
+    ($level:expr, $simd:pat => $op:expr) => {{
+        match $level {
+            #[cfg(target_arch = "aarch64")]
+            $crate::Level::Neon(neon) => {
+                $crate::__fearless_simd_dispatch_with_token!(neon, $simd => $op)
+            }
+            #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+            $crate::Level::WasmSimd128(wasm) => {
+                $crate::__fearless_simd_dispatch_with_token!(wasm, $simd => $op)
+            }
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            $crate::Level::Sse4_2(sse4_2) => {
+                $crate::__fearless_simd_dispatch_dispatch_sse4_2!(sse4_2, $simd => $op)
+            }
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            $crate::Level::Avx2(avx2) => {
+                $crate::__fearless_simd_dispatch_dispatch_avx2!(avx2, $simd => $op)
+            }
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            $crate::Level::Avx512(avx512) => {
+                $crate::__fearless_simd_dispatch_dispatch_avx512!(avx512, $simd => $op)
+            }
+            $crate::Level::Fallback(fb) => {
+                $crate::__fearless_simd_dispatch_dispatch_fallback!(fb, $simd => $op)
+            }
+            _ => unreachable!(),
+        }
     }};
 }
 
 // The dispatch helpers are split into cfg-selected macro definitions
 // because exported macro bodies are expanded in the downstream crate,
 // so selecting the helper definitions here preserves `fearless_simd`'s
-// dispatch configuration.
-//
-// This mostly comes up in `RUSTFLAGS=-C target-cpu=native cargo test`
-// because that runs doctests (among other things) and RUSTFLAGS only apply
-// to the library code but not the doctests where the macro gets expanded.
-// So you get a part of the binary thinking it has e.g. AVX2 while another
-// thinks it doesn't, causing all sorts of issues including miri reporting UB.
+// dispatch configuration. Helpers for statically pruned levels expand to
+// `unreachable!()` without mentioning `$op`, so the pruned SIMD body is not
+// typechecked or compiled.
 
 /// Implementation detail of [`crate::dispatch`]; this is not public API.
 #[macro_export]
 #[doc(hidden)]
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    not(all(
-        target_feature = "sse4.2",
-        target_feature = "cmpxchg16b",
-        target_feature = "popcnt"
-    ))
-))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::Sse4_2(sse4_2) => {
-                $crate::__fearless_simd_dispatch_dispatch_sse4_2!(sse4_2, $simd => $op)
-            }
-            $crate::Level::Avx2(avx2) => {
-                $crate::__fearless_simd_dispatch_dispatch_avx2!(avx2, $simd => $op)
-            }
-            $crate::Level::Avx512(avx512) => {
-                $crate::__fearless_simd_dispatch_dispatch_avx512!(avx512, $simd => $op)
-            }
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
+macro_rules! __fearless_simd_dispatch_with_token {
+    ($token:expr, $simd:pat => $op:expr) => {{
+        /// Convert the `Simd` value into an `impl Simd`, which enforces that
+        /// it is correctly handled.
+        // TODO: Just make into a `pub` function in fearless_simd itself?
+        #[inline(always)]
+        fn launder<S: $crate::Simd>(x: S) -> impl $crate::Simd {
+            x
         }
+
+        // $token can be an arbitrary expression,
+        // so bind the result of evaluating it to a variable before use
+        // so that it's evaluated only once
+        let __fearless_simd_token = $token;
+        let $simd = launder(__fearless_simd_token);
+        $crate::Simd::vectorize(
+            __fearless_simd_token,
+            #[inline(always)]
+            || $op,
+        )
+    }};
+}
+
+/// Implementation detail of [`crate::dispatch`]; this is not public API.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __fearless_simd_dispatch_pruned {
+    ($proof:expr) => {{
+        let __fearless_simd_proof = $proof;
+        let _ = __fearless_simd_proof;
+        unreachable!("this SIMD level was statically pruned from dispatch")
+    }};
+}
+
+/// Implementation detail of [`crate::dispatch`]; this is not public API.
+#[macro_export]
+#[doc(hidden)]
+#[cfg(any(
+    all(target_arch = "aarch64", not(target_feature = "neon")),
+    all(
+        any(target_arch = "x86", target_arch = "x86_64"),
+        not(all(
+            target_feature = "sse4.2",
+            target_feature = "cmpxchg16b",
+            target_feature = "popcnt"
+        ))
+    ),
+    all(target_arch = "wasm32", not(target_feature = "simd128")),
+    not(any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        target_arch = "wasm32"
+    )),
+    feature = "force_support_fallback"
+))]
+macro_rules! __fearless_simd_dispatch_dispatch_fallback {
+    ($fallback:expr, $simd:pat => $op:expr) => {
+        $crate::__fearless_simd_dispatch_with_token!($fallback, $simd => $op)
+    };
+}
+
+/// Implementation detail of [`crate::dispatch`]; this is not public API.
+#[macro_export]
+#[doc(hidden)]
+#[cfg(not(any(
+    all(target_arch = "aarch64", not(target_feature = "neon")),
+    all(
+        any(target_arch = "x86", target_arch = "x86_64"),
+        not(all(
+            target_feature = "sse4.2",
+            target_feature = "cmpxchg16b",
+            target_feature = "popcnt"
+        ))
+    ),
+    all(target_arch = "wasm32", not(target_feature = "simd128")),
+    not(any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "aarch64",
+        target_arch = "wasm32"
+    )),
+    feature = "force_support_fallback"
+)))]
+macro_rules! __fearless_simd_dispatch_dispatch_fallback {
+    ($fallback:expr, $simd:pat => $op:expr) => {{ $crate::__fearless_simd_dispatch_pruned!($fallback) }};
+}
+
+/// Implementation detail of [`crate::dispatch`]; this is not public API.
+#[macro_export]
+#[doc(hidden)]
+#[cfg(not(disable_dispatch_avx512))]
+macro_rules! __fearless_simd_dispatch_dispatch_avx512 {
+    ($avx512:expr, $simd:pat => $op:expr) => {
+        $crate::__fearless_simd_dispatch_with_token!($avx512, $simd => $op)
+    };
+}
+
+/// Implementation detail of [`crate::dispatch`]; this is not public API.
+#[macro_export]
+#[doc(hidden)]
+#[cfg(disable_dispatch_avx512)]
+macro_rules! __fearless_simd_dispatch_dispatch_avx512 {
+    ($avx512:expr, $simd:pat => $op:expr) => {{
+        $crate::__fearless_simd_dispatch_dispatch_avx2_from_superset!($avx512, $simd => $op)
     }};
 }
 
@@ -101,63 +199,7 @@ macro_rules! __fearless_simd_dispatch_impl {
 #[macro_export]
 #[doc(hidden)]
 #[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    all(
-        target_feature = "sse4.2",
-        target_feature = "cmpxchg16b",
-        target_feature = "popcnt"
-    ),
-    not(all(
-        target_feature = "avx2",
-        target_feature = "bmi1",
-        target_feature = "bmi2",
-        target_feature = "cmpxchg16b",
-        target_feature = "f16c",
-        target_feature = "fma",
-        target_feature = "lzcnt",
-        target_feature = "movbe",
-        target_feature = "popcnt",
-        target_feature = "xsave"
-    ))
-))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::Sse4_2(sse4_2) => {
-                $crate::__fearless_simd_dispatch_dispatch_sse4_2!(sse4_2, $simd => $op)
-            }
-            $crate::Level::Avx2(avx2) => {
-                $crate::__fearless_simd_dispatch_dispatch_avx2!(avx2, $simd => $op)
-            }
-            $crate::Level::Avx512(avx512) => {
-                $crate::__fearless_simd_dispatch_dispatch_avx512!(avx512, $simd => $op)
-            }
-            #[cfg($forced_fallback_arm)]
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
-        }
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    all(
-        target_feature = "avx2",
-        target_feature = "bmi1",
-        target_feature = "bmi2",
-        target_feature = "cmpxchg16b",
-        target_feature = "f16c",
-        target_feature = "fma",
-        target_feature = "lzcnt",
-        target_feature = "movbe",
-        target_feature = "popcnt",
-        target_feature = "xsave"
-    ),
+    not(disable_dispatch_avx2),
     not(all(
         target_feature = "aes",
         target_feature = "avx512bitalg",
@@ -191,29 +233,17 @@ macro_rules! __fearless_simd_dispatch_impl {
         target_feature = "xsaves",
     ))
 ))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::Avx2(avx2) => {
-                $crate::__fearless_simd_dispatch_dispatch_avx2!(avx2, $simd => $op)
-            }
-            $crate::Level::Avx512(avx512) => {
-                $crate::__fearless_simd_dispatch_dispatch_avx512!(avx512, $simd => $op)
-            }
-            #[cfg($forced_fallback_arm)]
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
-        }
-    }};
+macro_rules! __fearless_simd_dispatch_dispatch_avx2 {
+    ($avx2:expr, $simd:pat => $op:expr) => {
+        $crate::__fearless_simd_dispatch_with_token!($avx2, $simd => $op)
+    };
 }
 
 /// Implementation detail of [`crate::dispatch`]; this is not public API.
 #[macro_export]
 #[doc(hidden)]
 #[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
+    not(disable_dispatch_avx2),
     all(
         target_feature = "aes",
         target_feature = "avx512bitalg",
@@ -247,166 +277,8 @@ macro_rules! __fearless_simd_dispatch_impl {
         target_feature = "xsaves",
     )
 ))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::Avx512(avx512) => {
-                $crate::__fearless_simd_dispatch_dispatch_avx512!(avx512, $simd => $op)
-            }
-            #[cfg($forced_fallback_arm)]
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
-        }
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::Neon(neon) => {
-                $crate::__fearless_simd_dispatch_with_token!(neon, $simd => $op)
-            }
-            #[cfg($forced_fallback_arm)]
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
-        }
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(all(target_arch = "aarch64", not(target_feature = "neon")))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::Neon(neon) => {
-                $crate::__fearless_simd_dispatch_with_token!(neon, $simd => $op)
-            }
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
-        }
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::WasmSimd128(wasm) => {
-                $crate::__fearless_simd_dispatch_with_token!(wasm, $simd => $op)
-            }
-            #[cfg($forced_fallback_arm)]
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
-        }
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(all(target_arch = "wasm32", not(target_feature = "simd128")))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
-        }
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(any(
-    target_arch = "x86",
-    target_arch = "x86_64",
-    target_arch = "aarch64",
-    target_arch = "wasm32"
-)))]
-macro_rules! __fearless_simd_dispatch_impl {
-    ($level:expr, $simd:pat => $op:expr; $forced_fallback_arm: literal) => {{
-        match $level {
-            $crate::Level::Fallback(fb) => {
-                $crate::__fearless_simd_dispatch_with_token!(fb, $simd => $op)
-            }
-            _ => unreachable!(),
-        }
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-macro_rules! __fearless_simd_dispatch_with_token {
-    ($token:expr, $simd:pat => $op:expr) => {{
-        /// Convert the `Simd` value into an `impl Simd`, which enforces that
-        /// it is correctly handled.
-        // TODO: Just make into a `pub` function in fearless_simd itself?
-        #[inline(always)]
-        fn launder<S: $crate::Simd>(x: S) -> impl $crate::Simd {
-            x
-        }
-
-        // $token can be an arbitrary expression,
-        // so bind the result of evaluating it to a variable before use
-        // so that it's evaluated only once
-        let __fearless_simd_token = $token;
-        let $simd = launder(__fearless_simd_token);
-        $crate::Simd::vectorize(
-            __fearless_simd_token,
-            #[inline(always)]
-            || $op,
-        )
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(disable_dispatch_avx512))]
-macro_rules! __fearless_simd_dispatch_dispatch_avx512 {
-    ($avx512:expr, $simd:pat => $op:expr) => {
-        $crate::__fearless_simd_dispatch_with_token!($avx512, $simd => $op)
-    };
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(disable_dispatch_avx512)]
-macro_rules! __fearless_simd_dispatch_dispatch_avx512 {
-    ($avx512:expr, $simd:pat => $op:expr) => {{
-        $crate::__fearless_simd_dispatch_dispatch_avx2_from_superset!($avx512, $simd => $op)
-    }};
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(disable_dispatch_avx2))]
 macro_rules! __fearless_simd_dispatch_dispatch_avx2 {
-    ($avx2:expr, $simd:pat => $op:expr) => {
-        $crate::__fearless_simd_dispatch_with_token!($avx2, $simd => $op)
-    };
+    ($avx2:expr, $simd:pat => $op:expr) => {{ $crate::__fearless_simd_dispatch_pruned!($avx2) }};
 }
 
 /// Implementation detail of [`crate::dispatch`]; this is not public API.
@@ -446,11 +318,47 @@ macro_rules! __fearless_simd_dispatch_dispatch_avx2_from_superset {
 /// Implementation detail of [`crate::dispatch`]; this is not public API.
 #[macro_export]
 #[doc(hidden)]
-#[cfg(not(disable_dispatch_sse4_2))]
+#[cfg(all(
+    not(disable_dispatch_sse4_2),
+    not(all(
+        target_feature = "avx2",
+        target_feature = "bmi1",
+        target_feature = "bmi2",
+        target_feature = "cmpxchg16b",
+        target_feature = "f16c",
+        target_feature = "fma",
+        target_feature = "lzcnt",
+        target_feature = "movbe",
+        target_feature = "popcnt",
+        target_feature = "xsave"
+    ))
+))]
 macro_rules! __fearless_simd_dispatch_dispatch_sse4_2 {
     ($sse4_2:expr, $simd:pat => $op:expr) => {
         $crate::__fearless_simd_dispatch_with_token!($sse4_2, $simd => $op)
     };
+}
+
+/// Implementation detail of [`crate::dispatch`]; this is not public API.
+#[macro_export]
+#[doc(hidden)]
+#[cfg(all(
+    not(disable_dispatch_sse4_2),
+    all(
+        target_feature = "avx2",
+        target_feature = "bmi1",
+        target_feature = "bmi2",
+        target_feature = "cmpxchg16b",
+        target_feature = "f16c",
+        target_feature = "fma",
+        target_feature = "lzcnt",
+        target_feature = "movbe",
+        target_feature = "popcnt",
+        target_feature = "xsave"
+    )
+))]
+macro_rules! __fearless_simd_dispatch_dispatch_sse4_2 {
+    ($sse4_2:expr, $simd:pat => $op:expr) => {{ $crate::__fearless_simd_dispatch_pruned!($sse4_2) }};
 }
 
 /// Implementation detail of [`crate::dispatch`]; this is not public API.
@@ -491,38 +399,11 @@ macro_rules! __fearless_simd_dispatch_dispatch_sse4_2_from_superset {
     }};
 }
 
-// This macro turns whether the `force_support_fallback` macro is enabled into a boolean literal
-// in `dispatch`, which allows it to be used correctly cross-crate.
-// This trickery is required because macros are expanded in the context of the calling crate, including for
-// evaluating `cfg`s.
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(feature = "force_support_fallback")]
-macro_rules! internal_unstable_dispatch_inner {
-    ($level:expr, $simd:pat => $op:expr) => {
-        $crate::dispatch!(
-            @impl $level, $simd => $op; true
-        )
-    };
-}
-
-/// Implementation detail of [`crate::dispatch`]; this is not public API.
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(feature = "force_support_fallback"))]
-macro_rules! internal_unstable_dispatch_inner {
-    ($level:expr, $simd:pat => $op:expr) => {
-        $crate::dispatch!(@impl $level, $simd => $op; false)
-    };
-}
-
 #[cfg(test)]
-// `Level` is non_exhaustive to downstream crates, so dispatch keeps a wildcard even when all local variants are covered.
-#[allow(
+// This expect also validates that we haven't missed any levels!
+#[expect(
     unreachable_patterns,
-    reason = "Some target configurations keep a wildcard for downstream non_exhaustive matching even when all local variants are covered."
+    reason = "Level is non_exhaustive, but you must be exhaustive within the same crate."
 )]
 mod tests {
     use crate::{Level, Simd};
@@ -564,6 +445,14 @@ mod tests {
         } else {
             X86DispatchBackend::Fallback
         }
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[allow(dead_code, reason = "Compile test")]
+    fn x86_level_variants_remain_available() {
+        let _ = Level::Sse4_2(unsafe { crate::Sse4_2::new_unchecked() });
+        let _ = Level::Avx2(unsafe { crate::Avx2::new_unchecked() });
+        let _ = Level::Avx512(unsafe { crate::Avx512::new_unchecked() });
     }
 
     #[allow(dead_code, reason = "Compile test")]
