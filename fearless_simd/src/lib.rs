@@ -842,9 +842,9 @@ impl Level {
     ///
     /// [enabled]: https://doc.rust-lang.org/reference/attributes/codegen.html#the-target_feature-attribute
     #[inline]
-    #[expect(
+    #[allow(
         unreachable_patterns,
-        reason = "Level is `non_exhaustive`, but we are in the crate it's defined."
+        reason = "Some target configurations keep a wildcard for downstream non_exhaustive matching even when all local variants are covered."
     )]
     pub fn dispatch<W: WithSimd>(self, f: W) -> W::Output {
         dispatch!(self, simd => f.with_simd(simd))
