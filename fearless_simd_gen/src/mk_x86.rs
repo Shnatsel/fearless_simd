@@ -160,13 +160,15 @@ impl Level for X86 {
 
     fn should_impl_arch_type_conversion(&self, ty: &VecType) -> bool {
         if *self == Self::Sse4_2 {
-            return false;
+            return false; // already covered by SSE2 which has the same vector widths
         }
 
         let n_bits = ty.n_bits();
+        // AVX-512 masks are not 512-bit vectors and need special handling
         if *self == Self::Avx512 && ty.scalar == ScalarType::Mask {
             return n_bits <= self.max_block_size();
         }
+
         n_bits <= self.max_block_size() && n_bits >= self.native_width()
     }
 
