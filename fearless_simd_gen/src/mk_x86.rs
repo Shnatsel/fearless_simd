@@ -717,53 +717,6 @@ fn fallback_method(op: Op, vec_ty: &VecType) -> TokenStream {
     crate::mk_fallback::Fallback.make_method(op, vec_ty)
 }
 
-fn scalar_compare(method_sig: TokenStream, method: &str, vec_ty: &VecType) -> TokenStream {
-    let as_array = generic_op_name("as_array", vec_ty);
-    let mask_ty = vec_ty.mask_ty();
-    let mask_scalar = mask_ty.scalar.rust(mask_ty.scalar_bits);
-    let len = vec_ty.len;
-    let op = match method {
-        "simd_eq" => quote! { == },
-        "simd_lt" => quote! { < },
-        "simd_le" => quote! { <= },
-        "simd_ge" => quote! { >= },
-        "simd_gt" => quote! { > },
-        _ => unreachable!(),
-    };
-    quote! {
-        #method_sig {
-            let a = self.#as_array(a);
-            let b = self.#as_array(b);
-            let lanes: [#mask_scalar; #len] =
-                core::array::from_fn(|i| if a[i] #op b[i] { !0 } else { 0 });
-            lanes.simd_into(self)
-        }
-    }
-}
-
-fn scalar_unzip(method_sig: TokenStream, vec_ty: &VecType, select_even: bool) -> TokenStream {
-    let as_array = generic_op_name("as_array", vec_ty);
-    let from_array = generic_op_name("load_array", vec_ty);
-    let offset = usize::from(!select_even);
-    let indices = (0..vec_ty.len / 2)
-        .map(|i| {
-            let idx = i * 2 + offset;
-            quote! { a[#idx] }
-        })
-        .chain((0..vec_ty.len / 2).map(|i| {
-            let idx = i * 2 + offset;
-            quote! { b[#idx] }
-        }));
-
-    quote! {
-        #method_sig {
-            let a = self.#as_array(a);
-            let b = self.#as_array(b);
-            self.#from_array([#(#indices),*])
-        }
-    }
-}
-
 fn sse2_not_mask_expr(mask: TokenStream) -> TokenStream {
     quote! {
         {
@@ -1356,7 +1309,7 @@ impl X86 {
 
         if *self == Self::Sse2 && vec_ty.scalar != ScalarType::Float {
             if vec_ty.scalar_bits == 64 && method != "simd_eq" {
-                return scalar_compare(op.simd_trait_method_sig(vec_ty), method, vec_ty);
+                return fallback_method(op, vec_ty);
             }
 
             let expr = sse2_int_compare_expr(method, vec_ty);
@@ -2527,9 +2480,6 @@ impl X86 {
             )
             && matches!(vec_ty.scalar_bits, 8 | 16)
         {
-            if vec_ty.scalar == ScalarType::Mask {
-                return scalar_unzip(op.simd_trait_method_sig(vec_ty), vec_ty, select_even);
-            }
             return fallback_method(op, vec_ty);
         }
 
