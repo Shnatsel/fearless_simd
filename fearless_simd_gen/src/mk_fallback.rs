@@ -435,31 +435,21 @@ impl Level for Fallback {
             OpSig::Cvt {
                 target_ty,
                 scalar_bits,
-                precise,
+                precise: _,
             } => {
-                if precise {
-                    let non_precise =
-                        generic_op_name(method.strip_suffix("_precise").unwrap(), vec_ty);
-                    quote! {
-                        #method_sig {
-                            self.#non_precise(a)
-                        }
-                    }
-                } else {
-                    let to_ty = vec_ty.reinterpret(target_ty, scalar_bits);
-                    let scalar = to_ty.scalar.rust(scalar_bits);
-                    let items = make_list(
-                        (0..vec_ty.len)
-                            .map(|idx| {
-                                let a = lane(quote! { a }, vec_ty, idx);
-                                quote! { #a as #scalar }
-                            })
-                            .collect::<Vec<_>>(),
-                    );
-                    quote! {
-                        #method_sig {
-                            #items.simd_into(self)
-                        }
+                let to_ty = vec_ty.reinterpret(target_ty, scalar_bits);
+                let scalar = to_ty.scalar.rust(scalar_bits);
+                let items = make_list(
+                    (0..vec_ty.len)
+                        .map(|idx| {
+                            let a = lane(quote! { a }, vec_ty, idx);
+                            quote! { #a as #scalar }
+                        })
+                        .collect::<Vec<_>>(),
+                );
+                quote! {
+                    #method_sig {
+                        #items.simd_into(self)
                     }
                 }
             }

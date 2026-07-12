@@ -563,21 +563,33 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn floor_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        let a = self.as_array_f32x4(a);
-        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::floor(a[i]));
-        lanes.simd_into(self)
+        [
+            f32::floor(a[0usize]),
+            f32::floor(a[1usize]),
+            f32::floor(a[2usize]),
+            f32::floor(a[3usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn ceil_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        let a = self.as_array_f32x4(a);
-        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::ceil(a[i]));
-        lanes.simd_into(self)
+        [
+            f32::ceil(a[0usize]),
+            f32::ceil(a[1usize]),
+            f32::ceil(a[2usize]),
+            f32::ceil(a[3usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn round_ties_even_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        let a = self.as_array_f32x4(a);
-        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::round_ties_even(a[i]));
-        lanes.simd_into(self)
+        [
+            f32::round_ties_even(a[0usize]),
+            f32::round_ties_even(a[1usize]),
+            f32::round_ties_even(a[2usize]),
+            f32::round_ties_even(a[3usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn fract_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
@@ -585,9 +597,13 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn trunc_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        let a = self.as_array_f32x4(a);
-        let lanes: [f32; 4usize] = core::array::from_fn(|i| f32::trunc(a[i]));
-        lanes.simd_into(self)
+        [
+            f32::trunc(a[0usize]),
+            f32::trunc(a[1usize]),
+            f32::trunc(a[2usize]),
+            f32::trunc(a[3usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn select_f32x4(self, a: mask32x4<Self>, b: f32x4<Self>, c: f32x4<Self>) -> f32x4<Self> {
@@ -657,15 +673,23 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn cvt_u32_f32x4(self, a: f32x4<Self>) -> u32x4<Self> {
-        let a = self.as_array_f32x4(a);
-        let lanes: [u32; 4usize] = core::array::from_fn(|i| a[i] as u32);
-        lanes.simd_into(self)
+        [
+            a[0usize] as u32,
+            a[1usize] as u32,
+            a[2usize] as u32,
+            a[3usize] as u32,
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn cvt_u32_precise_f32x4(self, a: f32x4<Self>) -> u32x4<Self> {
-        let a = self.as_array_f32x4(a);
-        let lanes: [u32; 4usize] = core::array::from_fn(|i| a[i] as u32);
-        lanes.simd_into(self)
+        [
+            a[0usize] as u32,
+            a[1usize] as u32,
+            a[2usize] as u32,
+            a[3usize] as u32,
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn cvt_i32_f32x4(self, a: f32x4<Self>) -> i32x4<Self> {
@@ -679,9 +703,13 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn cvt_i32_precise_f32x4(self, a: f32x4<Self>) -> i32x4<Self> {
-        let a = self.as_array_f32x4(a);
-        let lanes: [i32; 4usize] = core::array::from_fn(|i| a[i] as i32);
-        lanes.simd_into(self)
+        [
+            a[0usize] as i32,
+            a[1usize] as i32,
+            a[2usize] as i32,
+            a[3usize] as i32,
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn splat_i8x16(self, val: i8) -> i8x16<Self> {
@@ -1026,23 +1054,21 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn unzip_low_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        let a = self.as_array_i8x16(a);
-        let b = self.as_array_i8x16(b);
-        self.load_array_i8x16([
+        [
             a[0usize], a[2usize], a[4usize], a[6usize], a[8usize], a[10usize], a[12usize],
             a[14usize], b[0usize], b[2usize], b[4usize], b[6usize], b[8usize], b[10usize],
             b[12usize], b[14usize],
-        ])
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn unzip_high_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
-        let a = self.as_array_i8x16(a);
-        let b = self.as_array_i8x16(b);
-        self.load_array_i8x16([
+        [
             a[1usize], a[3usize], a[5usize], a[7usize], a[9usize], a[11usize], a[13usize],
             a[15usize], b[1usize], b[3usize], b[5usize], b[7usize], b[9usize], b[11usize],
             b[13usize], b[15usize],
-        ])
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn interleave_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> (i8x16<Self>, i8x16<Self>) {
@@ -1507,23 +1533,21 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn unzip_low_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        let a = self.as_array_u8x16(a);
-        let b = self.as_array_u8x16(b);
-        self.load_array_u8x16([
+        [
             a[0usize], a[2usize], a[4usize], a[6usize], a[8usize], a[10usize], a[12usize],
             a[14usize], b[0usize], b[2usize], b[4usize], b[6usize], b[8usize], b[10usize],
             b[12usize], b[14usize],
-        ])
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn unzip_high_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
-        let a = self.as_array_u8x16(a);
-        let b = self.as_array_u8x16(b);
-        self.load_array_u8x16([
+        [
             a[1usize], a[3usize], a[5usize], a[7usize], a[9usize], a[11usize], a[13usize],
             a[15usize], b[1usize], b[3usize], b[5usize], b[7usize], b[9usize], b[11usize],
             b[13usize], b[15usize],
-        ])
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn interleave_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> (u8x16<Self>, u8x16<Self>) {
@@ -2091,19 +2115,17 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn unzip_low_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        let a = self.as_array_i16x8(a);
-        let b = self.as_array_i16x8(b);
-        self.load_array_i16x8([
+        [
             a[0usize], a[2usize], a[4usize], a[6usize], b[0usize], b[2usize], b[4usize], b[6usize],
-        ])
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn unzip_high_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        let a = self.as_array_i16x8(a);
-        let b = self.as_array_i16x8(b);
-        self.load_array_i16x8([
+        [
             a[1usize], a[3usize], a[5usize], a[7usize], b[1usize], b[3usize], b[5usize], b[7usize],
-        ])
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn interleave_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> (i16x8<Self>, i16x8<Self>) {
@@ -2541,19 +2563,17 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn unzip_low_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        let a = self.as_array_u16x8(a);
-        let b = self.as_array_u16x8(b);
-        self.load_array_u16x8([
+        [
             a[0usize], a[2usize], a[4usize], a[6usize], b[0usize], b[2usize], b[4usize], b[6usize],
-        ])
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn unzip_high_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        let a = self.as_array_u16x8(a);
-        let b = self.as_array_u16x8(b);
-        self.load_array_u16x8([
+        [
             a[1usize], a[3usize], a[5usize], a[7usize], b[1usize], b[3usize], b[5usize], b[7usize],
-        ])
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn interleave_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> (u16x8<Self>, u16x8<Self>) {
@@ -3017,10 +3037,13 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn mul_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
-        let a = self.as_array_i32x4(a);
-        let b = self.as_array_i32x4(b);
-        let lanes: [i32; 4usize] = core::array::from_fn(|i| a[i].wrapping_mul(b[i]));
-        lanes.simd_into(self)
+        [
+            i32::wrapping_mul(a[0usize], b[0usize]),
+            i32::wrapping_mul(a[1usize], b[1usize]),
+            i32::wrapping_mul(a[2usize], b[2usize]),
+            i32::wrapping_mul(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn and_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
@@ -3462,10 +3485,13 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn mul_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
-        let a = self.as_array_u32x4(a);
-        let b = self.as_array_u32x4(b);
-        let lanes: [u32; 4usize] = core::array::from_fn(|i| a[i].wrapping_mul(b[i]));
-        lanes.simd_into(self)
+        [
+            u32::wrapping_mul(a[0usize], b[0usize]),
+            u32::wrapping_mul(a[1usize], b[1usize]),
+            u32::wrapping_mul(a[2usize], b[2usize]),
+            u32::wrapping_mul(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn and_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
@@ -3767,9 +3793,13 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn cvt_f32_u32x4(self, a: u32x4<Self>) -> f32x4<Self> {
-        let a = self.as_array_u32x4(a);
-        let lanes: [f32; 4usize] = core::array::from_fn(|i| a[i] as f32);
-        lanes.simd_into(self)
+        [
+            a[0usize] as f32,
+            a[1usize] as f32,
+            a[2usize] as f32,
+            a[3usize] as f32,
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn splat_mask32x4(self, val: bool) -> mask32x4<Self> {
@@ -4344,21 +4374,19 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn floor_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        let a = self.as_array_f64x2(a);
-        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::floor(a[i]));
-        lanes.simd_into(self)
+        [f64::floor(a[0usize]), f64::floor(a[1usize])].simd_into(self)
     }
     #[inline(always)]
     fn ceil_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        let a = self.as_array_f64x2(a);
-        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::ceil(a[i]));
-        lanes.simd_into(self)
+        [f64::ceil(a[0usize]), f64::ceil(a[1usize])].simd_into(self)
     }
     #[inline(always)]
     fn round_ties_even_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        let a = self.as_array_f64x2(a);
-        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::round_ties_even(a[i]));
-        lanes.simd_into(self)
+        [
+            f64::round_ties_even(a[0usize]),
+            f64::round_ties_even(a[1usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn fract_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
@@ -4366,9 +4394,7 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn trunc_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        let a = self.as_array_f64x2(a);
-        let lanes: [f64; 2usize] = core::array::from_fn(|i| f64::trunc(a[i]));
-        lanes.simd_into(self)
+        [f64::trunc(a[0usize]), f64::trunc(a[1usize])].simd_into(self)
     }
     #[inline(always)]
     fn select_f64x2(self, a: mask64x2<Self>, b: f64x2<Self>, c: f64x2<Self>) -> f64x2<Self> {
@@ -8588,7 +8614,6 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn store_interleaved_128_u8x64(self, a: u8x64<Self>, dest: &mut [u8; 64usize]) -> () {
-        let a = self.as_array_u8x64(a);
         *dest = [
             a[0usize], a[16usize], a[32usize], a[48usize], a[1usize], a[17usize], a[33usize],
             a[49usize], a[2usize], a[18usize], a[34usize], a[50usize], a[3usize], a[19usize],
@@ -9332,7 +9357,6 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn store_interleaved_128_u16x32(self, a: u16x32<Self>, dest: &mut [u16; 32usize]) -> () {
-        let a = self.as_array_u16x32(a);
         *dest = [
             a[0usize], a[8usize], a[16usize], a[24usize], a[1usize], a[9usize], a[17usize],
             a[25usize], a[2usize], a[10usize], a[18usize], a[26usize], a[3usize], a[11usize],

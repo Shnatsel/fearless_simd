@@ -713,45 +713,8 @@ fn signed_literal(value: u64, bits: u32) -> TokenStream {
     }
 }
 
-fn scalar_float_unary(method_sig: TokenStream, method: &str, vec_ty: &VecType) -> TokenStream {
-    let as_array = generic_op_name("as_array", vec_ty);
-    let scalar = vec_ty.scalar.rust(vec_ty.scalar_bits);
-    let len = vec_ty.len;
-    let method = Ident::new(method, Span::call_site());
-    quote! {
-        #method_sig {
-            let a = self.#as_array(a);
-            let lanes: [#scalar; #len] = core::array::from_fn(|i| #scalar::#method(a[i]));
-            lanes.simd_into(self)
-        }
-    }
-}
-
-fn scalar_wrapping_mul(method_sig: TokenStream, vec_ty: &VecType) -> TokenStream {
-    let as_array = generic_op_name("as_array", vec_ty);
-    let scalar = vec_ty.scalar.rust(vec_ty.scalar_bits);
-    let len = vec_ty.len;
-    quote! {
-        #method_sig {
-            let a = self.#as_array(a);
-            let b = self.#as_array(b);
-            let lanes: [#scalar; #len] = core::array::from_fn(|i| a[i].wrapping_mul(b[i]));
-            lanes.simd_into(self)
-        }
-    }
-}
-
-fn scalar_cvt(method_sig: TokenStream, vec_ty: &VecType, target_ty: &VecType) -> TokenStream {
-    let as_array = generic_op_name("as_array", vec_ty);
-    let scalar = target_ty.scalar.rust(target_ty.scalar_bits);
-    let len = target_ty.len;
-    quote! {
-        #method_sig {
-            let a = self.#as_array(a);
-            let lanes: [#scalar; #len] = core::array::from_fn(|i| a[i] as #scalar);
-            lanes.simd_into(self)
-        }
-    }
+fn fallback_method(op: Op, vec_ty: &VecType) -> TokenStream {
+    crate::mk_fallback::Fallback.make_method(op, vec_ty)
 }
 
 fn scalar_compare(method_sig: TokenStream, method: &str, vec_ty: &VecType) -> TokenStream {
@@ -797,38 +760,6 @@ fn scalar_unzip(method_sig: TokenStream, vec_ty: &VecType, select_even: bool) ->
             let a = self.#as_array(a);
             let b = self.#as_array(b);
             self.#from_array([#(#indices),*])
-        }
-    }
-}
-
-fn scalar_load_interleaved(
-    method_sig: TokenStream,
-    vec_ty: &VecType,
-    block_count: u16,
-) -> TokenStream {
-    let indices = interleaved_load_indices(vec_ty.len, block_count as usize);
-    let lanes = indices.into_iter().map(|idx| quote! { src[#idx] });
-
-    quote! {
-        #method_sig {
-            [#(#lanes),*].simd_into(self)
-        }
-    }
-}
-
-fn scalar_store_interleaved(
-    method_sig: TokenStream,
-    vec_ty: &VecType,
-    block_count: u16,
-) -> TokenStream {
-    let as_array = generic_op_name("as_array", vec_ty);
-    let indices = interleaved_store_indices(vec_ty.len, block_count as usize);
-    let lanes = indices.into_iter().map(|idx| quote! { a[#idx] });
-
-    quote! {
-        #method_sig {
-            let a = self.#as_array(a);
-            *dest = [#(#lanes),*];
         }
     }
 }
@@ -1572,7 +1503,7 @@ impl X86 {
             && vec_ty.scalar == ScalarType::Float
             && matches!(method, "floor" | "ceil" | "round_ties_even" | "trunc")
         {
-            return scalar_float_unary(method_sig, method, vec_ty);
+            return fallback_method(op, vec_ty);
         }
 
         match method {
@@ -1873,7 +1804,7 @@ impl X86 {
             && method == "mul"
             && vec_ty.scalar_bits == 32
         {
-            return scalar_wrapping_mul(method_sig, vec_ty);
+            return fallback_method(op, vec_ty);
         }
 
         match method {
@@ -2596,7 +2527,10 @@ impl X86 {
             )
             && matches!(vec_ty.scalar_bits, 8 | 16)
         {
-            return scalar_unzip(op.simd_trait_method_sig(vec_ty), vec_ty, select_even);
+            if vec_ty.scalar == ScalarType::Mask {
+                return scalar_unzip(op.simd_trait_method_sig(vec_ty), vec_ty, select_even);
+            }
+            return fallback_method(op, vec_ty);
         }
 
         self.kernel_method(op, vec_ty, |token| {
@@ -2883,8 +2817,7 @@ impl X86 {
                 || vec_ty.scalar == ScalarType::Unsigned
                 || target_scalar == ScalarType::Unsigned)
         {
-            let target_ty = vec_ty.reinterpret(target_scalar, target_scalar_bits);
-            return scalar_cvt(op.simd_trait_method_sig(vec_ty), vec_ty, &target_ty);
+            return fallback_method(op, vec_ty);
         }
 
         if *self == Self::Avx512
@@ -3281,7 +3214,7 @@ impl X86 {
             return self.handle_avx512_load_interleaved(op, vec_ty, block_size, block_count);
         }
         if *self == Self::Sse2 && matches!(vec_ty.scalar_bits, 8 | 16) {
-            return scalar_load_interleaved(op.simd_trait_method_sig(vec_ty), vec_ty, block_count);
+            return fallback_method(op, vec_ty);
         }
         match vec_ty.scalar_bits {
             32 | 16 | 8 => {
@@ -3459,7 +3392,7 @@ impl X86 {
             return self.handle_avx512_store_interleaved(op, vec_ty, block_size, block_count);
         }
         if *self == Self::Sse2 && matches!(vec_ty.scalar_bits, 8 | 16) {
-            return scalar_store_interleaved(op.simd_trait_method_sig(vec_ty), vec_ty, block_count);
+            return fallback_method(op, vec_ty);
         }
         match vec_ty.scalar_bits {
             32 | 16 | 8 => {
