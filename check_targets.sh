@@ -1,7 +1,7 @@
 # A script to run cargo check for fearless_simd on each supported platform.
 # We currently don't run this in CI, as we expect it would take too long.
 # Before using, you must run:
-# rustup target add aarch64-linux-android x86_64-unknown-linux-gnu i686-pc-windows-msvc wasm32-unknown-unknown riscv64gc-unknown-linux-gnu
+# rustup target add aarch64-linux-android x86_64-unknown-linux-gnu i686-pc-windows-msvc i586-unknown-linux-gnu wasm32-unknown-unknown riscv64gc-unknown-linux-gnu
 
 # Run using `sh ./check_targets.sh`
 # TODO: Make into an xtask like thing so that windows users can use easily.
@@ -33,6 +33,12 @@ RUSTFLAGS=-Ctarget-cpu=x86-64-v2 cargo check -p fearless_simd --target i686-pc-w
 cargo check -p fearless_simd --target i686-pc-windows-msvc
 cargo check -p fearless_simd --target i686-pc-windows-msvc  --features force_support_fallback
 cargo check -p fearless_simd --target i686-pc-windows-msvc --no-default-features --features std
+
+# x86 (i.e. 32 bit) with and without static SSE2.
+cargo check -p fearless_simd --target i586-unknown-linux-gnu
+cargo check -p fearless_simd --target i586-unknown-linux-gnu --features force_support_fallback
+RUSTFLAGS=-Ctarget-feature=+sse2 cargo check -p fearless_simd --target i586-unknown-linux-gnu
+RUSTFLAGS=-Ctarget-feature=+sse2 cargo check -p fearless_simd --target i586-unknown-linux-gnu --features force_support_fallback
 
 # Wasm, both with and without SIMD.
 cargo check -p fearless_simd --target wasm32-unknown-unknown

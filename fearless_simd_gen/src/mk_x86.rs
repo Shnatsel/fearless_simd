@@ -19,6 +19,7 @@ use quote::{ToTokens as _, format_ident, quote};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum X86 {
+    Sse2,
     Sse4_2,
     Avx2,
     Avx512,
@@ -29,6 +30,7 @@ pub(crate) const AVX512_FEATURES: &str = "adx,aes,avx512bitalg,avx512bw,avx512cd
 impl Level for X86 {
     fn name(&self) -> &'static str {
         match self {
+            Self::Sse2 => "Sse2",
             Self::Sse4_2 => "Sse4_2",
             Self::Avx2 => "Avx2",
             Self::Avx512 => "Avx512",
@@ -37,6 +39,7 @@ impl Level for X86 {
 
     fn native_width(&self) -> usize {
         match self {
+            Self::Sse2 => 128,
             Self::Sse4_2 => 128,
             Self::Avx2 => 256,
             Self::Avx512 => 512,
@@ -44,11 +47,15 @@ impl Level for X86 {
     }
 
     fn max_block_size(&self) -> usize {
-        self.native_width()
+        match self {
+            Self::Sse2 => 512, // matches Fallback, because SSE2 is a wrapper around Fallback
+            _ => self.native_width(),
+        }
     }
 
     fn enabled_target_features(&self) -> Option<&'static str> {
         Some(match self {
+            Self::Sse2 => "sse2",
             Self::Sse4_2 => "sse4.2,cmpxchg16b,popcnt",
             Self::Avx2 => "avx2,bmi1,bmi2,cmpxchg16b,f16c,fma,lzcnt,movbe,popcnt,xsave",
             Self::Avx512 => AVX512_FEATURES,
@@ -74,6 +81,13 @@ impl Level for X86 {
     }
 
     fn arch_storage_ty(&self, vec_ty: &VecType) -> TokenStream {
+        if *self == Self::Sse2 {
+            let scalar_rust = vec_ty.scalar.rust(vec_ty.scalar_bits);
+            let len = vec_ty.len;
+            return vec_ty
+                .aligned_wrapper_ty(|_| quote!([#scalar_rust; #len]), self.max_block_size());
+        }
+
         if *self == Self::Avx512 && vec_ty.scalar == ScalarType::Mask {
             self.arch_ty(vec_ty)
         } else {
@@ -83,6 +97,9 @@ impl Level for X86 {
 
     fn token_doc(&self) -> &'static str {
         match self {
+            Self::Sse2 => {
+                "A token for SSE2 autovectorization on `x86` and `x86_64`, backed by fallback-style high-level operations."
+            }
             Self::Sse4_2 => {
                 "A token for SSE4.2 intrinsics on `x86` and `x86_64`, representing the x86-64-v2 level."
             }
@@ -96,7 +113,15 @@ impl Level for X86 {
     }
 
     fn make_module_prelude(&self) -> TokenStream {
+        let fallback_prelude = if *self == Self::Sse2 {
+            crate::mk_fallback::fallback_module_prelude()
+        } else {
+            TokenStream::new()
+        };
+
         quote! {
+            #fallback_prelude
+
             #[cfg(target_arch = "x86")]
             use core::arch::x86::*;
             #[cfg(target_arch = "x86_64")]
@@ -124,6 +149,7 @@ impl Level for X86 {
     fn make_module_footer(&self) -> TokenStream {
         let alignr_helpers = self.dyn_alignr_helpers();
         let slide_helpers = match self {
+            Self::Sse2 => TokenStream::new(),
             Self::Sse4_2 => Self::sse42_slide_helpers(),
             Self::Avx2 => Self::avx2_slide_helpers(),
             Self::Avx512 => TokenStream::new(),
@@ -145,6 +171,15 @@ impl Level for X86 {
 
     fn should_impl_arch_type_conversion(&self, ty: &VecType) -> bool {
         let n_bits = ty.n_bits();
+        // special-cased because SSE2 has an inflated max_block_size() to match Fallback
+        if *self == Self::Sse2 {
+            return n_bits == 128;
+        }
+        // avoid duplicate impls already covered by SSE2
+        if *self == Self::Sse4_2 {
+            return false;
+        }
+        // AVX-512 has a different mask representation that needs special handling
         if *self == Self::Avx512 && ty.scalar == ScalarType::Mask {
             return n_bits <= self.max_block_size();
         }
@@ -186,6 +221,17 @@ impl Level for X86 {
 
     fn make_impl_body(&self) -> TokenStream {
         match self {
+            Self::Sse2 => quote! {
+                /// Create a SIMD token.
+                ///
+                /// # Safety
+                ///
+                /// The `sse2` CPU feature must be available.
+                #[inline]
+                pub const unsafe fn new_unchecked() -> Self {
+                    Sse2 { _private: () }
+                }
+            },
             Self::Sse4_2 => quote! {
                 /// Create a SIMD token.
                 ///
@@ -253,6 +299,10 @@ impl Level for X86 {
     }
 
     fn make_method(&self, op: Op, vec_ty: &VecType) -> TokenStream {
+        if *self == Self::Sse2 {
+            return crate::mk_fallback::Fallback.make_method(op, vec_ty);
+        }
+
         let Op { sig, method, .. } = op;
         let method_sig = op.simd_trait_method_sig(vec_ty);
 
@@ -3211,6 +3261,7 @@ impl X86 {
         let token_ty = self.token();
 
         let vec_widths: &[usize] = match self {
+            Self::Sse2 => &[],
             Self::Sse4_2 => &[128],
             Self::Avx2 => &[128, 256],
             Self::Avx512 => &[128, 256, 512],

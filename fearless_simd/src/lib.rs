@@ -114,7 +114,7 @@
 //!
 //! # Instruction set support
 //!
-//! - x86/x86-64: [v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels) (SSE4.2), [v3](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels) (AVX2), [Ice Lake](https://en.wikipedia.org/wiki/AVX-512#CPUs_with_AVX-512) (AVX-512, avoiding early slow implementations)
+//! - x86/x86-64: SSE2 autovectorization, [v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels) (SSE4.2), [v3](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels) (AVX2), [Ice Lake](https://en.wikipedia.org/wiki/AVX-512#CPUs_with_AVX-512) (AVX-512, avoiding early slow implementations)
 //! - Aarch64: Baseline [NEON](https://en.wikipedia.org/wiki/Arm_architecture_family#Advanced_SIMD_(Neon))
 //! - WebAssembly: [128-bit packed SIMD](https://github.com/WebAssembly/spec/blob/main/proposals/simd/SIMD.md), [relaxed SIMD](https://github.com/WebAssembly/relaxed-simd/blob/main/proposals/relaxed-simd/Overview.md)
 //!
@@ -154,6 +154,8 @@
 //!
 //! x86 CPUs are not guaranteed to have any SIMD particular instruction set, so `fearless_simd` compiles a version
 //! of each function generic over [`Simd`] for each instruction set, and [`dispatch`] selects the best one at runtime.
+//! The SSE2 level is backed by the fallback high-level operations rather than custom intrinsic implementations,
+//! but it still runs dispatched code with SSE2 enabled so LLVM can autovectorize it.
 //!
 //! This is necessary to take advantage of SIMD, but results in an increased binary size on x86.
 //! If binary size is a concern, the increase can be partially mitigated by setting
@@ -162,7 +164,7 @@
 //! at the cost of longer build times.
 //!
 //! As a last resort, you can turn off multiversioning for specific SIMD instruction sets by passing
-//! `--cfg disable_dispatch_sse4_2`, `--cfg disable_dispatch_avx2`, or `--cfg disable_dispatch_avx512` in `RUSTFLAGS`.
+//! `--cfg disable_dispatch_sse2`, `--cfg disable_dispatch_sse4_2`, `--cfg disable_dispatch_avx2`, or `--cfg disable_dispatch_avx512` in `RUSTFLAGS`.
 //! These configuration flags only control automatic multiversioning. Disabling one does not remove its token type, its
 //! [`Simd`] implementation, or explicit [`kernel`] support; for example, an `Avx2` token can still be used to call an
 //! AVX2 kernel when the CPU supports it.
@@ -251,6 +253,7 @@ pub mod wasm32 {
 pub mod x86 {
     pub use crate::generated::Avx2;
     pub use crate::generated::Avx512;
+    pub use crate::generated::Sse2;
     pub use crate::generated::Sse4_2;
 }
 
@@ -310,6 +313,10 @@ pub enum Level {
     /// The SIMD 128 instructions on 32-bit WebAssembly.
     #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
     WasmSimd128(WasmSimd128),
+    /// The SSE2 instruction set on (32 and 64 bit) x86, with high-level operations
+    /// backed by fallback-style scalar code inside an SSE2 target-feature context.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    Sse2(Sse2),
     /// The SSE4.2 instruction set on (32 and 64 bit) x86, plus `popcnt` and `cmpxchg16b`.
     /// Also known as x86-64-v2.
     ///
@@ -399,17 +406,15 @@ impl Level {
                 && std::arch::is_x86_feature_detected!("popcnt")
             {
                 return unsafe { Self::Sse4_2(Sse4_2::new_unchecked()) };
+            } else if std::arch::is_x86_feature_detected!("sse2") {
+                return unsafe { Self::Sse2(Sse2::new_unchecked()) };
             }
         }
         #[cfg(any(
             all(target_arch = "aarch64", not(target_feature = "neon")),
             all(
                 any(target_arch = "x86", target_arch = "x86_64"),
-                not(all(
-                    target_feature = "sse4.2",
-                    target_feature = "cmpxchg16b",
-                    target_feature = "popcnt"
-                ))
+                not(target_feature = "sse2")
             ),
             all(target_arch = "wasm32", not(target_feature = "simd128")),
             not(any(
@@ -490,6 +495,31 @@ impl Level {
         )]
         match self {
             Self::WasmSimd128(simd128) => Some(simd128),
+            _ => None,
+        }
+    }
+
+    /// If this is a proof that SSE2 (or better) is available, access that instruction set.
+    ///
+    /// The `Sse2` level uses fallback-style high-level operations inside an SSE2 target-feature
+    /// context, so it is primarily useful for autovectorization and safe access to SSE2 kernels.
+    ///
+    /// This method should be preferred over matching against the `Sse2` variant of self,
+    /// because if the CPU supports a superset of SSE2 (e.g. SSE4.2, AVX2, or AVX-512),
+    /// this method will return the SSE2 token even if that "better" instruction set is available.
+    ///
+    /// This can be used in combination with the [kernel] macro to safely access level-specific
+    /// SIMD intrinsics.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[inline]
+    pub fn as_sse2(self) -> Option<Sse2> {
+        match self {
+            // Safety: Every stronger x86 SIMD level in this crate includes the `sse2`
+            // feature required by Sse2.
+            Self::Avx512(_avx512) => unsafe { Some(Sse2::new_unchecked()) },
+            Self::Avx2(_avx2) => unsafe { Some(Sse2::new_unchecked()) },
+            Self::Sse4_2(_sse4_2) => unsafe { Some(Sse2::new_unchecked()) },
+            Self::Sse2(sse2) => Some(sse2),
             _ => None,
         }
     }
@@ -704,11 +734,16 @@ impl Level {
                 ))
             ))]
             return unsafe { Self::Sse4_2(Sse4_2::new_unchecked()) };
-            #[cfg(not(all(
-                target_feature = "sse4.2",
-                target_feature = "cmpxchg16b",
-                target_feature = "popcnt"
-            )))]
+            #[cfg(all(
+                target_feature = "sse2",
+                not(all(
+                    target_feature = "sse4.2",
+                    target_feature = "cmpxchg16b",
+                    target_feature = "popcnt"
+                ))
+            ))]
+            return unsafe { Self::Sse2(Sse2::new_unchecked()) };
+            #[cfg(not(target_feature = "sse2"))]
             return Self::Fallback(Fallback::new());
         }
         #[cfg(target_arch = "wasm32")]
@@ -754,6 +789,11 @@ impl Level {
             #[cfg(not(disable_dispatch_sse4_2))]
             if let Some(sse4_2) = self.as_sse4_2().or_else(|| baseline.as_sse4_2()) {
                 return Self::Sse4_2(sse4_2);
+            }
+
+            #[cfg(not(disable_dispatch_sse2))]
+            if let Some(sse2) = self.as_sse2().or_else(|| baseline.as_sse2()) {
+                return Self::Sse2(sse2);
             }
         }
 

@@ -11,6 +11,10 @@ You can find its changes [documented below](#060-2026-07-10).
 
 ## [Unreleased]
 
+### Added
+
+- Added an x86 `Sse2` level for `dispatch!`, `Level`, and `kernel!`. It uses fallback-backed high-level operations under an SSE2 target-feature context so LLVM can autovectorize, while still providing safe conversion to and from 128-bit x86 intrinsic types.
+
 ## [0.6.0][] (2026-07-10)
 
 This release has an [MSRV][] of 1.89.
