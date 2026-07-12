@@ -1213,10 +1213,13 @@ impl Simd for Sse4_2 {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse4_2, a: u8x16<Sse4_2>, b: u8x16<Sse4_2>) -> mask8x16<Sse4_2> {
-                let sign_bit = _mm_set1_epi8(0x80u8.cast_signed());
-                let a_signed = _mm_xor_si128(a.into(), sign_bit);
-                let b_signed = _mm_xor_si128(b.into(), sign_bit);
-                _mm_cmpgt_epi8(b_signed, a_signed).simd_into(token)
+                {
+                    let sign_bit = _mm_set1_epi8(0x80u8.cast_signed());
+                    let lhs_signed = _mm_xor_si128(b.into(), sign_bit);
+                    let rhs_signed = _mm_xor_si128(a.into(), sign_bit);
+                    _mm_cmpgt_epi8(lhs_signed, rhs_signed)
+                }
+                .simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -1246,10 +1249,13 @@ impl Simd for Sse4_2 {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse4_2, a: u8x16<Sse4_2>, b: u8x16<Sse4_2>) -> mask8x16<Sse4_2> {
-                let sign_bit = _mm_set1_epi8(0x80u8.cast_signed());
-                let a_signed = _mm_xor_si128(a.into(), sign_bit);
-                let b_signed = _mm_xor_si128(b.into(), sign_bit);
-                _mm_cmpgt_epi8(a_signed, b_signed).simd_into(token)
+                {
+                    let sign_bit = _mm_set1_epi8(0x80u8.cast_signed());
+                    let lhs_signed = _mm_xor_si128(a.into(), sign_bit);
+                    let rhs_signed = _mm_xor_si128(b.into(), sign_bit);
+                    _mm_cmpgt_epi8(lhs_signed, rhs_signed)
+                }
+                .simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -2106,10 +2112,13 @@ impl Simd for Sse4_2 {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse4_2, a: u16x8<Sse4_2>, b: u16x8<Sse4_2>) -> mask16x8<Sse4_2> {
-                let sign_bit = _mm_set1_epi16(0x8000u16.cast_signed());
-                let a_signed = _mm_xor_si128(a.into(), sign_bit);
-                let b_signed = _mm_xor_si128(b.into(), sign_bit);
-                _mm_cmpgt_epi16(b_signed, a_signed).simd_into(token)
+                {
+                    let sign_bit = _mm_set1_epi16(0x8000u16.cast_signed());
+                    let lhs_signed = _mm_xor_si128(b.into(), sign_bit);
+                    let rhs_signed = _mm_xor_si128(a.into(), sign_bit);
+                    _mm_cmpgt_epi16(lhs_signed, rhs_signed)
+                }
+                .simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -2139,10 +2148,13 @@ impl Simd for Sse4_2 {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse4_2, a: u16x8<Sse4_2>, b: u16x8<Sse4_2>) -> mask16x8<Sse4_2> {
-                let sign_bit = _mm_set1_epi16(0x8000u16.cast_signed());
-                let a_signed = _mm_xor_si128(a.into(), sign_bit);
-                let b_signed = _mm_xor_si128(b.into(), sign_bit);
-                _mm_cmpgt_epi16(a_signed, b_signed).simd_into(token)
+                {
+                    let sign_bit = _mm_set1_epi16(0x8000u16.cast_signed());
+                    let lhs_signed = _mm_xor_si128(a.into(), sign_bit);
+                    let rhs_signed = _mm_xor_si128(b.into(), sign_bit);
+                    _mm_cmpgt_epi16(lhs_signed, rhs_signed)
+                }
+                .simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -3002,10 +3014,13 @@ impl Simd for Sse4_2 {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse4_2, a: u32x4<Sse4_2>, b: u32x4<Sse4_2>) -> mask32x4<Sse4_2> {
-                let sign_bit = _mm_set1_epi32(0x80000000u32.cast_signed());
-                let a_signed = _mm_xor_si128(a.into(), sign_bit);
-                let b_signed = _mm_xor_si128(b.into(), sign_bit);
-                _mm_cmpgt_epi32(b_signed, a_signed).simd_into(token)
+                {
+                    let sign_bit = _mm_set1_epi32(0x80000000u32.cast_signed());
+                    let lhs_signed = _mm_xor_si128(b.into(), sign_bit);
+                    let rhs_signed = _mm_xor_si128(a.into(), sign_bit);
+                    _mm_cmpgt_epi32(lhs_signed, rhs_signed)
+                }
+                .simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -3035,10 +3050,13 @@ impl Simd for Sse4_2 {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse4_2, a: u32x4<Sse4_2>, b: u32x4<Sse4_2>) -> mask32x4<Sse4_2> {
-                let sign_bit = _mm_set1_epi32(0x80000000u32.cast_signed());
-                let a_signed = _mm_xor_si128(a.into(), sign_bit);
-                let b_signed = _mm_xor_si128(b.into(), sign_bit);
-                _mm_cmpgt_epi32(a_signed, b_signed).simd_into(token)
+                {
+                    let sign_bit = _mm_set1_epi32(0x80000000u32.cast_signed());
+                    let lhs_signed = _mm_xor_si128(a.into(), sign_bit);
+                    let rhs_signed = _mm_xor_si128(b.into(), sign_bit);
+                    _mm_cmpgt_epi32(lhs_signed, rhs_signed)
+                }
+                .simd_into(token)
             }
         );
         kernel(self, a, b)

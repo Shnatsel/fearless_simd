@@ -1359,43 +1359,8 @@ impl X86 {
                     let max_min_expr = x86::expr(max_min, vec_ty, &args);
                     quote! { #eq_intrinsic(#max_min_expr, a.into()) }
                 }
-                "simd_lt" | "simd_gt" => {
-                    let gt = simple_sign_unaware_intrinsic("cmpgt", vec_ty);
-
-                    if vec_ty.scalar == ScalarType::Unsigned {
-                        // Below AVX-512, we only have signed GT/LT, not unsigned.
-                        let set = set1_intrinsic(vec_ty);
-                        let sign = match vec_ty.scalar_bits {
-                            8 => quote! { 0x80u8 },
-                            16 => quote! { 0x8000u16 },
-                            32 => quote! { 0x80000000u32 },
-                            _ => unimplemented!(),
-                        };
-                        let xor_op = intrinsic_ident("xor", coarse_type(vec_ty), vec_ty.n_bits());
-                        let args = if method == "simd_lt" {
-                            quote! { b_signed, a_signed }
-                        } else {
-                            quote! { a_signed, b_signed }
-                        };
-
-                        quote! {
-                            let sign_bit = #set(#sign.cast_signed());
-                            let a_signed = #xor_op(a.into(), sign_bit);
-                            let b_signed = #xor_op(b.into(), sign_bit);
-
-                            #gt(#args)
-                        }
-                    } else {
-                        let args = if method == "simd_lt" {
-                            quote! { b.into(), a.into() }
-                        } else {
-                            quote! { a.into(), b.into() }
-                        };
-                        quote! {
-                            #gt(#args)
-                        }
-                    }
-                }
+                // Below AVX-512 we only have signed GT/LT, not unsigned. We have to emulate it.
+                "simd_lt" | "simd_gt" => sse2_int_compare_expr(method, vec_ty),
                 "simd_eq" => x86::expr(method, vec_ty, &args),
                 _ => unreachable!(),
             }
