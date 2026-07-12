@@ -313,7 +313,7 @@ pub enum Level {
     WasmSimd128(WasmSimd128),
     /// The SSE2 instruction set on (32 and 64 bit) x86.
     ///
-    /// This is the baseline for x86-64 targets.
+    /// This is the baseline for i686 and x86-64 targets.
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     Sse2(Sse2),
     /// The SSE4.2 instruction set on (32 and 64 bit) x86, plus `popcnt` and `cmpxchg16b`.
