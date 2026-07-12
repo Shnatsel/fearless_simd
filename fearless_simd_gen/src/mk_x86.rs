@@ -2686,29 +2686,7 @@ impl X86 {
         let from_bytes = generic_op_name("cvt_from_bytes", vec_ty);
 
         if *self == Self::Sse2 {
-            assert_eq!(
-                vec_ty.n_bits(),
-                self.native_width(),
-                "wide swizzles should use the generic split implementation"
-            );
-            let method_sig = op.simd_trait_method_sig(vec_ty);
-            let byte_count = bytes_ty.len;
-            let items = (0..byte_count).map(|idx| {
-                quote! {
-                    {
-                        let index = indices[#idx] as usize;
-                        bytes[index % #byte_count]
-                    }
-                }
-            });
-
-            return quote! {
-                #method_sig {
-                    let bytes = self.#to_bytes(a);
-                    let result: #bytes<Self> = [#(#items),*].simd_into(self);
-                    self.#from_bytes(result)
-                }
-            };
+            return fallback_method(op, vec_ty);
         }
 
         self.kernel_method(op, vec_ty, |token| {
