@@ -717,6 +717,10 @@ fn fallback_method(op: Op, vec_ty: &VecType) -> TokenStream {
     crate::mk_fallback::Fallback.make_method(op, vec_ty)
 }
 
+/// Invert an SSE2 mask expression.
+///
+/// SSE2 has no vector NOT intrinsic, so we synthesize an all-ones vector by
+/// comparing zero with itself and XOR the mask with that.
 fn sse2_not_mask_expr(mask: TokenStream) -> TokenStream {
     quote! {
         {
@@ -727,6 +731,11 @@ fn sse2_not_mask_expr(mask: TokenStream) -> TokenStream {
     }
 }
 
+/// Build a signed or unsigned integer `>` comparison using SSE2 operations.
+///
+/// SSE2 only provides signed greater-than comparisons for these integer lane
+/// widths. Unsigned comparisons are lowered by flipping the sign bit in both
+/// operands, which preserves unsigned ordering when interpreted as signed.
 fn sse2_cmpgt_expr(vec_ty: &VecType, lhs: TokenStream, rhs: TokenStream) -> TokenStream {
     let gt = simple_sign_unaware_intrinsic("cmpgt", vec_ty);
     if vec_ty.scalar != ScalarType::Unsigned {
@@ -752,6 +761,12 @@ fn sse2_cmpgt_expr(vec_ty: &VecType, lhs: TokenStream, rhs: TokenStream) -> Toke
     }
 }
 
+/// Build an integer comparison expression that stays within SSE2.
+///
+/// Later x86 levels have richer comparisons, but SSE2 needs comparisons like
+/// `<`, `<=`, and `>=` expressed in terms of signed `>` plus operand swapping
+/// or mask inversion. Equality for 64-bit lanes is also synthesized from
+/// 32-bit equality because SSE2 has no `_mm_cmpeq_epi64`.
 fn sse2_int_compare_expr(method: &str, vec_ty: &VecType) -> TokenStream {
     match method {
         "simd_eq" if vec_ty.scalar_bits == 64 => quote! {
@@ -779,6 +794,11 @@ fn sse2_int_compare_expr(method: &str, vec_ty: &VecType) -> TokenStream {
     }
 }
 
+/// Select between two vectors using an SSE2 mask.
+///
+/// SSE2 predates `blendv`, but these masks are represented as all-zero or
+/// all-one bits, so selection can be implemented as `(mask & true) |
+/// (!mask & false)`.
 fn sse2_select_expr(
     vec_ty: &VecType,
     mask: TokenStream,
@@ -794,6 +814,11 @@ fn sse2_select_expr(
     }
 }
 
+/// Build an integer min/max expression that is available on SSE2.
+///
+/// SSE2 has native min/max only for unsigned 8-bit and signed 16-bit lanes.
+/// Other 8/16/32-bit integer min/max operations are synthesized with an SSE2
+/// comparison and the bitwise select helper above.
 fn sse2_min_max_expr(method: &str, vec_ty: &VecType) -> TokenStream {
     match (method, vec_ty.scalar, vec_ty.scalar_bits) {
         ("min", ScalarType::Unsigned, 8) | ("max", ScalarType::Unsigned, 8) => {
