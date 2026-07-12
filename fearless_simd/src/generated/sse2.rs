@@ -19,6 +19,8 @@ trait FloatExt {
     fn floor(self) -> Self;
     fn ceil(self) -> Self;
     fn round_ties_even(self) -> Self;
+    fn fract(self) -> Self;
+    fn sqrt(self) -> Self;
     fn trunc(self) -> Self;
 }
 #[cfg(all(feature = "libm", not(feature = "std")))]
@@ -34,6 +36,14 @@ impl FloatExt for f32 {
     #[inline(always)]
     fn round_ties_even(self) -> f32 {
         libm::rintf(self)
+    }
+    #[inline(always)]
+    fn sqrt(self) -> f32 {
+        libm::sqrtf(self)
+    }
+    #[inline(always)]
+    fn fract(self) -> f32 {
+        self - self.trunc()
     }
     #[inline(always)]
     fn trunc(self) -> f32 {
@@ -53,6 +63,14 @@ impl FloatExt for f64 {
     #[inline(always)]
     fn round_ties_even(self) -> f64 {
         libm::rint(self)
+    }
+    #[inline(always)]
+    fn sqrt(self) -> f64 {
+        libm::sqrt(self)
+    }
+    #[inline(always)]
+    fn fract(self) -> f64 {
+        self - self.trunc()
     }
     #[inline(always)]
     fn trunc(self) -> f64 {
