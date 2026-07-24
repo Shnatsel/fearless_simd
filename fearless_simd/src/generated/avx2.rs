@@ -2146,17 +2146,22 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn shlv_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::shl(a[0usize], &b[0usize]),
-            i16::shl(a[1usize], &b[1usize]),
-            i16::shl(a[2usize], &b[2usize]),
-            i16::shl(a[3usize], &b[3usize]),
-            i16::shl(a[4usize], &b[4usize]),
-            i16::shl(a[5usize], &b[5usize]),
-            i16::shl(a[6usize], &b[6usize]),
-            i16::shl(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: i16x8<Avx2>, b: i16x8<Avx2>) -> i16x8<Avx2> {
+                let values = a.into();
+                let counts = b.into();
+                let low_words = _mm_set1_epi32(0x0000ffff);
+                let low_counts = _mm_and_si128(counts, low_words);
+                let high_counts = _mm_srli_epi32::<16>(counts);
+                let high_values = _mm_andnot_si128(low_words, values);
+                let low_shifted = _mm_sllv_epi32(values, low_counts);
+                let high_shifted = _mm_sllv_epi32(high_values, high_counts);
+                let low_shifted = _mm_and_si128(low_shifted, low_words);
+                _mm_or_si128(low_shifted, high_shifted).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
     }
     #[inline(always)]
     fn shr_i16x8(self, a: i16x8<Self>, shift: u32) -> i16x8<Self> {
@@ -2170,17 +2175,22 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn shrv_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
-        [
-            i16::shr(a[0usize], &b[0usize]),
-            i16::shr(a[1usize], &b[1usize]),
-            i16::shr(a[2usize], &b[2usize]),
-            i16::shr(a[3usize], &b[3usize]),
-            i16::shr(a[4usize], &b[4usize]),
-            i16::shr(a[5usize], &b[5usize]),
-            i16::shr(a[6usize], &b[6usize]),
-            i16::shr(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: i16x8<Avx2>, b: i16x8<Avx2>) -> i16x8<Avx2> {
+                let values = a.into();
+                let counts = b.into();
+                let zero = _mm_setzero_si128();
+                let low_counts = _mm_blend_epi16::<0xaa>(counts, zero);
+                let high_counts = _mm_srli_epi32::<16>(counts);
+                let select_low = _mm_set1_epi32(1);
+                let low_values = _mm_madd_epi16(values, select_low);
+                let low_shifted = _mm_srav_epi32(low_values, low_counts);
+                let high_shifted = _mm_srav_epi32(values, high_counts);
+                _mm_blend_epi16::<0xaa>(low_shifted, high_shifted).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
     }
     #[inline(always)]
     fn simd_eq_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> mask16x8<Self> {
@@ -2597,17 +2607,22 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn shlv_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::shl(a[0usize], &b[0usize]),
-            u16::shl(a[1usize], &b[1usize]),
-            u16::shl(a[2usize], &b[2usize]),
-            u16::shl(a[3usize], &b[3usize]),
-            u16::shl(a[4usize], &b[4usize]),
-            u16::shl(a[5usize], &b[5usize]),
-            u16::shl(a[6usize], &b[6usize]),
-            u16::shl(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: u16x8<Avx2>, b: u16x8<Avx2>) -> u16x8<Avx2> {
+                let values = a.into();
+                let counts = b.into();
+                let low_words = _mm_set1_epi32(0x0000ffff);
+                let low_counts = _mm_and_si128(counts, low_words);
+                let high_counts = _mm_srli_epi32::<16>(counts);
+                let high_values = _mm_andnot_si128(low_words, values);
+                let low_shifted = _mm_sllv_epi32(values, low_counts);
+                let high_shifted = _mm_sllv_epi32(high_values, high_counts);
+                let low_shifted = _mm_and_si128(low_shifted, low_words);
+                _mm_or_si128(low_shifted, high_shifted).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
     }
     #[inline(always)]
     fn shr_u16x8(self, a: u16x8<Self>, shift: u32) -> u16x8<Self> {
@@ -2621,17 +2636,22 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn shrv_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
-        [
-            u16::shr(a[0usize], &b[0usize]),
-            u16::shr(a[1usize], &b[1usize]),
-            u16::shr(a[2usize], &b[2usize]),
-            u16::shr(a[3usize], &b[3usize]),
-            u16::shr(a[4usize], &b[4usize]),
-            u16::shr(a[5usize], &b[5usize]),
-            u16::shr(a[6usize], &b[6usize]),
-            u16::shr(a[7usize], &b[7usize]),
-        ]
-        .simd_into(self)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: u16x8<Avx2>, b: u16x8<Avx2>) -> u16x8<Avx2> {
+                let values = a.into();
+                let counts = b.into();
+                let low_words = _mm_set1_epi32(0x0000ffff);
+                let low_counts = _mm_and_si128(counts, low_words);
+                let high_counts = _mm_srli_epi32::<16>(counts);
+                let low_values = _mm_and_si128(values, low_words);
+                let low_shifted = _mm_srlv_epi32(low_values, low_counts);
+                let high_shifted = _mm_srlv_epi32(values, high_counts);
+                let high_shifted = _mm_andnot_si128(low_words, high_shifted);
+                _mm_or_si128(low_shifted, high_shifted).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
     }
     #[inline(always)]
     fn simd_eq_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> mask16x8<Self> {
@@ -8007,25 +8027,22 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn shlv_i16x16(self, a: i16x16<Self>, b: i16x16<Self>) -> i16x16<Self> {
-        [
-            i16::shl(a[0usize], &b[0usize]),
-            i16::shl(a[1usize], &b[1usize]),
-            i16::shl(a[2usize], &b[2usize]),
-            i16::shl(a[3usize], &b[3usize]),
-            i16::shl(a[4usize], &b[4usize]),
-            i16::shl(a[5usize], &b[5usize]),
-            i16::shl(a[6usize], &b[6usize]),
-            i16::shl(a[7usize], &b[7usize]),
-            i16::shl(a[8usize], &b[8usize]),
-            i16::shl(a[9usize], &b[9usize]),
-            i16::shl(a[10usize], &b[10usize]),
-            i16::shl(a[11usize], &b[11usize]),
-            i16::shl(a[12usize], &b[12usize]),
-            i16::shl(a[13usize], &b[13usize]),
-            i16::shl(a[14usize], &b[14usize]),
-            i16::shl(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: i16x16<Avx2>, b: i16x16<Avx2>) -> i16x16<Avx2> {
+                let values = a.into();
+                let counts = b.into();
+                let low_words = _mm256_set1_epi32(0x0000ffff);
+                let low_counts = _mm256_and_si256(counts, low_words);
+                let high_counts = _mm256_srli_epi32::<16>(counts);
+                let high_values = _mm256_andnot_si256(low_words, values);
+                let low_shifted = _mm256_sllv_epi32(values, low_counts);
+                let high_shifted = _mm256_sllv_epi32(high_values, high_counts);
+                let low_shifted = _mm256_and_si256(low_shifted, low_words);
+                _mm256_or_si256(low_shifted, high_shifted).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
     }
     #[inline(always)]
     fn shr_i16x16(self, a: i16x16<Self>, shift: u32) -> i16x16<Self> {
@@ -8039,25 +8056,22 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn shrv_i16x16(self, a: i16x16<Self>, b: i16x16<Self>) -> i16x16<Self> {
-        [
-            i16::shr(a[0usize], &b[0usize]),
-            i16::shr(a[1usize], &b[1usize]),
-            i16::shr(a[2usize], &b[2usize]),
-            i16::shr(a[3usize], &b[3usize]),
-            i16::shr(a[4usize], &b[4usize]),
-            i16::shr(a[5usize], &b[5usize]),
-            i16::shr(a[6usize], &b[6usize]),
-            i16::shr(a[7usize], &b[7usize]),
-            i16::shr(a[8usize], &b[8usize]),
-            i16::shr(a[9usize], &b[9usize]),
-            i16::shr(a[10usize], &b[10usize]),
-            i16::shr(a[11usize], &b[11usize]),
-            i16::shr(a[12usize], &b[12usize]),
-            i16::shr(a[13usize], &b[13usize]),
-            i16::shr(a[14usize], &b[14usize]),
-            i16::shr(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: i16x16<Avx2>, b: i16x16<Avx2>) -> i16x16<Avx2> {
+                let values = a.into();
+                let counts = b.into();
+                let zero = _mm256_setzero_si256();
+                let low_counts = _mm256_blend_epi16::<0xaa>(counts, zero);
+                let high_counts = _mm256_srli_epi32::<16>(counts);
+                let select_low = _mm256_set1_epi32(1);
+                let low_values = _mm256_madd_epi16(values, select_low);
+                let low_shifted = _mm256_srav_epi32(low_values, low_counts);
+                let high_shifted = _mm256_srav_epi32(values, high_counts);
+                _mm256_blend_epi16::<0xaa>(low_shifted, high_shifted).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
     }
     #[inline(always)]
     fn simd_eq_i16x16(self, a: i16x16<Self>, b: i16x16<Self>) -> mask16x16<Self> {
@@ -8601,25 +8615,22 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn shlv_u16x16(self, a: u16x16<Self>, b: u16x16<Self>) -> u16x16<Self> {
-        [
-            u16::shl(a[0usize], &b[0usize]),
-            u16::shl(a[1usize], &b[1usize]),
-            u16::shl(a[2usize], &b[2usize]),
-            u16::shl(a[3usize], &b[3usize]),
-            u16::shl(a[4usize], &b[4usize]),
-            u16::shl(a[5usize], &b[5usize]),
-            u16::shl(a[6usize], &b[6usize]),
-            u16::shl(a[7usize], &b[7usize]),
-            u16::shl(a[8usize], &b[8usize]),
-            u16::shl(a[9usize], &b[9usize]),
-            u16::shl(a[10usize], &b[10usize]),
-            u16::shl(a[11usize], &b[11usize]),
-            u16::shl(a[12usize], &b[12usize]),
-            u16::shl(a[13usize], &b[13usize]),
-            u16::shl(a[14usize], &b[14usize]),
-            u16::shl(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: u16x16<Avx2>, b: u16x16<Avx2>) -> u16x16<Avx2> {
+                let values = a.into();
+                let counts = b.into();
+                let low_words = _mm256_set1_epi32(0x0000ffff);
+                let low_counts = _mm256_and_si256(counts, low_words);
+                let high_counts = _mm256_srli_epi32::<16>(counts);
+                let high_values = _mm256_andnot_si256(low_words, values);
+                let low_shifted = _mm256_sllv_epi32(values, low_counts);
+                let high_shifted = _mm256_sllv_epi32(high_values, high_counts);
+                let low_shifted = _mm256_and_si256(low_shifted, low_words);
+                _mm256_or_si256(low_shifted, high_shifted).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
     }
     #[inline(always)]
     fn shr_u16x16(self, a: u16x16<Self>, shift: u32) -> u16x16<Self> {
@@ -8633,25 +8644,22 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn shrv_u16x16(self, a: u16x16<Self>, b: u16x16<Self>) -> u16x16<Self> {
-        [
-            u16::shr(a[0usize], &b[0usize]),
-            u16::shr(a[1usize], &b[1usize]),
-            u16::shr(a[2usize], &b[2usize]),
-            u16::shr(a[3usize], &b[3usize]),
-            u16::shr(a[4usize], &b[4usize]),
-            u16::shr(a[5usize], &b[5usize]),
-            u16::shr(a[6usize], &b[6usize]),
-            u16::shr(a[7usize], &b[7usize]),
-            u16::shr(a[8usize], &b[8usize]),
-            u16::shr(a[9usize], &b[9usize]),
-            u16::shr(a[10usize], &b[10usize]),
-            u16::shr(a[11usize], &b[11usize]),
-            u16::shr(a[12usize], &b[12usize]),
-            u16::shr(a[13usize], &b[13usize]),
-            u16::shr(a[14usize], &b[14usize]),
-            u16::shr(a[15usize], &b[15usize]),
-        ]
-        .simd_into(self)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: u16x16<Avx2>, b: u16x16<Avx2>) -> u16x16<Avx2> {
+                let values = a.into();
+                let counts = b.into();
+                let low_words = _mm256_set1_epi32(0x0000ffff);
+                let low_counts = _mm256_and_si256(counts, low_words);
+                let high_counts = _mm256_srli_epi32::<16>(counts);
+                let low_values = _mm256_and_si256(values, low_words);
+                let low_shifted = _mm256_srlv_epi32(low_values, low_counts);
+                let high_shifted = _mm256_srlv_epi32(values, high_counts);
+                let high_shifted = _mm256_andnot_si256(low_words, high_shifted);
+                _mm256_or_si256(low_shifted, high_shifted).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
     }
     #[inline(always)]
     fn simd_eq_u16x16(self, a: u16x16<Self>, b: u16x16<Self>) -> mask16x16<Self> {

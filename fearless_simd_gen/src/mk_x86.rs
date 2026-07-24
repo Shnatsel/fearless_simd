@@ -1818,6 +1818,15 @@ impl X86 {
                 })
             }
             "shlv" | "shrv"
+                if *self == Self::Avx2
+                    && matches!(vec_ty.scalar, ScalarType::Int | ScalarType::Unsigned)
+                    && vec_ty.scalar_bits == 16 =>
+            {
+                self.kernel_method(op, vec_ty, |token| {
+                    self.handle_avx2_i16_variable_shift(method, vec_ty, token)
+                })
+            }
+            "shlv" | "shrv"
                 if !(matches!(self, Self::Avx2 | Self::Avx512) && vec_ty.scalar_bits >= 32) =>
             {
                 // x86 only has lane-wise variable shifts for wider lanes starting at AVX2.
@@ -1860,6 +1869,88 @@ impl X86 {
                     }
                 }
             }),
+        }
+    }
+
+    fn handle_avx2_i16_variable_shift(
+        &self,
+        method: &str,
+        vec_ty: &VecType,
+        token: &Ident,
+    ) -> TokenStream {
+        assert!(
+            *self == Self::Avx2,
+            "16-bit variable shifts are specialized for AVX2"
+        );
+        assert_eq!(
+            vec_ty.scalar_bits, 16,
+            "AVX2 16-bit variable shifts only handle 16-bit lanes"
+        );
+
+        let ty_bits = vec_ty.n_bits();
+        let set1_epi32 = intrinsic_ident("set1", "epi32", ty_bits);
+        let srli_epi32 = intrinsic_ident("srli", "epi32", ty_bits);
+        let shift_name = match method {
+            "shlv" => "sllv",
+            "shrv" if vec_ty.scalar == ScalarType::Int => "srav",
+            "shrv" => "srlv",
+            _ => unreachable!(),
+        };
+        let shift_epi32 = intrinsic_ident(shift_name, "epi32", ty_bits);
+
+        if method == "shrv" && vec_ty.scalar == ScalarType::Int {
+            // Multiplying each low word by one and each high word by zero sign-extends the
+            // low words to 32 bits. The high words are already in the signed position of
+            // each 32-bit lane, so both halves can then use vpsravd and be blended together.
+            let setzero = intrinsic_ident("setzero", coarse_type(vec_ty), ty_bits);
+            let blend_epi16 = intrinsic_ident("blend", "epi16", ty_bits);
+            let madd_epi16 = intrinsic_ident("madd", "epi16", ty_bits);
+            return quote! {
+                let values = a.into();
+                let counts = b.into();
+                let zero = #setzero();
+                let low_counts = #blend_epi16::<0xaa>(counts, zero);
+                let high_counts = #srli_epi32::<16>(counts);
+                let select_low = #set1_epi32(1);
+                let low_values = #madd_epi16(values, select_low);
+                let low_shifted = #shift_epi32(low_values, low_counts);
+                let high_shifted = #shift_epi32(values, high_counts);
+                #blend_epi16::<0xaa>(low_shifted, high_shifted).simd_into(#token)
+            };
+        }
+
+        let and = intrinsic_ident("and", coarse_type(vec_ty), ty_bits);
+        let andnot = intrinsic_ident("andnot", coarse_type(vec_ty), ty_bits);
+        let or = intrinsic_ident("or", coarse_type(vec_ty), ty_bits);
+
+        // Shift the low and high words independently as 32-bit lanes, masking away the
+        // neighboring word wherever a logical shift could otherwise mix the two.
+        if method == "shlv" {
+            quote! {
+                let values = a.into();
+                let counts = b.into();
+                let low_words = #set1_epi32(0x0000ffff);
+                let low_counts = #and(counts, low_words);
+                let high_counts = #srli_epi32::<16>(counts);
+                let high_values = #andnot(low_words, values);
+                let low_shifted = #shift_epi32(values, low_counts);
+                let high_shifted = #shift_epi32(high_values, high_counts);
+                let low_shifted = #and(low_shifted, low_words);
+                #or(low_shifted, high_shifted).simd_into(#token)
+            }
+        } else {
+            quote! {
+                let values = a.into();
+                let counts = b.into();
+                let low_words = #set1_epi32(0x0000ffff);
+                let low_counts = #and(counts, low_words);
+                let high_counts = #srli_epi32::<16>(counts);
+                let low_values = #and(values, low_words);
+                let low_shifted = #shift_epi32(low_values, low_counts);
+                let high_shifted = #shift_epi32(values, high_counts);
+                let high_shifted = #andnot(low_words, high_shifted);
+                #or(low_shifted, high_shifted).simd_into(#token)
+            }
         }
     }
 
