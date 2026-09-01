@@ -118,6 +118,66 @@ impl<T, S: Simd> SimdFrom<T, S> for T {
 }
 
 /// Types that can be used as elements in SIMD vectors.
+///
+/// [`Vector`](SimdElement::Vector) maps an element type and a [`Simd`] backend
+/// to that backend's native-width vector. For example,
+/// `<f32 as SimdElement>::Vector<Avx2>` is the same type as
+/// `<Avx2 as Simd>::f32s`. This scalar-owned mapping lets code remain generic
+/// over the element type while using SIMD vectors internally.
+///
+/// The vector's lane count, mask, and 128-bit block type are available through
+/// [`SimdBase`]. Operations specific to integers or floats can be requested by
+/// additionally bounding `T::Vector<S>` with [`SimdInt`](crate::SimdInt) or
+/// [`SimdFloat`](crate::SimdFloat).
+///
+/// This trait is sealed because SIMD hardware supports a finite set of element
+/// types. It is implemented for `f32`, `f64`, and the signed and unsigned
+/// integer types from 8 through 64 bits.
+///
+/// # Example
+///
+/// Both the public wrapper and its SIMD kernel can be generic over the scalar
+/// type. The backend-specific vector stays inside the dispatched kernel:
+///
+/// ```
+/// use fearless_simd::{dispatch, prelude::*, Level};
+///
+/// #[inline(always)]
+/// fn multiply_add<S: Simd, T: SimdElement>(
+///     simd: S,
+///     values: &mut [T],
+///     multiplier: T,
+///     addend: T,
+/// ) {
+///     let mut chunks = values.chunks_exact_mut(T::Vector::<S>::N);
+///     for chunk in &mut chunks {
+///         let values = T::Vector::<S>::from_slice(simd, chunk);
+///         (values * multiplier + addend).store_slice(chunk);
+///     }
+///     for value in chunks.into_remainder() {
+///         *value = *value * multiplier + addend;
+///     }
+/// }
+///
+/// fn multiply_add_best<T: SimdElement>(
+///     level: Level,
+///     values: &mut [T],
+///     multiplier: T,
+///     addend: T,
+/// ) {
+///     dispatch!(level, simd => multiply_add(simd, values, multiplier, addend));
+/// }
+///
+/// let level = Level::new();
+///
+/// let mut floats = [1.5_f32; 64];
+/// multiply_add_best(level, &mut floats, 2.0, 1.0);
+/// assert_eq!(floats, [4.0; 64]);
+///
+/// let mut integers = [2_u32; 64];
+/// multiply_add_best(level, &mut integers, 3, 1);
+/// assert_eq!(integers, [7; 64]);
+/// ```
 pub trait SimdElement:
     Copy
     + Clone
@@ -156,6 +216,9 @@ pub trait SimdElement:
     + for<'a> Sum<&'a Self>
     + for<'a> Product<&'a Self>
 {
+    /// The native-width SIMD vector of this element type for `S`.
+    type Vector<S: Simd>: SimdBase<S, Element = Self>;
+
     /// The associated mask lane type. This will be a signed integer of the same size as this type.
     type Mask: SimdElement<Mask = Self::Mask>;
 
@@ -164,42 +227,52 @@ pub trait SimdElement:
 }
 
 impl SimdElement for f32 {
+    type Vector<S: Simd> = S::f32s;
     type Mask = i32;
 }
 
 impl SimdElement for f64 {
+    type Vector<S: Simd> = S::f64s;
     type Mask = i64;
 }
 
 impl SimdElement for u8 {
+    type Vector<S: Simd> = S::u8s;
     type Mask = i8;
 }
 
 impl SimdElement for i8 {
+    type Vector<S: Simd> = S::i8s;
     type Mask = Self;
 }
 
 impl SimdElement for u16 {
+    type Vector<S: Simd> = S::u16s;
     type Mask = i16;
 }
 
 impl SimdElement for i16 {
+    type Vector<S: Simd> = S::i16s;
     type Mask = Self;
 }
 
 impl SimdElement for u32 {
+    type Vector<S: Simd> = S::u32s;
     type Mask = i32;
 }
 
 impl SimdElement for i32 {
+    type Vector<S: Simd> = S::i32s;
     type Mask = Self;
 }
 
 impl SimdElement for u64 {
+    type Vector<S: Simd> = S::u64s;
     type Mask = i64;
 }
 
 impl SimdElement for i64 {
+    type Vector<S: Simd> = S::i64s;
     type Mask = Self;
 }
 

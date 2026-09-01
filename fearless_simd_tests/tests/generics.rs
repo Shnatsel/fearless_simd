@@ -5,7 +5,46 @@
 
 #![expect(dead_code, reason = "Compile only tests")]
 
-use fearless_simd::{f32x4, f64x2, prelude::*};
+use fearless_simd::{Level, dispatch, f32x4, f64x2, prelude::*};
+
+#[inline(always)]
+fn generic_multiply_add<S: Simd, T: SimdElement>(
+    simd: S,
+    values: &mut [T],
+    multiplier: T,
+    addend: T,
+) {
+    let mut chunks = values.chunks_exact_mut(T::Vector::<S>::N);
+    for chunk in &mut chunks {
+        let values = T::Vector::<S>::from_slice(simd, chunk);
+        (values * multiplier + addend).store_slice(chunk);
+    }
+    for value in chunks.into_remainder() {
+        *value = *value * multiplier + addend;
+    }
+}
+
+fn dispatch_generic_multiply_add<T: SimdElement>(
+    level: Level,
+    values: &mut [T],
+    multiplier: T,
+    addend: T,
+) {
+    dispatch!(level, simd => generic_multiply_add(simd, values, multiplier, addend));
+}
+
+#[test]
+fn scalar_type_selects_native_vector_during_dispatch() {
+    let level = Level::new();
+
+    let mut floats = [1.5_f32; 65];
+    dispatch_generic_multiply_add(level, &mut floats, 2.0, 1.0);
+    assert_eq!(floats, [4.0; 65]);
+
+    let mut integers = [2_u32; 65];
+    dispatch_generic_multiply_add(level, &mut integers, 3, 1);
+    assert_eq!(integers, [7; 65]);
+}
 
 // Ensure that we can cast between generic native-width vectors
 fn generic_cast<S: Simd>(x: S::f32s) -> S::u32s {
