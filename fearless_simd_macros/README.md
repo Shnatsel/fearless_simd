@@ -59,7 +59,9 @@ outer wrapper; their effects are not transferred to the generated closure or
 the target-feature helper that executes it.
 
 The closure and `vectorize` call are tail expressions, so the original body's
-value and type checking are preserved.
+value is preserved. The closure also receives the function's declared return
+type to preserve return-value coercions. Any `impl Trait` within that annotation
+is replaced with `_` for inference; the function's signature remains unchanged.
 
 ## Accepted functions
 

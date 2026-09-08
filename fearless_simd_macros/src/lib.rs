@@ -7,6 +7,7 @@ use core::mem;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::quote;
+use syn::fold::{self, Fold};
 use syn::{AttrStyle, Attribute, FnArg, ItemFn, Pat, PatIdent, Result};
 
 /// Run a SIMD-generic function body with the token's target features enabled.
@@ -39,6 +40,11 @@ fn expand(args: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
 
     let token = simd_token(&mut function)?;
     let original_statements = mem::take(&mut function.block.stmts);
+    // Give the closure the same expected return type so branch and early-return
+    // coercions happen inside its body. Closures cannot name `impl Trait`, so
+    // infer those parts while preserving the surrounding type structure.
+    let output = &function.sig.output;
+    let closure_output = InferImplTrait.fold_return_type(syn::parse_quote!(#output));
 
     // Inner function attributes are held in function.attrs by Syn. Leaving
     // them there keeps them at the beginning of the outer function body,
@@ -49,7 +55,7 @@ fn expand(args: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
     let vectorize_call: syn::Expr = syn::parse_quote! {
         #token.vectorize(
             #[inline(always)]
-            || { #(#original_statements)* }
+            || #closure_output { #(#original_statements)* }
         )
     };
     function
@@ -58,6 +64,17 @@ fn expand(args: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
         .push(syn::Stmt::Expr(vectorize_call, None));
 
     Ok(quote!(#function))
+}
+
+struct InferImplTrait;
+
+impl Fold for InferImplTrait {
+    fn fold_type(&mut self, ty: syn::Type) -> syn::Type {
+        match ty {
+            syn::Type::ImplTrait(_) => syn::parse_quote!(_),
+            ty => fold::fold_type(self, ty),
+        }
+    }
 }
 
 fn reject_unsupported_signature(function: &ItemFn) -> Result<()> {
@@ -258,7 +275,10 @@ mod tests {
                 panic!("vectorize argument should be a closure");
             };
 
-            assert!(matches!(closure.output, syn::ReturnType::Default));
+            assert_eq!(
+                closure.output.to_token_stream().to_string(),
+                parsed.sig.output.to_token_stream().to_string()
+            );
         }
     }
 
