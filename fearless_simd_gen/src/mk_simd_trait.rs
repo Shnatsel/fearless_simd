@@ -156,9 +156,9 @@ pub(crate) fn mk_simd_trait() -> TokenStream {
             /// itself need an `#[inline(always)]` annotation; a target-feature boundary is retained
             /// whenever one is required.
             ///
-            /// The experimental [`#[simd]`](https://docs.rs/fearless_simd_macros/latest/fearless_simd_macros/attr.simd.html)
+            /// The [`#[simd]`](https://docs.rs/fearless_simd_macros/latest/fearless_simd_macros/attr.simd.html)
             /// attribute from the separate `fearless_simd_macros` crate performs this wrapping
-            /// automatically. Calling `vectorize()` directly is the dependency-free equivalent.
+            /// automatically. Calling `vectorize()` manually is the dependency-free equivalent.
             ///
             /// # Example
             ///

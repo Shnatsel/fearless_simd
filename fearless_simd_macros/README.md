@@ -1,24 +1,20 @@
 # Fearless SIMD macros
 
-This crate provides the experimental `#[simd]` attribute for
+This crate provides the `#[simd]` attribute for
 [`fearless_simd`](https://crates.io/crates/fearless_simd). It is versioned
 separately so that the macro can evolve without adding a procedural-macro
 dependency to `fearless_simd` itself.
 
-The macro currently targets the inline-friendly `vectorize` implementation on
-the main branch. Until the next `fearless_simd` release containing that
-implementation and the first macro release are published, use both packages
-from Git:
+Add both packages from crates.io to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-fearless_simd = { git = "https://github.com/linebender/fearless_simd" }
-fearless_simd_macros = { git = "https://github.com/linebender/fearless_simd" }
+fearless_simd = "1.0"
+fearless_simd_macros = "0.1"
 ```
 
-`fearless_simd_macros` 0.1.0 must be published only after that core release;
-this example should then use the released core version and
-`fearless_simd_macros = "0.1"`.
+The macro also works with earlier `fearless_simd` versions that provide
+`Simd::vectorize`.
 
 Then apply `#[simd]` to a function whose first ordinary parameter is its SIMD
 token:

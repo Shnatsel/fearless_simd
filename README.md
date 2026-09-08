@@ -24,7 +24,7 @@ For now, prefer updating the package-level readmes, e.g. fearless_simd/README.md
 </div>
 
 Full details of how to use Fearless SIMD can be found in the
-[core package's README](./fearless_simd/README.md). The optional, experimental `#[simd]`
+[core package's README](./fearless_simd/README.md). The optional `#[simd]`
 attribute is provided by the separately versioned
 [`fearless_simd_macros` companion package](./fearless_simd_macros/README.md); the core package does
 not depend on it.
@@ -40,7 +40,7 @@ The blog post [Safe SIMD in Rust, even on the inside] describes the design and h
 This repository contains two packages published to crates.io:
 
 - `fearless_simd`: The zero-dependency core library, including the examples.
-- `fearless_simd_macros`: A separately versioned, experimental companion crate providing the optional `#[simd]` procedural macro.
+- `fearless_simd_macros`: A separately versioned companion crate providing the optional `#[simd]` procedural macro.
 
 The remaining packages are development tools and tests:
 

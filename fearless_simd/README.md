@@ -48,7 +48,7 @@ The core crate has zero dependencies, safe public APIs, and
 
 ## Automatic vectorization
 
-The easiest way to define a SIMD-generic function is the experimental
+The easiest way to define a SIMD-generic function is the
 [`#[simd]`](https://docs.rs/fearless_simd_macros/latest/fearless_simd_macros/attr.simd.html)
 attribute from the separately versioned `fearless_simd_macros` crate. The companion macro
 crate is optional: `fearless_simd` does not depend on it, so users of only the core API do not

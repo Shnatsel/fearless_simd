@@ -21,7 +21,7 @@
 /// For clarity, it will only be executed once per execution of `dispatch`.
 ///
 /// To guarantee target-feature-specific code generation, functions called within the operation
-/// should either establish their own context with [`Simd::vectorize`], use the experimental
+/// should either establish their own context with [`Simd::vectorize`], use the
 /// [`#[simd]`](https://docs.rs/fearless_simd_macros/latest/fearless_simd_macros/attr.simd.html)
 /// attribute, or be `#[inline(always)]` so that they are incorporated into this operation.
 ///
