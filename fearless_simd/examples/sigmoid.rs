@@ -8,7 +8,7 @@
 
 use fearless_simd::{Level, dispatch, prelude::*};
 
-#[inline(always)]
+#[inline(always)] // or #[simd], either works
 fn sigmoid<S: Simd>(simd: S, x: &[f32], out: &mut [f32]) {
     let n = S::f32s::N;
     for (x, y) in x.chunks_exact(n).zip(out.chunks_exact_mut(n)) {
