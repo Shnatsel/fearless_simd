@@ -13,10 +13,22 @@ fearless_simd = "1.0"
 fearless_simd_macros = "0.1"
 ```
 
-The consumer must declare `fearless_simd` as a direct dependency; renamed Cargo
-dependencies are supported. The macro uses the library's internal
-`__fearless_simd_kernel_target_fn!` helper, so `Simd::vectorize` alone is no
-longer sufficient for compatibility with older library versions.
+The library must be in scope as `fearless_simd` in the module containing the
+annotated function. The dependency declaration above makes that name available
+automatically. For a renamed Cargo dependency, add an alias in that module:
+
+```rust,ignore
+use simd_backend as fearless_simd;
+```
+
+A library re-export can be imported with
+`use my_facade::simd_backend as fearless_simd;`. For use inside the
+`fearless_simd` library itself, write `use crate as fearless_simd;`.
+The macro does not inspect Cargo manifests to discover dependency names.
+
+The library version must provide the internal `__fearless_simd_dispatch!`
+helper. `Simd::vectorize` or `__fearless_simd_kernel_target_fn!` alone is not
+sufficient for compatibility with older library versions.
 
 Then apply `#[simd]` to a function whose first ordinary parameter is its SIMD
 token:
@@ -122,11 +134,14 @@ substitute for function-parameter destruction order. Avoid relying on the
 relative drop order of by-value parameters with observable destructors in a
 `#[simd]` function.
 
-The selected token must implement `fearless_simd::Simd`, normally through an
-`S: Simd` bound. The macro generates paths to the consumer's library dependency;
-the procedural-macro crate itself does not depend on `fearless_simd`.
+The selected token must implement the library's `Simd` trait, normally through
+an `S: Simd` bound. The procedural macro invokes
+`fearless_simd::__fearless_simd_dispatch!`; the procedural-macro crate itself
+does not depend on `fearless_simd`. The library helper owns the unsafe calls
+and resolves all proof types through `$crate`, so a lookalike module cannot
+substitute counterfeit proof tokens when re-exporting that helper.
 Unknown future backends retain the existing `Simd::vectorize` path until the
-macro is updated to generate helpers for them.
+library helper is updated to generate entries for them.
 
 ## Minimum supported Rust version
 

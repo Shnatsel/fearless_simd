@@ -10,36 +10,21 @@ use quote::quote;
 use syn::fold::{self, Fold};
 use syn::{AttrStyle, Attribute, FnArg, ItemFn, Pat, Result};
 
-mod dispatch;
-
 /// Run a SIMD-generic function body with the token's target features enabled.
 ///
 /// The first typed parameter after an optional `self` receiver is used as the
-/// SIMD token. See the [crate-level documentation](crate) for the complete
+/// SIMD token. The library must be in scope as `fearless_simd`; for a renamed
+/// dependency, import it with `use simd_backend as fearless_simd;` in the
+/// containing module. See the [crate-level documentation](crate) for the complete
 /// expansion, supported function forms, and semantic caveats.
 #[proc_macro_attribute]
 pub fn simd(args: TokenStream, item: TokenStream) -> TokenStream {
-    library_path()
-        .and_then(|library| expand(args.into(), item.into(), &library))
+    expand(args.into(), item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
 
-fn library_path() -> Result<syn::Path> {
-    match proc_macro_crate::crate_name("fearless_simd") {
-        Ok(proc_macro_crate::FoundCrate::Itself) => Ok(syn::parse_quote!(crate)),
-        Ok(proc_macro_crate::FoundCrate::Name(name)) => {
-            let name = Ident::new(&name, Span::call_site());
-            Ok(syn::parse_quote!(::#name))
-        }
-        Err(error) => Err(syn::Error::new(
-            Span::call_site(),
-            format!("`#[simd]` requires a `fearless_simd` dependency: {error}"),
-        )),
-    }
-}
-
-fn expand(args: TokenStream2, item: TokenStream2, library: &syn::Path) -> Result<TokenStream2> {
+fn expand(args: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
     if !args.is_empty() {
         return Err(syn::Error::new_spanned(
             args,
@@ -106,7 +91,6 @@ fn expand(args: TokenStream2, item: TokenStream2, library: &syn::Path) -> Result
     }
     // The first typed argument is the validated, unconditional SIMD token.
     let token = &arguments[0];
-    let dispatcher = dispatch::dispatcher(library, &argument_types, &arguments);
 
     // Inner function attributes are held in function.attrs by Syn. Leaving
     // them there keeps them at the beginning of the outer function body,
@@ -116,8 +100,10 @@ fn expand(args: TokenStream2, item: TokenStream2, library: &syn::Path) -> Result
     // `semicolon_if_nothing_returned` lint fire on unit-returning functions.
     // Keep the closure directly in the call, after the arguments: the FnOnce
     // bound then infers its parameter types and their borrowed-return lifetimes.
+    // The library macro owns the unsafe calls and resolves proof types through
+    // $crate. A lookalike `fearless_simd` module cannot spoof those proofs.
     let dispatch_call: syn::Expr = syn::parse_quote! {
-        (#dispatcher).call(
+        (fearless_simd::__fearless_simd_dispatch!(#(#argument_types => #arguments),*)).call(
             #token, #(#arguments,)*
             #[inline(always)]
             |#(#parameters),*| #closure_output { #use_token #(#original_statements)* }
@@ -270,12 +256,7 @@ mod tests {
     use quote::{ToTokens, quote};
     use syn::{AttrStyle, Expr, ItemFn, Stmt};
 
-    fn expand(
-        args: proc_macro2::TokenStream,
-        item: proc_macro2::TokenStream,
-    ) -> syn::Result<proc_macro2::TokenStream> {
-        super::expand(args, item, &syn::parse_quote!(::fearless_simd))
-    }
+    use super::expand;
 
     fn expand_ok(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
         expand(proc_macro2::TokenStream::new(), item).expect("macro expansion should succeed")
@@ -295,10 +276,24 @@ mod tests {
                 sum
             }
         });
+        // Safe user code must not acquire an unsafe call to a caller-resolved
+        // name. Only the library helper may introduce dispatcher unsafety.
+        assert!(!expanded.to_string().contains("unsafe"));
         let parsed: ItemFn = syn::parse2(expanded).expect("expanded function parses");
         let Some(Stmt::Expr(Expr::MethodCall(call), None)) = parsed.block.stmts.last() else {
             panic!("function tail should be a method call");
         };
+        let Expr::Paren(receiver) = &*call.receiver else {
+            panic!("dispatcher receiver should be parenthesized");
+        };
+        let Expr::Macro(dispatcher) = &*receiver.expr else {
+            panic!("dispatcher receiver should be a library macro invocation");
+        };
+        assert!(dispatcher.mac.path.leading_colon.is_none());
+        assert_eq!(
+            dispatcher.mac.path.to_token_stream().to_string(),
+            "fearless_simd :: __fearless_simd_dispatch"
+        );
         let Some(Expr::Closure(closure)) = call.args.last() else {
             panic!("last dispatcher argument should be a closure");
         };
@@ -395,10 +390,12 @@ mod tests {
         let inner_attr = text
             .find("# ! [allow")
             .expect("inner attribute is retained");
-        let call = text.find("__FearlessDispatch").expect("dispatcher exists");
+        let call = text
+            .find("__fearless_simd_dispatch")
+            .expect("dispatcher invocation exists");
         assert!(inner_attr < call);
         assert_eq!(text.matches("inline (never)").count(), 1);
-        assert_eq!(text.matches("inline (always)").count(), 2);
+        assert_eq!(text.matches("inline (always)").count(), 1);
         assert!(text.contains("target_feature"));
     }
 
