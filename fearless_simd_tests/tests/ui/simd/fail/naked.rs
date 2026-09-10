@@ -5,6 +5,7 @@ use fearless_simd_macros::simd;
 
 #[simd]
 #[naked]
+//~^ ERROR: `#[simd]` cannot be used on a naked function
 fn naked_is_not_supported<S: fearless_simd::Simd>(simd: S) {
     let _ = simd;
 }

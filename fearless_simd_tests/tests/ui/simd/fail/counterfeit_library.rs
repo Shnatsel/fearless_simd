@@ -37,6 +37,7 @@ mod fearless_simd {
 }
 
 #[simd]
+//~^ E0277
 fn counterfeit<S: fearless_simd::Simd>(simd: S, value: u32) -> u32 {
     let _ = simd.level();
     value

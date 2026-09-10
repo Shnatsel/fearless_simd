@@ -5,6 +5,7 @@ use fearless_simd_macros::simd;
 
 #[simd]
 #[instruction_set(arm::a32)]
+//~^ ERROR: `#[simd]` cannot be combined with `#[instruction_set]`
 fn instruction_set_is_not_supported<S: fearless_simd::Simd>(simd: S) {
     let _ = simd;
 }

@@ -5,6 +5,7 @@ use fearless_simd_macros::simd;
 
 #[simd]
 unsafe extern "C" fn variadic_is_not_supported<S: fearless_simd::Simd>(simd: S, _: ...) {
+    //~^ ERROR: `#[simd]` does not support variadic functions
     let _ = simd;
 }
 

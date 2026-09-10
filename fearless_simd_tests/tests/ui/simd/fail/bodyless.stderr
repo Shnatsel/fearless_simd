@@ -1,5 +1,0 @@
-error: expected curly braces
- --> tests/ui/simd/fail/bodyless.rs:8:49
-  |
-8 |     fn bodyless<S: fearless_simd::Simd>(simd: S);
-  |                                                 ^

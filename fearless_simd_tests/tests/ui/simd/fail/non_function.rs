@@ -5,5 +5,6 @@ use fearless_simd_macros::simd;
 
 #[simd]
 struct NotAFunction;
+//~^ ERROR: expected `fn`
 
 fn main() {}

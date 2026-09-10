@@ -5,6 +5,7 @@ use fearless_simd_macros::simd;
 
 #[simd]
 fn ref_token_is_not_supported<S: fearless_simd::Simd>(ref simd: S) {
+    //~^ ERROR: the SIMD token parameter must be bound by value, not `ref`
     let _ = simd;
 }
 

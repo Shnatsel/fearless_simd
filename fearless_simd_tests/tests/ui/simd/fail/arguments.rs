@@ -4,6 +4,7 @@
 use fearless_simd_macros::simd;
 
 #[simd(token = simd)]
+//~^ ERROR: `#[simd]` does not accept arguments
 fn arguments_are_not_supported<S: fearless_simd::Simd>(simd: S) {
     let _ = simd;
 }

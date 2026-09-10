@@ -5,6 +5,7 @@ use fearless_simd_macros::simd;
 
 #[simd]
 async fn async_is_not_supported<S: fearless_simd::Simd>(simd: S) {
+    //~^ ERROR: `#[simd]` does not support async functions
     let _ = simd;
 }
 

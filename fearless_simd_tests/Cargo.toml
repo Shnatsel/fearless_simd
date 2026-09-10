@@ -37,4 +37,4 @@ fearless_simd = { workspace = true, features = [
 fearless_simd_dev_macros = { workspace = true }
 
 [target.'cfg(all(target_arch = "x86_64", target_os = "linux"))'.dev-dependencies]
-trybuild = "1.0.120"
+ui_test = "0.30.7"

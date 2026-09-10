@@ -5,6 +5,7 @@ use fearless_simd_macros::simd;
 
 #[simd]
 const fn const_is_not_supported<S: fearless_simd::Simd>(simd: S) {
+    //~^ ERROR: `#[simd]` does not support const functions
     let _ = simd;
 }
 

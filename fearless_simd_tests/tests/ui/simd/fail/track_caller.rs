@@ -5,6 +5,7 @@ use fearless_simd_macros::simd;
 
 #[simd]
 #[track_caller]
+//~^ ERROR: `#[simd]` cannot preserve `#[track_caller]` through its closure
 fn track_caller_is_not_supported<S: fearless_simd::Simd>(simd: S) {
     let _ = simd;
 }
