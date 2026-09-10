@@ -66,6 +66,20 @@ fn expand(args: TokenStream2, item: TokenStream2, library: &syn::Path) -> Result
     let output = &function.sig.output;
     let closure_output = InferImplTrait.fold_return_type(syn::parse_quote!(#output));
 
+    // Wrapping the body in simd.vectorize(|| ...) puts its captured arguments
+    // into a closure struct. If the target-feature helper remains out of line,
+    // that struct can be passed through memory, spilling arguments that would
+    // otherwise fit in registers. Instead, make the body a FnOnce(A0, A1, ...)
+    // and pass each argument separately through the dispatcher. This preserves
+    // register passing without forcing large bodies to inline into every caller.
+    //
+    // Give outer parameters fresh names so we can forward their whole values,
+    // even when their original patterns destructure them. Move those patterns
+    // into the closure's parameters so the body can keep its original bindings.
+    // Fresh generic argument types let the helpers forward these values without
+    // having to reproduce the outer function's generics, lifetimes, or Self.
+    // Keeping one closure body also preserves a single opaque return type when
+    // the function returns impl Trait.
     let mut parameters = Vec::new();
     let mut arguments = Vec::new();
     let mut argument_types = Vec::new();
