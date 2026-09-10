@@ -24,7 +24,15 @@ pub(crate) fn mk_simd_trait() -> TokenStream {
             let doc_alias = op
                 .doc_alias()
                 .map(|alias| quote! { #[doc(alias = #alias)] });
-            if op.sig.should_route_swizzle_through_bytes(vec_ty) {
+            if op.method == "abs" && vec_ty.scalar == ScalarType::Unsigned {
+                methods.extend(quote! {
+                    #[doc = #doc]
+                    #[inline(always)]
+                    #method_sig {
+                        a
+                    }
+                });
+            } else if op.sig.should_route_swizzle_through_bytes(vec_ty) {
                 let method = byte_swizzle_op(&op, vec_ty);
                 methods.extend(quote! {
                     #[doc = #doc]
@@ -173,7 +181,7 @@ pub(crate) fn mk_simd_trait() -> TokenStream {
             ///     simd.vectorize(
             ///         #[inline(always)]
             ///         || {
-            ///             let mut chunks = values.chunks_exact_mut(S::u32s::N);
+            ///             let mut chunks = values.chunks_exact_mut(S::u32s::LEN);
             ///             for chunk in &mut chunks {
             ///                 let value = S::u32s::from_slice(simd, chunk);
             ///                 (value * 2).store_slice(chunk);
@@ -302,7 +310,7 @@ fn mk_simd_base() -> TokenStream {
             /// This vector type's lane count. This is useful when you're
             /// working with a native-width vector (e.g. [`Simd::f32s`]) and
             /// want to process data in native-width chunks.
-            const N: usize;
+            const LEN: usize;
             /// A SIMD vector mask with the same number of logical lanes.
             ///
             /// Masks intentionally do not implement [`SimdBase`]. SSE, NEON, WASM, and the
@@ -312,7 +320,7 @@ fn mk_simd_base() -> TokenStream {
             /// A 128-bit SIMD vector of the same scalar type.
             type Block: SimdBase<S, Element = Self::Element, Block = Self::Block>;
             /// The array type that this vector type corresponds to, which will
-            /// always be `[Self::Element; Self::N]`. It has the same layout as
+            /// always be `[Self::Element; Self::LEN]`. It has the same layout as
             /// this vector type, but likely has a lower alignment.
             type Array: Copy
                 + Debug
@@ -367,15 +375,15 @@ fn mk_simd_base() -> TokenStream {
             fn block_splat(block: Self::Block) -> Self;
             /// Create a SIMD vector where each element is produced by
             /// calling `f` with that element's lane index (from 0 to
-            /// [`SimdBase::N`] - 1).
+            /// [`SimdBase::LEN`] - 1).
             fn from_fn(simd: S, f: impl FnMut(usize) -> Self::Element) -> Self;
 
             /// Rotate the vector elements to the left by `OFFSET`.
             ///
-            /// If `OFFSET` is greater than or equal to `Self::N`, it wraps modulo `Self::N`.
+            /// If `OFFSET` is greater than or equal to `Self::LEN`, it wraps modulo `Self::LEN`.
             #[inline(always)]
             fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
-                match OFFSET % Self::N {
+                match OFFSET % Self::LEN {
                     #(#rotate_left_arms,)*
                     _ => unreachable!(),
                 }
@@ -383,10 +391,10 @@ fn mk_simd_base() -> TokenStream {
 
             /// Rotate the vector elements to the right by `OFFSET`.
             ///
-            /// If `OFFSET` is greater than or equal to `Self::N`, it wraps modulo `Self::N`.
+            /// If `OFFSET` is greater than or equal to `Self::LEN`, it wraps modulo `Self::LEN`.
             #[inline(always)]
             fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
-                match Self::N - OFFSET % Self::N {
+                match Self::LEN - OFFSET % Self::LEN {
                     #(#rotate_right_arms,)*
                     _ => unreachable!(),
                 }
@@ -394,10 +402,10 @@ fn mk_simd_base() -> TokenStream {
 
             /// Shift the vector elements to the left by `OFFSET`, filling in with `padding` from the right.
             ///
-            /// If `OFFSET` is greater than or equal to `Self::N`, all lanes are filled with `padding`.
+            /// If `OFFSET` is greater than or equal to `Self::LEN`, all lanes are filled with `padding`.
             #[inline(always)]
             fn shift_elements_left<const OFFSET: usize>(self, padding: Self::Element) -> Self {
-                match OFFSET.min(Self::N) {
+                match OFFSET.min(Self::LEN) {
                     #(#shift_left_arms,)*
                     _ => unreachable!(),
                 }
@@ -405,11 +413,11 @@ fn mk_simd_base() -> TokenStream {
 
             /// Shift the vector elements to the right by `OFFSET`, filling in with `padding` from the left.
             ///
-            /// If `OFFSET` is greater than or equal to `Self::N`, all lanes are filled with `padding`.
+            /// If `OFFSET` is greater than or equal to `Self::LEN`, all lanes are filled with `padding`.
             #[inline(always)]
             fn shift_elements_right<const OFFSET: usize>(self, padding: Self::Element) -> Self {
                 let padding = Self::splat(self.witness(), padding);
-                match Self::N.saturating_sub(OFFSET) {
+                match Self::LEN.saturating_sub(OFFSET) {
                     #(#shift_right_arms,)*
                     _ => unreachable!(),
                 }
@@ -535,7 +543,7 @@ fn mk_simd_mask() -> TokenStream {
             type Element: SimdElement;
 
             /// This mask type's lane count.
-            const N: usize;
+            const LEN: usize;
 
             /// Get the [`Simd`] implementation associated with this type.
             fn witness(&self) -> S;
@@ -546,13 +554,13 @@ fn mk_simd_mask() -> TokenStream {
             /// Create a mask from a compact bitmask.
             ///
             /// Bit `i` maps to lane `i`, with lane 0 in the least significant bit. Bits above
-            /// [`Self::N`] are ignored.
+            /// [`Self::LEN`] are ignored.
             fn from_bitmask(simd: S, bits: u64) -> Self;
 
             /// Convert this mask to a compact bitmask.
             ///
             /// Bit `i` maps to lane `i`, with lane 0 in the least significant bit. Bits above
-            /// [`Self::N`] are cleared.
+            /// [`Self::LEN`] are cleared.
             fn to_bitmask(self) -> u64;
 
             /// Test whether one logical lane is set.
@@ -561,9 +569,9 @@ fn mk_simd_mask() -> TokenStream {
             #[inline(always)]
             fn test(&self, index: usize) -> bool {
                 assert!(
-                    index < Self::N,
+                    index < Self::LEN,
                     "mask lane index {index} is out of bounds for {} lanes",
-                    Self::N
+                    Self::LEN
                 );
                 (((*self).to_bitmask() >> index) & 1) != 0
             }

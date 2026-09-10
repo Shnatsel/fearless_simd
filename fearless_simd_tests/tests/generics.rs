@@ -36,6 +36,20 @@ fn generic_i64_to_f64<S: Simd>(x: S::i64s) -> S::f64s {
     x.to_float()
 }
 
+// Ensure absolute value is available with only a numeric base trait bound.
+fn generic_abs<S: Simd, V: SimdBase<S>>(value: V) -> V {
+    value.abs()
+}
+
+// Ensure that integer operations exposed through `SimdInt` are available to generic code.
+fn generic_saturating_add<S: Simd, V: SimdInt<S>>(lhs: V, rhs: V) -> V {
+    lhs.saturating_add(rhs)
+}
+
+fn generic_saturating_sub<S: Simd, V: SimdInt<S>>(lhs: V, rhs: V) -> V {
+    lhs.saturating_sub(rhs)
+}
+
 // Ensure that a generic vector's byte representation is itself a same-token
 // byte vector whose byte representation is idempotent.
 fn generic_bytes<S: Simd, V: SimdBase<S>>(value: V) -> V {
@@ -85,6 +99,10 @@ fn generic_reduce_sum<S: Simd, V: SimdBase<S>>(vector: V) -> V::Element {
     vector.reduce_sum()
 }
 
+fn generic_reduce_product<S: Simd, V: SimdBase<S>>(vector: V) -> V::Element {
+    vector.reduce_product()
+}
+
 // Ensure that a generic vector's 128-bit block is its own block
 fn generic_block_splat<S: Simd, V: SimdBase<S>>(block: V::Block) -> V::Block {
     V::Block::block_splat(block)
@@ -96,7 +114,7 @@ fn generic_four_interleaved_color_transform<S: Simd, V: SimdInterleaved<S>>(
     simd: S,
     pixels: &mut [V::Element],
 ) {
-    let mut chunks = pixels.chunks_exact_mut(V::N * 4);
+    let mut chunks = pixels.chunks_exact_mut(V::LEN * 4);
     for chunk in &mut chunks {
         let [red, green, blue, alpha] = V::load_four_interleaved(simd, chunk);
         V::store_four_interleaved([blue, green, red, alpha], chunk);

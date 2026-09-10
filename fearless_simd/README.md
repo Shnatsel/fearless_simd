@@ -108,7 +108,7 @@ use fearless_simd_macros::simd;
 
 #[simd]
 fn double_u32s<S: Simd>(simd: S, values: &mut [u32]) {
-    let mut chunks = values.chunks_exact_mut(S::u32s::N); // the CPU's native SIMD width
+    let mut chunks = values.chunks_exact_mut(S::u32s::LEN); // the CPU's native SIMD width
     for chunk in &mut chunks {
         let v = S::u32s::from_slice(simd, chunk);
         (v * 2).store_slice(chunk);
@@ -270,8 +270,10 @@ It benefited from conversations with Luca Versari, though he is not responsible 
 
 This version of Fearless SIMD has been verified to compile with **Rust 1.89** and later.
 
-Future versions of Fearless SIMD might increase the Rust version requirement.
-It will not be treated as a breaking change and as such can even happen with small patch releases.
+Future versions of Fearless SIMD might increase the Rust version requirement. This will be accompanied by a minor version bump.
+
+If you require a fixed MSRV, we recommend using Cargo's [MSRV-aware resolver](https://doc.rust-lang.org/edition-guide/rust-2024/cargo-resolver.html) which will not select a version that fails to build.
+We will provide [security backports](SECURITY.md) to older Rust versions released within the last 3 years.
 
 ## Community
 

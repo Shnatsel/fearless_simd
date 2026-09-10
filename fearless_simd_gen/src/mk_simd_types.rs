@@ -396,13 +396,18 @@ fn simd_mask_impl(ty: &VecType) -> TokenStream {
             op.vec_trait_method_sig()
         };
         if let Some(method_sig) = method_sig {
-            let call_args = sig
-                .forwarding_call_args()
-                .expect("this method can be forwarded to a specific Simd function");
+            let call = if matches!(sig, OpSig::RotateElements { .. }) {
+                quote! { self.simd.#trait_method::<OFFSET>(self) }
+            } else {
+                let call_args = sig
+                    .forwarding_call_args()
+                    .expect("this method can be forwarded to a specific Simd function");
+                quote! { self.simd.#trait_method(#call_args) }
+            };
             methods.push(quote! {
                 #[inline(always)]
                 #method_sig {
-                    self.simd.#trait_method(#call_args)
+                    #call
                 }
             });
         }
@@ -411,7 +416,7 @@ fn simd_mask_impl(ty: &VecType) -> TokenStream {
     quote! {
         impl<S: Simd> SimdMask<S> for #name<S> {
             type Element = #scalar;
-            const N: usize = #len;
+            const LEN: usize = #len;
 
             #[inline(always)]
             fn witness(&self) -> S {
@@ -551,7 +556,7 @@ fn simd_vec_impl(ty: &VecType) -> TokenStream {
         impl<S: Simd> SimdBase<S> for #name<S> {
             type Element = #scalar;
             type ByteVector = #byte_vector<S>;
-            const N: usize = #len;
+            const LEN: usize = #len;
             type Mask = #mask_ty<S>;
             type Block = #block_ty<S>;
             type Array = [#scalar; #len];

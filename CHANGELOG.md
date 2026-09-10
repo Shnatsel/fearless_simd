@@ -14,6 +14,7 @@ You can find its changes [documented below](#070-2026-08-11).
 ### Added
 
 - Added `reverse` for all SIMD vector and mask types.
+- Added lane-wise `saturating_add` and `saturating_sub` for all integer vector types and backends.
 - Added lane-wise `count_ones` and `count_zeros` operations for all integer vector types and backends.
 - Added `mul_add_precise` and `mul_sub_precise` for floating-point vectors. They guarantee the infinite-precision product-plus-add rounded once, including on SIMD levels without hardware fused multiply-add instructions. They are not susceptible to the [bug](https://github.com/rust-lang/compiler-builtins/issues/1262) in Rust standard library, `std::simd` and musl libc that causes incorrect rounding for subnormal results. SSE4.2 gets SIMD emulation of these operations for better performance. ([#323][], [#324][] by [@Shnatsel][])
 - Documented the storage representation of the SIMD vector types. The documented representation will not change without a semver major version change.
@@ -22,6 +23,7 @@ You can find its changes [documented below](#070-2026-08-11).
 
 ### Changed
 
+- Breaking change: `SimdBase::N` and `SimdMask::N` have been renamed to `LEN`, matching the `std::simd` naming.
 - Breaking change: `SimdBase::as_array` now borrows the vector and returns an array reference, while owned extraction has moved to `to_array`. The old `as_array_ref` and `as_array_mut` methods have been replaced by `as_array` and `as_mut_array`, matching the `std::simd` API.
 - Documentation now recommends the optional `#[simd]` attribute for ergonomics and shows direct `vectorize` calls as the dependency-free equivalent.
 

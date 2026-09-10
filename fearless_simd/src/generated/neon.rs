@@ -110,6 +110,16 @@ impl Simd for Neon {
         unsafe { vectorize_neon(f) }
     }
     #[inline(always)]
+    fn abs_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: f32x4<Neon>) -> f32x4<Neon> {
+                vabsq_f32(a.into()).simd_into(token)
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
     fn splat_f32x4(self, val: f32) -> f32x4<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -140,16 +150,6 @@ impl Simd for Neon {
             val: crate::support::Aligned128(result),
             simd: self,
         })
-    }
-    #[inline(always)]
-    fn abs_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        crate::kernel!(
-            #[inline(always)]
-            fn kernel(token: Neon, a: f32x4<Neon>) -> f32x4<Neon> {
-                vabsq_f32(a.into()).simd_into(token)
-            }
-        );
-        kernel(self, a)
     }
     #[inline(always)]
     fn neg_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
@@ -278,6 +278,19 @@ impl Simd for Neon {
             #[inline(always)]
             fn kernel(token: Neon, a: f32x4<Neon>) -> f32 {
                 vaddvq_f32(a.into())
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_f32x4(self, a: f32x4<Self>) -> f32 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: f32x4<Neon>) -> f32 {
+                let product: float32x4_t = a.into();
+                let product = vmulq_f32(product, vextq_f32::<1>(product, product));
+                let product = vmulq_f32(product, vextq_f32::<2>(product, product));
+                vgetq_lane_f32::<0>(product)
             }
         );
         kernel(self, a)
@@ -568,6 +581,16 @@ impl Simd for Neon {
         self.cvt_i32_f32x4(a)
     }
     #[inline(always)]
+    fn abs_i8x16(self, a: i8x16<Self>) -> i8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i8x16<Neon>) -> i8x16<Neon> {
+                vabsq_s8(a.into()).simd_into(token)
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
     fn splat_i8x16(self, val: i8) -> i8x16<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -624,11 +647,31 @@ impl Simd for Neon {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i8x16<Neon>, b: i8x16<Neon>) -> i8x16<Neon> {
+                vqaddq_s8(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Neon, a: i8x16<Neon>, b: i8x16<Neon>) -> i8x16<Neon> {
                 vsubq_s8(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i8x16<Neon>, b: i8x16<Neon>) -> i8x16<Neon> {
+                vqsubq_s8(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -749,6 +792,21 @@ impl Simd for Neon {
             #[inline(always)]
             fn kernel(token: Neon, a: i8x16<Neon>) -> i8 {
                 vaddvq_s8(a.into())
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_i8x16(self, a: i8x16<Self>) -> i8 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i8x16<Neon>) -> i8 {
+                let product: int8x16_t = a.into();
+                let product = vmulq_s8(product, vextq_s8::<1>(product, product));
+                let product = vmulq_s8(product, vextq_s8::<2>(product, product));
+                let product = vmulq_s8(product, vextq_s8::<4>(product, product));
+                let product = vmulq_s8(product, vextq_s8::<8>(product, product));
+                vgetq_lane_s8::<0>(product)
             }
         );
         kernel(self, a)
@@ -1017,11 +1075,31 @@ impl Simd for Neon {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u8x16<Neon>, b: u8x16<Neon>) -> u8x16<Neon> {
+                vqaddq_u8(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Neon, a: u8x16<Neon>, b: u8x16<Neon>) -> u8x16<Neon> {
                 vsubq_u8(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u8x16<Neon>, b: u8x16<Neon>) -> u8x16<Neon> {
+                vqsubq_u8(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -1142,6 +1220,21 @@ impl Simd for Neon {
             #[inline(always)]
             fn kernel(token: Neon, a: u8x16<Neon>) -> u8 {
                 vaddvq_u8(a.into())
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_u8x16(self, a: u8x16<Self>) -> u8 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u8x16<Neon>) -> u8 {
+                let product: uint8x16_t = a.into();
+                let product = vmulq_u8(product, vextq_u8::<1>(product, product));
+                let product = vmulq_u8(product, vextq_u8::<2>(product, product));
+                let product = vmulq_u8(product, vextq_u8::<4>(product, product));
+                let product = vmulq_u8(product, vextq_u8::<8>(product, product));
+                vgetq_lane_u8::<0>(product)
             }
         );
         kernel(self, a)
@@ -1371,6 +1464,36 @@ impl Simd for Neon {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x16<const OFFSET: usize>(
+        self,
+        a: mask8x16<Self>,
+    ) -> mask8x16<Self> {
+        let int = i8x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x16<const OFFSET: usize>(
+        self,
+        a: mask8x16<Self>,
+    ) -> mask8x16<Self> {
+        let int = i8x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask8x16(self, a: mask8x16<Self>, b: mask8x16<Self>) -> mask8x16<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -1500,6 +1623,16 @@ impl Simd for Neon {
         }
     }
     #[inline(always)]
+    fn abs_i16x8(self, a: i16x8<Self>) -> i16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i16x8<Neon>) -> i16x8<Neon> {
+                vabsq_s16(a.into()).simd_into(token)
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
     fn splat_i16x8(self, val: i16) -> i16x8<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -1557,11 +1690,31 @@ impl Simd for Neon {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i16x8<Neon>, b: i16x8<Neon>) -> i16x8<Neon> {
+                vqaddq_s16(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Neon, a: i16x8<Neon>, b: i16x8<Neon>) -> i16x8<Neon> {
                 vsubq_s16(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i16x8<Neon>, b: i16x8<Neon>) -> i16x8<Neon> {
+                vqsubq_s16(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -1682,6 +1835,20 @@ impl Simd for Neon {
             #[inline(always)]
             fn kernel(token: Neon, a: i16x8<Neon>) -> i16 {
                 vaddvq_s16(a.into())
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_i16x8(self, a: i16x8<Self>) -> i16 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i16x8<Neon>) -> i16 {
+                let product: int16x8_t = a.into();
+                let product = vmulq_s16(product, vextq_s16::<1>(product, product));
+                let product = vmulq_s16(product, vextq_s16::<2>(product, product));
+                let product = vmulq_s16(product, vextq_s16::<4>(product, product));
+                vgetq_lane_s16::<0>(product)
             }
         );
         kernel(self, a)
@@ -1949,11 +2116,31 @@ impl Simd for Neon {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u16x8<Neon>, b: u16x8<Neon>) -> u16x8<Neon> {
+                vqaddq_u16(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Neon, a: u16x8<Neon>, b: u16x8<Neon>) -> u16x8<Neon> {
                 vsubq_u16(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u16x8<Neon>, b: u16x8<Neon>) -> u16x8<Neon> {
+                vqsubq_u16(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -2074,6 +2261,20 @@ impl Simd for Neon {
             #[inline(always)]
             fn kernel(token: Neon, a: u16x8<Neon>) -> u16 {
                 vaddvq_u16(a.into())
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_u16x8(self, a: u16x8<Self>) -> u16 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u16x8<Neon>) -> u16 {
+                let product: uint16x8_t = a.into();
+                let product = vmulq_u16(product, vextq_u16::<1>(product, product));
+                let product = vmulq_u16(product, vextq_u16::<2>(product, product));
+                let product = vmulq_u16(product, vextq_u16::<4>(product, product));
+                vgetq_lane_u16::<0>(product)
             }
         );
         kernel(self, a)
@@ -2326,6 +2527,36 @@ impl Simd for Neon {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x8<const OFFSET: usize>(
+        self,
+        a: mask16x8<Self>,
+    ) -> mask16x8<Self> {
+        let int = i16x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x8<const OFFSET: usize>(
+        self,
+        a: mask16x8<Self>,
+    ) -> mask16x8<Self> {
+        let int = i16x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask16x8(self, a: mask16x8<Self>, b: mask16x8<Self>) -> mask16x8<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -2455,6 +2686,16 @@ impl Simd for Neon {
         }
     }
     #[inline(always)]
+    fn abs_i32x4(self, a: i32x4<Self>) -> i32x4<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i32x4<Neon>) -> i32x4<Neon> {
+                vabsq_s32(a.into()).simd_into(token)
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
     fn splat_i32x4(self, val: i32) -> i32x4<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -2514,11 +2755,31 @@ impl Simd for Neon {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i32x4<Neon>, b: i32x4<Neon>) -> i32x4<Neon> {
+                vqaddq_s32(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Neon, a: i32x4<Neon>, b: i32x4<Neon>) -> i32x4<Neon> {
                 vsubq_s32(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i32x4<Neon>, b: i32x4<Neon>) -> i32x4<Neon> {
+                vqsubq_s32(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -2639,6 +2900,19 @@ impl Simd for Neon {
             #[inline(always)]
             fn kernel(token: Neon, a: i32x4<Neon>) -> i32 {
                 vaddvq_s32(a.into())
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_i32x4(self, a: i32x4<Self>) -> i32 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i32x4<Neon>) -> i32 {
+                let product: int32x4_t = a.into();
+                let product = vmulq_s32(product, vextq_s32::<1>(product, product));
+                let product = vmulq_s32(product, vextq_s32::<2>(product, product));
+                vgetq_lane_s32::<0>(product)
             }
         );
         kernel(self, a)
@@ -2916,11 +3190,31 @@ impl Simd for Neon {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u32x4<Neon>, b: u32x4<Neon>) -> u32x4<Neon> {
+                vqaddq_u32(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Neon, a: u32x4<Neon>, b: u32x4<Neon>) -> u32x4<Neon> {
                 vsubq_u32(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u32x4<Neon>, b: u32x4<Neon>) -> u32x4<Neon> {
+                vqsubq_u32(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -3041,6 +3335,19 @@ impl Simd for Neon {
             #[inline(always)]
             fn kernel(token: Neon, a: u32x4<Neon>) -> u32 {
                 vaddvq_u32(a.into())
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_u32x4(self, a: u32x4<Self>) -> u32 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u32x4<Neon>) -> u32 {
+                let product: uint32x4_t = a.into();
+                let product = vmulq_u32(product, vextq_u32::<1>(product, product));
+                let product = vmulq_u32(product, vextq_u32::<2>(product, product));
+                vgetq_lane_u32::<0>(product)
             }
         );
         kernel(self, a)
@@ -3302,6 +3609,36 @@ impl Simd for Neon {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask32x4<const OFFSET: usize>(
+        self,
+        a: mask32x4<Self>,
+    ) -> mask32x4<Self> {
+        let int = i32x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x4<const OFFSET: usize>(
+        self,
+        a: mask32x4<Self>,
+    ) -> mask32x4<Self> {
+        let int = i32x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask32x4(self, a: mask32x4<Self>, b: mask32x4<Self>) -> mask32x4<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -3431,6 +3768,16 @@ impl Simd for Neon {
         }
     }
     #[inline(always)]
+    fn abs_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: f64x2<Neon>) -> f64x2<Neon> {
+                vabsq_f64(a.into()).simd_into(token)
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
     fn splat_f64x2(self, val: f64) -> f64x2<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -3461,16 +3808,6 @@ impl Simd for Neon {
             val: crate::support::Aligned128(result),
             simd: self,
         })
-    }
-    #[inline(always)]
-    fn abs_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        crate::kernel!(
-            #[inline(always)]
-            fn kernel(token: Neon, a: f64x2<Neon>) -> f64x2<Neon> {
-                vabsq_f64(a.into()).simd_into(token)
-            }
-        );
-        kernel(self, a)
     }
     #[inline(always)]
     fn neg_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
@@ -3599,6 +3936,17 @@ impl Simd for Neon {
             #[inline(always)]
             fn kernel(token: Neon, a: f64x2<Neon>) -> f64 {
                 vaddvq_f64(a.into())
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_f64x2(self, a: f64x2<Self>) -> f64 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: f64x2<Neon>) -> f64 {
+                let a: float64x2_t = a.into();
+                vgetq_lane_f64::<0>(a) * vgetq_lane_f64::<1>(a)
             }
         );
         kernel(self, a)
@@ -3894,6 +4242,16 @@ impl Simd for Neon {
         self.cvt_i64_f64x2(a)
     }
     #[inline(always)]
+    fn abs_i64x2(self, a: i64x2<Self>) -> i64x2<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i64x2<Neon>) -> i64x2<Neon> {
+                vabsq_s64(a.into()).simd_into(token)
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
     fn splat_i64x2(self, val: i64) -> i64x2<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -3953,11 +4311,31 @@ impl Simd for Neon {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i64x2<Neon>, b: i64x2<Neon>) -> i64x2<Neon> {
+                vqaddq_s64(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Neon, a: i64x2<Neon>, b: i64x2<Neon>) -> i64x2<Neon> {
                 vsubq_s64(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: i64x2<Neon>, b: i64x2<Neon>) -> i64x2<Neon> {
+                vqsubq_s64(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -4069,6 +4447,11 @@ impl Simd for Neon {
             }
         );
         kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_i64x2(self, a: i64x2<Self>) -> i64 {
+        let mul_level_0: [i64; 1usize] = [a[0usize].wrapping_mul(a[1usize])];
+        mul_level_0[0]
     }
     #[inline(always)]
     fn max_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
@@ -4329,11 +4712,31 @@ impl Simd for Neon {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u64x2<Neon>, b: u64x2<Neon>) -> u64x2<Neon> {
+                vqaddq_u64(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Neon, a: u64x2<Neon>, b: u64x2<Neon>) -> u64x2<Neon> {
                 vsubq_u64(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Neon, a: u64x2<Neon>, b: u64x2<Neon>) -> u64x2<Neon> {
+                vqsubq_u64(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -4445,6 +4848,11 @@ impl Simd for Neon {
             }
         );
         kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_u64x2(self, a: u64x2<Self>) -> u64 {
+        let mul_level_0: [u64; 1usize] = [a[0usize].wrapping_mul(a[1usize])];
+        mul_level_0[0]
     }
     #[inline(always)]
     fn max_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
@@ -4683,6 +5091,36 @@ impl Simd for Neon {
         let mut lanes: [i64; 2usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask64x2<const OFFSET: usize>(
+        self,
+        a: mask64x2<Self>,
+    ) -> mask64x2<Self> {
+        let int = i64x2 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x2 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x2<const OFFSET: usize>(
+        self,
+        a: mask64x2<Self>,
+    ) -> mask64x2<Self> {
+        let int = i64x2 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x2 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn and_mask64x2(self, a: mask64x2<Self>, b: mask64x2<Self>) -> mask64x2<Self> {
@@ -5045,6 +5483,36 @@ impl Simd for Neon {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x32<const OFFSET: usize>(
+        self,
+        a: mask8x32<Self>,
+    ) -> mask8x32<Self> {
+        let int = i8x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x32<const OFFSET: usize>(
+        self,
+        a: mask8x32<Self>,
+    ) -> mask8x32<Self> {
+        let int = i8x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn combine_mask8x32(self, a: mask8x32<Self>, b: mask8x32<Self>) -> mask8x64<Self> {
         mask8x64 {
             val: crate::support::Aligned512(int8x16x4_t(
@@ -5211,6 +5679,36 @@ impl Simd for Neon {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x16<const OFFSET: usize>(
+        self,
+        a: mask16x16<Self>,
+    ) -> mask16x16<Self> {
+        let int = i16x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x16<const OFFSET: usize>(
+        self,
+        a: mask16x16<Self>,
+    ) -> mask16x16<Self> {
+        let int = i16x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn combine_mask16x16(self, a: mask16x16<Self>, b: mask16x16<Self>) -> mask16x32<Self> {
         mask16x32 {
             val: crate::support::Aligned512(int16x8x4_t(
@@ -5375,6 +5873,36 @@ impl Simd for Neon {
         let mut lanes: [i32; 8usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask32x8<const OFFSET: usize>(
+        self,
+        a: mask32x8<Self>,
+    ) -> mask32x8<Self> {
+        let int = i32x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x8<const OFFSET: usize>(
+        self,
+        a: mask32x8<Self>,
+    ) -> mask32x8<Self> {
+        let int = i32x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn combine_mask32x8(self, a: mask32x8<Self>, b: mask32x8<Self>) -> mask32x16<Self> {
@@ -5600,6 +6128,36 @@ impl Simd for Neon {
         let mut lanes: [i64; 4usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask64x4<const OFFSET: usize>(
+        self,
+        a: mask64x4<Self>,
+    ) -> mask64x4<Self> {
+        let int = i64x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x4<const OFFSET: usize>(
+        self,
+        a: mask64x4<Self>,
+    ) -> mask64x4<Self> {
+        let int = i64x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn combine_mask64x4(self, a: mask64x4<Self>, b: mask64x4<Self>) -> mask64x8<Self> {
@@ -5885,6 +6443,36 @@ impl Simd for Neon {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x64<const OFFSET: usize>(
+        self,
+        a: mask8x64<Self>,
+    ) -> mask8x64<Self> {
+        let int = i8x64 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x64<const OFFSET: usize>(
+        self,
+        a: mask8x64<Self>,
+    ) -> mask8x64<Self> {
+        let int = i8x64 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn split_mask8x64(self, a: mask8x64<Self>) -> (mask8x32<Self>, mask8x32<Self>) {
         (
             mask8x32 {
@@ -6065,6 +6653,36 @@ impl Simd for Neon {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x32<const OFFSET: usize>(
+        self,
+        a: mask16x32<Self>,
+    ) -> mask16x32<Self> {
+        let int = i16x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x32<const OFFSET: usize>(
+        self,
+        a: mask16x32<Self>,
+    ) -> mask16x32<Self> {
+        let int = i16x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn split_mask16x32(self, a: mask16x32<Self>) -> (mask16x16<Self>, mask16x16<Self>) {
         (
             mask16x16 {
@@ -6243,6 +6861,36 @@ impl Simd for Neon {
         let mut lanes: [i32; 16usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask32x16<const OFFSET: usize>(
+        self,
+        a: mask32x16<Self>,
+    ) -> mask32x16<Self> {
+        let int = i32x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x16<const OFFSET: usize>(
+        self,
+        a: mask32x16<Self>,
+    ) -> mask32x16<Self> {
+        let int = i32x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn split_mask32x16(self, a: mask32x16<Self>) -> (mask32x8<Self>, mask32x8<Self>) {
@@ -6491,6 +7139,36 @@ impl Simd for Neon {
         let mut lanes: [i64; 8usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask64x8<const OFFSET: usize>(
+        self,
+        a: mask64x8<Self>,
+    ) -> mask64x8<Self> {
+        let int = i64x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x8<const OFFSET: usize>(
+        self,
+        a: mask64x8<Self>,
+    ) -> mask64x8<Self> {
+        let int = i64x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn split_mask64x8(self, a: mask64x8<Self>) -> (mask64x4<Self>, mask64x4<Self>) {

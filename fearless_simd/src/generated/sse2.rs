@@ -213,6 +213,16 @@ impl Simd for Sse2 {
         unsafe { vectorize_sse2(f) }
     }
     #[inline(always)]
+    fn abs_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: f32x4<Sse2>) -> f32x4<Sse2> {
+                _mm_andnot_ps(_mm_set1_ps(-0.0), a.into()).simd_into(token)
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
     fn splat_f32x4(self, val: f32) -> f32x4<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -241,16 +251,6 @@ impl Simd for Sse2 {
             val: crate::support::Aligned128(result),
             simd: self,
         })
-    }
-    #[inline(always)]
-    fn abs_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        crate::kernel!(
-            #[inline(always)]
-            fn kernel(token: Sse2, a: f32x4<Sse2>) -> f32x4<Sse2> {
-                _mm_andnot_ps(_mm_set1_ps(-0.0), a.into()).simd_into(token)
-            }
-        );
-        kernel(self, a)
     }
     #[inline(always)]
     fn neg_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
@@ -430,6 +430,18 @@ impl Simd for Sse2 {
                 let a: __m128 = a.into();
                 let adjacent = _mm_add_ps(a, _mm_shuffle_ps::<0b10_11_00_01>(a, a));
                 _mm_cvtss_f32(_mm_add_ss(adjacent, _mm_movehl_ps(adjacent, adjacent)))
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_f32x4(self, a: f32x4<Self>) -> f32 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: f32x4<Sse2>) -> f32 {
+                let a: __m128 = a.into();
+                let adjacent = _mm_mul_ps(a, _mm_shuffle_ps::<0b10_11_00_01>(a, a));
+                _mm_cvtss_f32(_mm_mul_ss(adjacent, _mm_movehl_ps(adjacent, adjacent)))
             }
         );
         kernel(self, a)
@@ -798,6 +810,28 @@ impl Simd for Sse2 {
         .simd_into(self)
     }
     #[inline(always)]
+    fn abs_i8x16(self, a: i8x16<Self>) -> i8x16<Self> {
+        [
+            i8::wrapping_abs(a[0usize]),
+            i8::wrapping_abs(a[1usize]),
+            i8::wrapping_abs(a[2usize]),
+            i8::wrapping_abs(a[3usize]),
+            i8::wrapping_abs(a[4usize]),
+            i8::wrapping_abs(a[5usize]),
+            i8::wrapping_abs(a[6usize]),
+            i8::wrapping_abs(a[7usize]),
+            i8::wrapping_abs(a[8usize]),
+            i8::wrapping_abs(a[9usize]),
+            i8::wrapping_abs(a[10usize]),
+            i8::wrapping_abs(a[11usize]),
+            i8::wrapping_abs(a[12usize]),
+            i8::wrapping_abs(a[13usize]),
+            i8::wrapping_abs(a[14usize]),
+            i8::wrapping_abs(a[15usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn splat_i8x16(self, val: i8) -> i8x16<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -887,11 +921,31 @@ impl Simd for Sse2 {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: i8x16<Sse2>, b: i8x16<Sse2>) -> i8x16<Sse2> {
+                _mm_adds_epi8(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse2, a: i8x16<Sse2>, b: i8x16<Sse2>) -> i8x16<Sse2> {
                 _mm_sub_epi8(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: i8x16<Sse2>, b: i8x16<Sse2>) -> i8x16<Sse2> {
+                _mm_subs_epi8(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -1138,6 +1192,25 @@ impl Simd for Sse2 {
                 let sum = _mm_add_epi8(sum, _mm_srli_si128::<2>(sum));
                 let sum = _mm_add_epi8(sum, _mm_srli_si128::<1>(sum));
                 let lanes: [i8; 16usize] = crate::transmute::checked_transmute_copy(&sum);
+                lanes[0]
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_i8x16(self, a: i8x16<Self>) -> i8 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: i8x16<Sse2>) -> i8 {
+                let value: __m128i = a.into();
+                let product = _mm_mullo_epi16(
+                    _mm_unpacklo_epi8(value, value),
+                    _mm_unpackhi_epi8(value, value),
+                );
+                let product = _mm_mullo_epi16(product, _mm_shuffle_epi32::<0b11_10_11_10>(product));
+                let product = _mm_mullo_epi16(product, _mm_shuffle_epi32::<0b01_01_01_01>(product));
+                let product = _mm_mullo_epi16(product, _mm_srli_epi32::<16>(product));
+                let lanes: [i8; 16usize] = crate::transmute::checked_transmute_copy(&product);
                 lanes[0]
             }
         );
@@ -1645,11 +1718,31 @@ impl Simd for Sse2 {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: u8x16<Sse2>, b: u8x16<Sse2>) -> u8x16<Sse2> {
+                _mm_adds_epu8(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse2, a: u8x16<Sse2>, b: u8x16<Sse2>) -> u8x16<Sse2> {
                 _mm_sub_epi8(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: u8x16<Sse2>, b: u8x16<Sse2>) -> u8x16<Sse2> {
+                _mm_subs_epu8(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -1834,6 +1927,25 @@ impl Simd for Sse2 {
                 let sum = _mm_add_epi8(sum, _mm_srli_si128::<2>(sum));
                 let sum = _mm_add_epi8(sum, _mm_srli_si128::<1>(sum));
                 let lanes: [u8; 16usize] = crate::transmute::checked_transmute_copy(&sum);
+                lanes[0]
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_u8x16(self, a: u8x16<Self>) -> u8 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: u8x16<Sse2>) -> u8 {
+                let value: __m128i = a.into();
+                let product = _mm_mullo_epi16(
+                    _mm_unpacklo_epi8(value, value),
+                    _mm_unpackhi_epi8(value, value),
+                );
+                let product = _mm_mullo_epi16(product, _mm_shuffle_epi32::<0b11_10_11_10>(product));
+                let product = _mm_mullo_epi16(product, _mm_shuffle_epi32::<0b01_01_01_01>(product));
+                let product = _mm_mullo_epi16(product, _mm_srli_epi32::<16>(product));
+                let lanes: [u8; 16usize] = crate::transmute::checked_transmute_copy(&product);
                 lanes[0]
             }
         );
@@ -2203,6 +2315,36 @@ impl Simd for Sse2 {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x16<const OFFSET: usize>(
+        self,
+        a: mask8x16<Self>,
+    ) -> mask8x16<Self> {
+        let int = i8x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x16<const OFFSET: usize>(
+        self,
+        a: mask8x16<Self>,
+    ) -> mask8x16<Self> {
+        let int = i8x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask8x16(self, a: mask8x16<Self>, b: mask8x16<Self>) -> mask8x16<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -2330,6 +2472,20 @@ impl Simd for Sse2 {
         }
     }
     #[inline(always)]
+    fn abs_i16x8(self, a: i16x8<Self>) -> i16x8<Self> {
+        [
+            i16::wrapping_abs(a[0usize]),
+            i16::wrapping_abs(a[1usize]),
+            i16::wrapping_abs(a[2usize]),
+            i16::wrapping_abs(a[3usize]),
+            i16::wrapping_abs(a[4usize]),
+            i16::wrapping_abs(a[5usize]),
+            i16::wrapping_abs(a[6usize]),
+            i16::wrapping_abs(a[7usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn splat_i16x8(self, val: i16) -> i16x8<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -2401,11 +2557,31 @@ impl Simd for Sse2 {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: i16x8<Sse2>, b: i16x8<Sse2>) -> i16x8<Sse2> {
+                _mm_adds_epi16(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse2, a: i16x8<Sse2>, b: i16x8<Sse2>) -> i16x8<Sse2> {
                 _mm_sub_epi16(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: i16x8<Sse2>, b: i16x8<Sse2>) -> i16x8<Sse2> {
+                _mm_subs_epi16(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -2552,6 +2728,21 @@ impl Simd for Sse2 {
                 let sum = _mm_add_epi16(sum, _mm_srli_si128::<4>(sum));
                 let sum = _mm_add_epi16(sum, _mm_srli_si128::<2>(sum));
                 let lanes: [i16; 8usize] = crate::transmute::checked_transmute_copy(&sum);
+                lanes[0]
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_i16x8(self, a: i16x8<Self>) -> i16 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: i16x8<Sse2>) -> i16 {
+                let product: __m128i = a.into();
+                let product = _mm_mullo_epi16(product, _mm_shuffle_epi32::<0b11_10_11_10>(product));
+                let product = _mm_mullo_epi16(product, _mm_shuffle_epi32::<0b01_01_01_01>(product));
+                let product = _mm_mullo_epi16(product, _mm_srli_epi32::<16>(product));
+                let lanes: [i16; 8usize] = crate::transmute::checked_transmute_copy(&product);
                 lanes[0]
             }
         );
@@ -2899,11 +3090,31 @@ impl Simd for Sse2 {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: u16x8<Sse2>, b: u16x8<Sse2>) -> u16x8<Sse2> {
+                _mm_adds_epu16(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
     fn sub_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
         crate::kernel!(
             #[inline(always)]
             fn kernel(token: Sse2, a: u16x8<Sse2>, b: u16x8<Sse2>) -> u16x8<Sse2> {
                 _mm_sub_epi16(a.into(), b.into()).simd_into(token)
+            }
+        );
+        kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: u16x8<Sse2>, b: u16x8<Sse2>) -> u16x8<Sse2> {
+                _mm_subs_epu16(a.into(), b.into()).simd_into(token)
             }
         );
         kernel(self, a, b)
@@ -3122,6 +3333,21 @@ impl Simd for Sse2 {
                 let sum = _mm_add_epi16(sum, _mm_srli_si128::<4>(sum));
                 let sum = _mm_add_epi16(sum, _mm_srli_si128::<2>(sum));
                 let lanes: [u16; 8usize] = crate::transmute::checked_transmute_copy(&sum);
+                lanes[0]
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_u16x8(self, a: u16x8<Self>) -> u16 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: u16x8<Sse2>) -> u16 {
+                let product: __m128i = a.into();
+                let product = _mm_mullo_epi16(product, _mm_shuffle_epi32::<0b11_10_11_10>(product));
+                let product = _mm_mullo_epi16(product, _mm_shuffle_epi32::<0b01_01_01_01>(product));
+                let product = _mm_mullo_epi16(product, _mm_srli_epi32::<16>(product));
+                let lanes: [u16; 8usize] = crate::transmute::checked_transmute_copy(&product);
                 lanes[0]
             }
         );
@@ -3479,6 +3705,36 @@ impl Simd for Sse2 {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x8<const OFFSET: usize>(
+        self,
+        a: mask16x8<Self>,
+    ) -> mask16x8<Self> {
+        let int = i16x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x8<const OFFSET: usize>(
+        self,
+        a: mask16x8<Self>,
+    ) -> mask16x8<Self> {
+        let int = i16x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask16x8(self, a: mask16x8<Self>, b: mask16x8<Self>) -> mask16x8<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -3606,6 +3862,16 @@ impl Simd for Sse2 {
         }
     }
     #[inline(always)]
+    fn abs_i32x4(self, a: i32x4<Self>) -> i32x4<Self> {
+        [
+            i32::wrapping_abs(a[0usize]),
+            i32::wrapping_abs(a[1usize]),
+            i32::wrapping_abs(a[2usize]),
+            i32::wrapping_abs(a[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn splat_i32x4(self, val: i32) -> i32x4<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -3666,6 +3932,16 @@ impl Simd for Sse2 {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
+        [
+            i32::saturating_add(a[0usize], b[0usize]),
+            i32::saturating_add(a[1usize], b[1usize]),
+            i32::saturating_add(a[2usize], b[2usize]),
+            i32::saturating_add(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -3674,6 +3950,16 @@ impl Simd for Sse2 {
             }
         );
         kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
+        [
+            i32::saturating_sub(a[0usize], b[0usize]),
+            i32::saturating_sub(a[1usize], b[1usize]),
+            i32::saturating_sub(a[2usize], b[2usize]),
+            i32::saturating_sub(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn mul_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
@@ -3836,6 +4122,15 @@ impl Simd for Sse2 {
             }
         );
         kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_i32x4(self, a: i32x4<Self>) -> i32 {
+        let mul_level_0: [i32; 2usize] = [
+            a[0usize].wrapping_mul(a[1usize]),
+            a[2usize].wrapping_mul(a[3usize]),
+        ];
+        let mul_level_1: [i32; 1usize] = [mul_level_0[0usize].wrapping_mul(mul_level_0[1usize])];
+        mul_level_1[0]
     }
     #[inline(always)]
     fn max_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
@@ -4195,6 +4490,16 @@ impl Simd for Sse2 {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
+        [
+            u32::saturating_add(a[0usize], b[0usize]),
+            u32::saturating_add(a[1usize], b[1usize]),
+            u32::saturating_add(a[2usize], b[2usize]),
+            u32::saturating_add(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -4203,6 +4508,16 @@ impl Simd for Sse2 {
             }
         );
         kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
+        [
+            u32::saturating_sub(a[0usize], b[0usize]),
+            u32::saturating_sub(a[1usize], b[1usize]),
+            u32::saturating_sub(a[2usize], b[2usize]),
+            u32::saturating_sub(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn mul_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
@@ -4385,6 +4700,15 @@ impl Simd for Sse2 {
             }
         );
         kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_u32x4(self, a: u32x4<Self>) -> u32 {
+        let mul_level_0: [u32; 2usize] = [
+            a[0usize].wrapping_mul(a[1usize]),
+            a[2usize].wrapping_mul(a[3usize]),
+        ];
+        let mul_level_1: [u32; 1usize] = [mul_level_0[0usize].wrapping_mul(mul_level_0[1usize])];
+        mul_level_1[0]
     }
     #[inline(always)]
     fn max_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
@@ -4749,6 +5073,36 @@ impl Simd for Sse2 {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask32x4<const OFFSET: usize>(
+        self,
+        a: mask32x4<Self>,
+    ) -> mask32x4<Self> {
+        let int = i32x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x4<const OFFSET: usize>(
+        self,
+        a: mask32x4<Self>,
+    ) -> mask32x4<Self> {
+        let int = i32x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask32x4(self, a: mask32x4<Self>, b: mask32x4<Self>) -> mask32x4<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -4876,6 +5230,16 @@ impl Simd for Sse2 {
         }
     }
     #[inline(always)]
+    fn abs_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: f64x2<Sse2>) -> f64x2<Sse2> {
+                _mm_andnot_pd(_mm_set1_pd(-0.0), a.into()).simd_into(token)
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
     fn splat_f64x2(self, val: f64) -> f64x2<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -4904,16 +5268,6 @@ impl Simd for Sse2 {
             val: crate::support::Aligned128(result),
             simd: self,
         })
-    }
-    #[inline(always)]
-    fn abs_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        crate::kernel!(
-            #[inline(always)]
-            fn kernel(token: Sse2, a: f64x2<Sse2>) -> f64x2<Sse2> {
-                _mm_andnot_pd(_mm_set1_pd(-0.0), a.into()).simd_into(token)
-            }
-        );
-        kernel(self, a)
     }
     #[inline(always)]
     fn neg_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
@@ -5064,6 +5418,17 @@ impl Simd for Sse2 {
             fn kernel(token: Sse2, a: f64x2<Sse2>) -> f64 {
                 let a: __m128d = a.into();
                 _mm_cvtsd_f64(_mm_add_sd(a, _mm_unpackhi_pd(a, a)))
+            }
+        );
+        kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_f64x2(self, a: f64x2<Self>) -> f64 {
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: f64x2<Sse2>) -> f64 {
+                let a: __m128d = a.into();
+                _mm_cvtsd_f64(_mm_mul_sd(a, _mm_unpackhi_pd(a, a)))
             }
         );
         kernel(self, a)
@@ -5394,6 +5759,10 @@ impl Simd for Sse2 {
         [a[0usize] as i64, a[1usize] as i64].simd_into(self)
     }
     #[inline(always)]
+    fn abs_i64x2(self, a: i64x2<Self>) -> i64x2<Self> {
+        [i64::wrapping_abs(a[0usize]), i64::wrapping_abs(a[1usize])].simd_into(self)
+    }
+    #[inline(always)]
     fn splat_i64x2(self, val: i64) -> i64x2<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -5450,6 +5819,14 @@ impl Simd for Sse2 {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
+        [
+            i64::saturating_add(a[0usize], b[0usize]),
+            i64::saturating_add(a[1usize], b[1usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -5458,6 +5835,14 @@ impl Simd for Sse2 {
             }
         );
         kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
+        [
+            i64::saturating_sub(a[0usize], b[0usize]),
+            i64::saturating_sub(a[1usize], b[1usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn mul_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
@@ -5569,6 +5954,11 @@ impl Simd for Sse2 {
             }
         );
         kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_i64x2(self, a: i64x2<Self>) -> i64 {
+        let mul_level_0: [i64; 1usize] = [a[0usize].wrapping_mul(a[1usize])];
+        mul_level_0[0]
     }
     #[inline(always)]
     fn max_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
@@ -5868,6 +6258,14 @@ impl Simd for Sse2 {
         kernel(self, a, b)
     }
     #[inline(always)]
+    fn saturating_add_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
+        [
+            u64::saturating_add(a[0usize], b[0usize]),
+            u64::saturating_add(a[1usize], b[1usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
         crate::kernel!(
             #[inline(always)]
@@ -5876,6 +6274,14 @@ impl Simd for Sse2 {
             }
         );
         kernel(self, a, b)
+    }
+    #[inline(always)]
+    fn saturating_sub_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
+        [
+            u64::saturating_sub(a[0usize], b[0usize]),
+            u64::saturating_sub(a[1usize], b[1usize]),
+        ]
+        .simd_into(self)
     }
     #[inline(always)]
     fn mul_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
@@ -5989,6 +6395,11 @@ impl Simd for Sse2 {
             }
         );
         kernel(self, a)
+    }
+    #[inline(always)]
+    fn reduce_product_u64x2(self, a: u64x2<Self>) -> u64 {
+        let mul_level_0: [u64; 1usize] = [a[0usize].wrapping_mul(a[1usize])];
+        mul_level_0[0]
     }
     #[inline(always)]
     fn max_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
@@ -6260,6 +6671,36 @@ impl Simd for Sse2 {
         let mut lanes: [i64; 2usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask64x2<const OFFSET: usize>(
+        self,
+        a: mask64x2<Self>,
+    ) -> mask64x2<Self> {
+        let int = i64x2 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x2 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x2<const OFFSET: usize>(
+        self,
+        a: mask64x2<Self>,
+    ) -> mask64x2<Self> {
+        let int = i64x2 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x2 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn and_mask64x2(self, a: mask64x2<Self>, b: mask64x2<Self>) -> mask64x2<Self> {
@@ -6536,6 +6977,36 @@ impl Simd for Sse2 {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x32<const OFFSET: usize>(
+        self,
+        a: mask8x32<Self>,
+    ) -> mask8x32<Self> {
+        let int = i8x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x32<const OFFSET: usize>(
+        self,
+        a: mask8x32<Self>,
+    ) -> mask8x32<Self> {
+        let int = i8x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn combine_mask8x32(self, a: mask8x32<Self>, b: mask8x32<Self>) -> mask8x64<Self> {
         mask8x64 {
             val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
@@ -6652,6 +7123,36 @@ impl Simd for Sse2 {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x16<const OFFSET: usize>(
+        self,
+        a: mask16x16<Self>,
+    ) -> mask16x16<Self> {
+        let int = i16x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x16<const OFFSET: usize>(
+        self,
+        a: mask16x16<Self>,
+    ) -> mask16x16<Self> {
+        let int = i16x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn combine_mask16x16(self, a: mask16x16<Self>, b: mask16x16<Self>) -> mask16x32<Self> {
         mask16x32 {
             val: crate::support::Aligned512([a.val.0[0], a.val.0[1], b.val.0[0], b.val.0[1]]),
@@ -6753,6 +7254,36 @@ impl Simd for Sse2 {
         let mut lanes: [i32; 8usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask32x8<const OFFSET: usize>(
+        self,
+        a: mask32x8<Self>,
+    ) -> mask32x8<Self> {
+        let int = i32x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x8<const OFFSET: usize>(
+        self,
+        a: mask32x8<Self>,
+    ) -> mask32x8<Self> {
+        let int = i32x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn combine_mask32x8(self, a: mask32x8<Self>, b: mask32x8<Self>) -> mask32x16<Self> {
@@ -6892,6 +7423,36 @@ impl Simd for Sse2 {
         let mut lanes: [i64; 4usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask64x4<const OFFSET: usize>(
+        self,
+        a: mask64x4<Self>,
+    ) -> mask64x4<Self> {
+        let int = i64x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x4<const OFFSET: usize>(
+        self,
+        a: mask64x4<Self>,
+    ) -> mask64x4<Self> {
+        let int = i64x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn combine_mask64x4(self, a: mask64x4<Self>, b: mask64x4<Self>) -> mask64x8<Self> {
@@ -7035,6 +7596,36 @@ impl Simd for Sse2 {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x64<const OFFSET: usize>(
+        self,
+        a: mask8x64<Self>,
+    ) -> mask8x64<Self> {
+        let int = i8x64 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x64<const OFFSET: usize>(
+        self,
+        a: mask8x64<Self>,
+    ) -> mask8x64<Self> {
+        let int = i8x64 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn split_mask8x64(self, a: mask8x64<Self>) -> (mask8x32<Self>, mask8x32<Self>) {
         (
             mask8x32 {
@@ -7133,6 +7724,36 @@ impl Simd for Sse2 {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x32<const OFFSET: usize>(
+        self,
+        a: mask16x32<Self>,
+    ) -> mask16x32<Self> {
+        let int = i16x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x32<const OFFSET: usize>(
+        self,
+        a: mask16x32<Self>,
+    ) -> mask16x32<Self> {
+        let int = i16x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn split_mask16x32(self, a: mask16x32<Self>) -> (mask16x16<Self>, mask16x16<Self>) {
         (
             mask16x16 {
@@ -7213,6 +7834,36 @@ impl Simd for Sse2 {
         let mut lanes: [i32; 16usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask32x16<const OFFSET: usize>(
+        self,
+        a: mask32x16<Self>,
+    ) -> mask32x16<Self> {
+        let int = i32x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x16<const OFFSET: usize>(
+        self,
+        a: mask32x16<Self>,
+    ) -> mask32x16<Self> {
+        let int = i32x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn split_mask32x16(self, a: mask32x16<Self>) -> (mask32x8<Self>, mask32x8<Self>) {
@@ -7324,6 +7975,36 @@ impl Simd for Sse2 {
         let mut lanes: [i64; 8usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask64x8<const OFFSET: usize>(
+        self,
+        a: mask64x8<Self>,
+    ) -> mask64x8<Self> {
+        let int = i64x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x8<const OFFSET: usize>(
+        self,
+        a: mask64x8<Self>,
+    ) -> mask64x8<Self> {
+        let int = i64x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn split_mask64x8(self, a: mask64x8<Self>) -> (mask64x4<Self>, mask64x4<Self>) {

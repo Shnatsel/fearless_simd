@@ -199,6 +199,16 @@ impl Simd for Fallback {
         vectorize_inner(f)
     }
     #[inline(always)]
+    fn abs_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
+        [
+            f32::abs(a[0usize]),
+            f32::abs(a[1usize]),
+            f32::abs(a[2usize]),
+            f32::abs(a[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn splat_f32x4(self, val: f32) -> f32x4<Self> {
         [val; 4usize].simd_into(self)
     }
@@ -212,16 +222,6 @@ impl Simd for Fallback {
         dest[..4usize - SHIFT].copy_from_slice(&a.val.0[SHIFT..]);
         dest[4usize - SHIFT..].copy_from_slice(&b.val.0[..SHIFT]);
         dest.simd_into(self)
-    }
-    #[inline(always)]
-    fn abs_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        [
-            f32::abs(a[0usize]),
-            f32::abs(a[1usize]),
-            f32::abs(a[2usize]),
-            f32::abs(a[3usize]),
-        ]
-        .simd_into(self)
     }
     #[inline(always)]
     fn neg_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
@@ -335,9 +335,15 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_f32x4(self, a: f32x4<Self>) -> f32 {
-        let sum_level_0: [f32; 2usize] = [a[0usize] + a[1usize], a[2usize] + a[3usize]];
-        let sum_level_1: [f32; 1usize] = [sum_level_0[0usize] + sum_level_0[1usize]];
-        sum_level_1[0]
+        let add_level_0: [f32; 2usize] = [a[0usize] + a[1usize], a[2usize] + a[3usize]];
+        let add_level_1: [f32; 1usize] = [add_level_0[0usize] + add_level_0[1usize]];
+        add_level_1[0]
+    }
+    #[inline(always)]
+    fn reduce_product_f32x4(self, a: f32x4<Self>) -> f32 {
+        let mul_level_0: [f32; 2usize] = [a[0usize] * a[1usize], a[2usize] * a[3usize]];
+        let mul_level_1: [f32; 1usize] = [mul_level_0[0usize] * mul_level_0[1usize]];
+        mul_level_1[0]
     }
     #[inline(always)]
     fn max_f32x4(self, a: f32x4<Self>, b: f32x4<Self>) -> f32x4<Self> {
@@ -620,6 +626,28 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn abs_i8x16(self, a: i8x16<Self>) -> i8x16<Self> {
+        [
+            i8::wrapping_abs(a[0usize]),
+            i8::wrapping_abs(a[1usize]),
+            i8::wrapping_abs(a[2usize]),
+            i8::wrapping_abs(a[3usize]),
+            i8::wrapping_abs(a[4usize]),
+            i8::wrapping_abs(a[5usize]),
+            i8::wrapping_abs(a[6usize]),
+            i8::wrapping_abs(a[7usize]),
+            i8::wrapping_abs(a[8usize]),
+            i8::wrapping_abs(a[9usize]),
+            i8::wrapping_abs(a[10usize]),
+            i8::wrapping_abs(a[11usize]),
+            i8::wrapping_abs(a[12usize]),
+            i8::wrapping_abs(a[13usize]),
+            i8::wrapping_abs(a[14usize]),
+            i8::wrapping_abs(a[15usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn splat_i8x16(self, val: i8) -> i8x16<Self> {
         [val; 16usize].simd_into(self)
     }
@@ -706,6 +734,28 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn saturating_add_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
+        [
+            i8::saturating_add(a[0usize], b[0usize]),
+            i8::saturating_add(a[1usize], b[1usize]),
+            i8::saturating_add(a[2usize], b[2usize]),
+            i8::saturating_add(a[3usize], b[3usize]),
+            i8::saturating_add(a[4usize], b[4usize]),
+            i8::saturating_add(a[5usize], b[5usize]),
+            i8::saturating_add(a[6usize], b[6usize]),
+            i8::saturating_add(a[7usize], b[7usize]),
+            i8::saturating_add(a[8usize], b[8usize]),
+            i8::saturating_add(a[9usize], b[9usize]),
+            i8::saturating_add(a[10usize], b[10usize]),
+            i8::saturating_add(a[11usize], b[11usize]),
+            i8::saturating_add(a[12usize], b[12usize]),
+            i8::saturating_add(a[13usize], b[13usize]),
+            i8::saturating_add(a[14usize], b[14usize]),
+            i8::saturating_add(a[15usize], b[15usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
         [
             i8::wrapping_sub(a[0usize], b[0usize]),
@@ -724,6 +774,28 @@ impl Simd for Fallback {
             i8::wrapping_sub(a[13usize], b[13usize]),
             i8::wrapping_sub(a[14usize], b[14usize]),
             i8::wrapping_sub(a[15usize], b[15usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
+    fn saturating_sub_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
+        [
+            i8::saturating_sub(a[0usize], b[0usize]),
+            i8::saturating_sub(a[1usize], b[1usize]),
+            i8::saturating_sub(a[2usize], b[2usize]),
+            i8::saturating_sub(a[3usize], b[3usize]),
+            i8::saturating_sub(a[4usize], b[4usize]),
+            i8::saturating_sub(a[5usize], b[5usize]),
+            i8::saturating_sub(a[6usize], b[6usize]),
+            i8::saturating_sub(a[7usize], b[7usize]),
+            i8::saturating_sub(a[8usize], b[8usize]),
+            i8::saturating_sub(a[9usize], b[9usize]),
+            i8::saturating_sub(a[10usize], b[10usize]),
+            i8::saturating_sub(a[11usize], b[11usize]),
+            i8::saturating_sub(a[12usize], b[12usize]),
+            i8::saturating_sub(a[13usize], b[13usize]),
+            i8::saturating_sub(a[14usize], b[14usize]),
+            i8::saturating_sub(a[15usize], b[15usize]),
         ]
         .simd_into(self)
     }
@@ -977,7 +1049,7 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_i8x16(self, a: i8x16<Self>) -> i8 {
-        let sum_level_0: [i8; 8usize] = [
+        let add_level_0: [i8; 8usize] = [
             a[0usize].wrapping_add(a[1usize]),
             a[2usize].wrapping_add(a[3usize]),
             a[4usize].wrapping_add(a[5usize]),
@@ -987,18 +1059,43 @@ impl Simd for Fallback {
             a[12usize].wrapping_add(a[13usize]),
             a[14usize].wrapping_add(a[15usize]),
         ];
-        let sum_level_1: [i8; 4usize] = [
-            sum_level_0[0usize].wrapping_add(sum_level_0[1usize]),
-            sum_level_0[2usize].wrapping_add(sum_level_0[3usize]),
-            sum_level_0[4usize].wrapping_add(sum_level_0[5usize]),
-            sum_level_0[6usize].wrapping_add(sum_level_0[7usize]),
+        let add_level_1: [i8; 4usize] = [
+            add_level_0[0usize].wrapping_add(add_level_0[1usize]),
+            add_level_0[2usize].wrapping_add(add_level_0[3usize]),
+            add_level_0[4usize].wrapping_add(add_level_0[5usize]),
+            add_level_0[6usize].wrapping_add(add_level_0[7usize]),
         ];
-        let sum_level_2: [i8; 2usize] = [
-            sum_level_1[0usize].wrapping_add(sum_level_1[1usize]),
-            sum_level_1[2usize].wrapping_add(sum_level_1[3usize]),
+        let add_level_2: [i8; 2usize] = [
+            add_level_1[0usize].wrapping_add(add_level_1[1usize]),
+            add_level_1[2usize].wrapping_add(add_level_1[3usize]),
         ];
-        let sum_level_3: [i8; 1usize] = [sum_level_2[0usize].wrapping_add(sum_level_2[1usize])];
-        sum_level_3[0]
+        let add_level_3: [i8; 1usize] = [add_level_2[0usize].wrapping_add(add_level_2[1usize])];
+        add_level_3[0]
+    }
+    #[inline(always)]
+    fn reduce_product_i8x16(self, a: i8x16<Self>) -> i8 {
+        let mul_level_0: [i8; 8usize] = [
+            a[0usize].wrapping_mul(a[1usize]),
+            a[2usize].wrapping_mul(a[3usize]),
+            a[4usize].wrapping_mul(a[5usize]),
+            a[6usize].wrapping_mul(a[7usize]),
+            a[8usize].wrapping_mul(a[9usize]),
+            a[10usize].wrapping_mul(a[11usize]),
+            a[12usize].wrapping_mul(a[13usize]),
+            a[14usize].wrapping_mul(a[15usize]),
+        ];
+        let mul_level_1: [i8; 4usize] = [
+            mul_level_0[0usize].wrapping_mul(mul_level_0[1usize]),
+            mul_level_0[2usize].wrapping_mul(mul_level_0[3usize]),
+            mul_level_0[4usize].wrapping_mul(mul_level_0[5usize]),
+            mul_level_0[6usize].wrapping_mul(mul_level_0[7usize]),
+        ];
+        let mul_level_2: [i8; 2usize] = [
+            mul_level_1[0usize].wrapping_mul(mul_level_1[1usize]),
+            mul_level_1[2usize].wrapping_mul(mul_level_1[3usize]),
+        ];
+        let mul_level_3: [i8; 1usize] = [mul_level_2[0usize].wrapping_mul(mul_level_2[1usize])];
+        mul_level_3[0]
     }
     #[inline(always)]
     fn max_i8x16(self, a: i8x16<Self>, b: i8x16<Self>) -> i8x16<Self> {
@@ -1631,6 +1728,28 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn saturating_add_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
+        [
+            u8::saturating_add(a[0usize], b[0usize]),
+            u8::saturating_add(a[1usize], b[1usize]),
+            u8::saturating_add(a[2usize], b[2usize]),
+            u8::saturating_add(a[3usize], b[3usize]),
+            u8::saturating_add(a[4usize], b[4usize]),
+            u8::saturating_add(a[5usize], b[5usize]),
+            u8::saturating_add(a[6usize], b[6usize]),
+            u8::saturating_add(a[7usize], b[7usize]),
+            u8::saturating_add(a[8usize], b[8usize]),
+            u8::saturating_add(a[9usize], b[9usize]),
+            u8::saturating_add(a[10usize], b[10usize]),
+            u8::saturating_add(a[11usize], b[11usize]),
+            u8::saturating_add(a[12usize], b[12usize]),
+            u8::saturating_add(a[13usize], b[13usize]),
+            u8::saturating_add(a[14usize], b[14usize]),
+            u8::saturating_add(a[15usize], b[15usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
         [
             u8::wrapping_sub(a[0usize], b[0usize]),
@@ -1649,6 +1768,28 @@ impl Simd for Fallback {
             u8::wrapping_sub(a[13usize], b[13usize]),
             u8::wrapping_sub(a[14usize], b[14usize]),
             u8::wrapping_sub(a[15usize], b[15usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
+    fn saturating_sub_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
+        [
+            u8::saturating_sub(a[0usize], b[0usize]),
+            u8::saturating_sub(a[1usize], b[1usize]),
+            u8::saturating_sub(a[2usize], b[2usize]),
+            u8::saturating_sub(a[3usize], b[3usize]),
+            u8::saturating_sub(a[4usize], b[4usize]),
+            u8::saturating_sub(a[5usize], b[5usize]),
+            u8::saturating_sub(a[6usize], b[6usize]),
+            u8::saturating_sub(a[7usize], b[7usize]),
+            u8::saturating_sub(a[8usize], b[8usize]),
+            u8::saturating_sub(a[9usize], b[9usize]),
+            u8::saturating_sub(a[10usize], b[10usize]),
+            u8::saturating_sub(a[11usize], b[11usize]),
+            u8::saturating_sub(a[12usize], b[12usize]),
+            u8::saturating_sub(a[13usize], b[13usize]),
+            u8::saturating_sub(a[14usize], b[14usize]),
+            u8::saturating_sub(a[15usize], b[15usize]),
         ]
         .simd_into(self)
     }
@@ -1902,7 +2043,7 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_u8x16(self, a: u8x16<Self>) -> u8 {
-        let sum_level_0: [u8; 8usize] = [
+        let add_level_0: [u8; 8usize] = [
             a[0usize].wrapping_add(a[1usize]),
             a[2usize].wrapping_add(a[3usize]),
             a[4usize].wrapping_add(a[5usize]),
@@ -1912,18 +2053,43 @@ impl Simd for Fallback {
             a[12usize].wrapping_add(a[13usize]),
             a[14usize].wrapping_add(a[15usize]),
         ];
-        let sum_level_1: [u8; 4usize] = [
-            sum_level_0[0usize].wrapping_add(sum_level_0[1usize]),
-            sum_level_0[2usize].wrapping_add(sum_level_0[3usize]),
-            sum_level_0[4usize].wrapping_add(sum_level_0[5usize]),
-            sum_level_0[6usize].wrapping_add(sum_level_0[7usize]),
+        let add_level_1: [u8; 4usize] = [
+            add_level_0[0usize].wrapping_add(add_level_0[1usize]),
+            add_level_0[2usize].wrapping_add(add_level_0[3usize]),
+            add_level_0[4usize].wrapping_add(add_level_0[5usize]),
+            add_level_0[6usize].wrapping_add(add_level_0[7usize]),
         ];
-        let sum_level_2: [u8; 2usize] = [
-            sum_level_1[0usize].wrapping_add(sum_level_1[1usize]),
-            sum_level_1[2usize].wrapping_add(sum_level_1[3usize]),
+        let add_level_2: [u8; 2usize] = [
+            add_level_1[0usize].wrapping_add(add_level_1[1usize]),
+            add_level_1[2usize].wrapping_add(add_level_1[3usize]),
         ];
-        let sum_level_3: [u8; 1usize] = [sum_level_2[0usize].wrapping_add(sum_level_2[1usize])];
-        sum_level_3[0]
+        let add_level_3: [u8; 1usize] = [add_level_2[0usize].wrapping_add(add_level_2[1usize])];
+        add_level_3[0]
+    }
+    #[inline(always)]
+    fn reduce_product_u8x16(self, a: u8x16<Self>) -> u8 {
+        let mul_level_0: [u8; 8usize] = [
+            a[0usize].wrapping_mul(a[1usize]),
+            a[2usize].wrapping_mul(a[3usize]),
+            a[4usize].wrapping_mul(a[5usize]),
+            a[6usize].wrapping_mul(a[7usize]),
+            a[8usize].wrapping_mul(a[9usize]),
+            a[10usize].wrapping_mul(a[11usize]),
+            a[12usize].wrapping_mul(a[13usize]),
+            a[14usize].wrapping_mul(a[15usize]),
+        ];
+        let mul_level_1: [u8; 4usize] = [
+            mul_level_0[0usize].wrapping_mul(mul_level_0[1usize]),
+            mul_level_0[2usize].wrapping_mul(mul_level_0[3usize]),
+            mul_level_0[4usize].wrapping_mul(mul_level_0[5usize]),
+            mul_level_0[6usize].wrapping_mul(mul_level_0[7usize]),
+        ];
+        let mul_level_2: [u8; 2usize] = [
+            mul_level_1[0usize].wrapping_mul(mul_level_1[1usize]),
+            mul_level_1[2usize].wrapping_mul(mul_level_1[3usize]),
+        ];
+        let mul_level_3: [u8; 1usize] = [mul_level_2[0usize].wrapping_mul(mul_level_2[1usize])];
+        mul_level_3[0]
     }
     #[inline(always)]
     fn max_u8x16(self, a: u8x16<Self>, b: u8x16<Self>) -> u8x16<Self> {
@@ -2404,6 +2570,36 @@ impl Simd for Fallback {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x16<const OFFSET: usize>(
+        self,
+        a: mask8x16<Self>,
+    ) -> mask8x16<Self> {
+        let int = i8x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x16<const OFFSET: usize>(
+        self,
+        a: mask8x16<Self>,
+    ) -> mask8x16<Self> {
+        let int = i8x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask8x16(self, a: mask8x16<Self>, b: mask8x16<Self>) -> mask8x16<Self> {
         [
             i8::bitand(a.val.0[0usize], &b.val.0[0usize]),
@@ -2710,6 +2906,20 @@ impl Simd for Fallback {
         result.simd_into(self)
     }
     #[inline(always)]
+    fn abs_i16x8(self, a: i16x8<Self>) -> i16x8<Self> {
+        [
+            i16::wrapping_abs(a[0usize]),
+            i16::wrapping_abs(a[1usize]),
+            i16::wrapping_abs(a[2usize]),
+            i16::wrapping_abs(a[3usize]),
+            i16::wrapping_abs(a[4usize]),
+            i16::wrapping_abs(a[5usize]),
+            i16::wrapping_abs(a[6usize]),
+            i16::wrapping_abs(a[7usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn splat_i16x8(self, val: i16) -> i16x8<Self> {
         [val; 8usize].simd_into(self)
     }
@@ -2770,6 +2980,20 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn saturating_add_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
+        [
+            i16::saturating_add(a[0usize], b[0usize]),
+            i16::saturating_add(a[1usize], b[1usize]),
+            i16::saturating_add(a[2usize], b[2usize]),
+            i16::saturating_add(a[3usize], b[3usize]),
+            i16::saturating_add(a[4usize], b[4usize]),
+            i16::saturating_add(a[5usize], b[5usize]),
+            i16::saturating_add(a[6usize], b[6usize]),
+            i16::saturating_add(a[7usize], b[7usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
         [
             i16::wrapping_sub(a[0usize], b[0usize]),
@@ -2780,6 +3004,20 @@ impl Simd for Fallback {
             i16::wrapping_sub(a[5usize], b[5usize]),
             i16::wrapping_sub(a[6usize], b[6usize]),
             i16::wrapping_sub(a[7usize], b[7usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
+    fn saturating_sub_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
+        [
+            i16::saturating_sub(a[0usize], b[0usize]),
+            i16::saturating_sub(a[1usize], b[1usize]),
+            i16::saturating_sub(a[2usize], b[2usize]),
+            i16::saturating_sub(a[3usize], b[3usize]),
+            i16::saturating_sub(a[4usize], b[4usize]),
+            i16::saturating_sub(a[5usize], b[5usize]),
+            i16::saturating_sub(a[6usize], b[6usize]),
+            i16::saturating_sub(a[7usize], b[7usize]),
         ]
         .simd_into(self)
     }
@@ -2941,18 +3179,33 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_i16x8(self, a: i16x8<Self>) -> i16 {
-        let sum_level_0: [i16; 4usize] = [
+        let add_level_0: [i16; 4usize] = [
             a[0usize].wrapping_add(a[1usize]),
             a[2usize].wrapping_add(a[3usize]),
             a[4usize].wrapping_add(a[5usize]),
             a[6usize].wrapping_add(a[7usize]),
         ];
-        let sum_level_1: [i16; 2usize] = [
-            sum_level_0[0usize].wrapping_add(sum_level_0[1usize]),
-            sum_level_0[2usize].wrapping_add(sum_level_0[3usize]),
+        let add_level_1: [i16; 2usize] = [
+            add_level_0[0usize].wrapping_add(add_level_0[1usize]),
+            add_level_0[2usize].wrapping_add(add_level_0[3usize]),
         ];
-        let sum_level_2: [i16; 1usize] = [sum_level_1[0usize].wrapping_add(sum_level_1[1usize])];
-        sum_level_2[0]
+        let add_level_2: [i16; 1usize] = [add_level_1[0usize].wrapping_add(add_level_1[1usize])];
+        add_level_2[0]
+    }
+    #[inline(always)]
+    fn reduce_product_i16x8(self, a: i16x8<Self>) -> i16 {
+        let mul_level_0: [i16; 4usize] = [
+            a[0usize].wrapping_mul(a[1usize]),
+            a[2usize].wrapping_mul(a[3usize]),
+            a[4usize].wrapping_mul(a[5usize]),
+            a[6usize].wrapping_mul(a[7usize]),
+        ];
+        let mul_level_1: [i16; 2usize] = [
+            mul_level_0[0usize].wrapping_mul(mul_level_0[1usize]),
+            mul_level_0[2usize].wrapping_mul(mul_level_0[3usize]),
+        ];
+        let mul_level_2: [i16; 1usize] = [mul_level_1[0usize].wrapping_mul(mul_level_1[1usize])];
+        mul_level_2[0]
     }
     #[inline(always)]
     fn max_i16x8(self, a: i16x8<Self>, b: i16x8<Self>) -> i16x8<Self> {
@@ -3352,6 +3605,20 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn saturating_add_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
+        [
+            u16::saturating_add(a[0usize], b[0usize]),
+            u16::saturating_add(a[1usize], b[1usize]),
+            u16::saturating_add(a[2usize], b[2usize]),
+            u16::saturating_add(a[3usize], b[3usize]),
+            u16::saturating_add(a[4usize], b[4usize]),
+            u16::saturating_add(a[5usize], b[5usize]),
+            u16::saturating_add(a[6usize], b[6usize]),
+            u16::saturating_add(a[7usize], b[7usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
         [
             u16::wrapping_sub(a[0usize], b[0usize]),
@@ -3362,6 +3629,20 @@ impl Simd for Fallback {
             u16::wrapping_sub(a[5usize], b[5usize]),
             u16::wrapping_sub(a[6usize], b[6usize]),
             u16::wrapping_sub(a[7usize], b[7usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
+    fn saturating_sub_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
+        [
+            u16::saturating_sub(a[0usize], b[0usize]),
+            u16::saturating_sub(a[1usize], b[1usize]),
+            u16::saturating_sub(a[2usize], b[2usize]),
+            u16::saturating_sub(a[3usize], b[3usize]),
+            u16::saturating_sub(a[4usize], b[4usize]),
+            u16::saturating_sub(a[5usize], b[5usize]),
+            u16::saturating_sub(a[6usize], b[6usize]),
+            u16::saturating_sub(a[7usize], b[7usize]),
         ]
         .simd_into(self)
     }
@@ -3523,18 +3804,33 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_u16x8(self, a: u16x8<Self>) -> u16 {
-        let sum_level_0: [u16; 4usize] = [
+        let add_level_0: [u16; 4usize] = [
             a[0usize].wrapping_add(a[1usize]),
             a[2usize].wrapping_add(a[3usize]),
             a[4usize].wrapping_add(a[5usize]),
             a[6usize].wrapping_add(a[7usize]),
         ];
-        let sum_level_1: [u16; 2usize] = [
-            sum_level_0[0usize].wrapping_add(sum_level_0[1usize]),
-            sum_level_0[2usize].wrapping_add(sum_level_0[3usize]),
+        let add_level_1: [u16; 2usize] = [
+            add_level_0[0usize].wrapping_add(add_level_0[1usize]),
+            add_level_0[2usize].wrapping_add(add_level_0[3usize]),
         ];
-        let sum_level_2: [u16; 1usize] = [sum_level_1[0usize].wrapping_add(sum_level_1[1usize])];
-        sum_level_2[0]
+        let add_level_2: [u16; 1usize] = [add_level_1[0usize].wrapping_add(add_level_1[1usize])];
+        add_level_2[0]
+    }
+    #[inline(always)]
+    fn reduce_product_u16x8(self, a: u16x8<Self>) -> u16 {
+        let mul_level_0: [u16; 4usize] = [
+            a[0usize].wrapping_mul(a[1usize]),
+            a[2usize].wrapping_mul(a[3usize]),
+            a[4usize].wrapping_mul(a[5usize]),
+            a[6usize].wrapping_mul(a[7usize]),
+        ];
+        let mul_level_1: [u16; 2usize] = [
+            mul_level_0[0usize].wrapping_mul(mul_level_0[1usize]),
+            mul_level_0[2usize].wrapping_mul(mul_level_0[3usize]),
+        ];
+        let mul_level_2: [u16; 1usize] = [mul_level_1[0usize].wrapping_mul(mul_level_1[1usize])];
+        mul_level_2[0]
     }
     #[inline(always)]
     fn max_u16x8(self, a: u16x8<Self>, b: u16x8<Self>) -> u16x8<Self> {
@@ -3903,6 +4199,36 @@ impl Simd for Fallback {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x8<const OFFSET: usize>(
+        self,
+        a: mask16x8<Self>,
+    ) -> mask16x8<Self> {
+        let int = i16x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x8<const OFFSET: usize>(
+        self,
+        a: mask16x8<Self>,
+    ) -> mask16x8<Self> {
+        let int = i16x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask16x8(self, a: mask16x8<Self>, b: mask16x8<Self>) -> mask16x8<Self> {
         [
             i16::bitand(a.val.0[0usize], &b.val.0[0usize]),
@@ -4089,6 +4415,16 @@ impl Simd for Fallback {
         result.simd_into(self)
     }
     #[inline(always)]
+    fn abs_i32x4(self, a: i32x4<Self>) -> i32x4<Self> {
+        [
+            i32::wrapping_abs(a[0usize]),
+            i32::wrapping_abs(a[1usize]),
+            i32::wrapping_abs(a[2usize]),
+            i32::wrapping_abs(a[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn splat_i32x4(self, val: i32) -> i32x4<Self> {
         [val; 4usize].simd_into(self)
     }
@@ -4134,12 +4470,32 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn saturating_add_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
+        [
+            i32::saturating_add(a[0usize], b[0usize]),
+            i32::saturating_add(a[1usize], b[1usize]),
+            i32::saturating_add(a[2usize], b[2usize]),
+            i32::saturating_add(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
         [
             i32::wrapping_sub(a[0usize], b[0usize]),
             i32::wrapping_sub(a[1usize], b[1usize]),
             i32::wrapping_sub(a[2usize], b[2usize]),
             i32::wrapping_sub(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
+    fn saturating_sub_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
+        [
+            i32::saturating_sub(a[0usize], b[0usize]),
+            i32::saturating_sub(a[1usize], b[1usize]),
+            i32::saturating_sub(a[2usize], b[2usize]),
+            i32::saturating_sub(a[3usize], b[3usize]),
         ]
         .simd_into(self)
     }
@@ -4253,12 +4609,21 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_i32x4(self, a: i32x4<Self>) -> i32 {
-        let sum_level_0: [i32; 2usize] = [
+        let add_level_0: [i32; 2usize] = [
             a[0usize].wrapping_add(a[1usize]),
             a[2usize].wrapping_add(a[3usize]),
         ];
-        let sum_level_1: [i32; 1usize] = [sum_level_0[0usize].wrapping_add(sum_level_0[1usize])];
-        sum_level_1[0]
+        let add_level_1: [i32; 1usize] = [add_level_0[0usize].wrapping_add(add_level_0[1usize])];
+        add_level_1[0]
+    }
+    #[inline(always)]
+    fn reduce_product_i32x4(self, a: i32x4<Self>) -> i32 {
+        let mul_level_0: [i32; 2usize] = [
+            a[0usize].wrapping_mul(a[1usize]),
+            a[2usize].wrapping_mul(a[3usize]),
+        ];
+        let mul_level_1: [i32; 1usize] = [mul_level_0[0usize].wrapping_mul(mul_level_0[1usize])];
+        mul_level_1[0]
     }
     #[inline(always)]
     fn max_i32x4(self, a: i32x4<Self>, b: i32x4<Self>) -> i32x4<Self> {
@@ -4513,12 +4878,32 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn saturating_add_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
+        [
+            u32::saturating_add(a[0usize], b[0usize]),
+            u32::saturating_add(a[1usize], b[1usize]),
+            u32::saturating_add(a[2usize], b[2usize]),
+            u32::saturating_add(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
         [
             u32::wrapping_sub(a[0usize], b[0usize]),
             u32::wrapping_sub(a[1usize], b[1usize]),
             u32::wrapping_sub(a[2usize], b[2usize]),
             u32::wrapping_sub(a[3usize], b[3usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
+    fn saturating_sub_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
+        [
+            u32::saturating_sub(a[0usize], b[0usize]),
+            u32::saturating_sub(a[1usize], b[1usize]),
+            u32::saturating_sub(a[2usize], b[2usize]),
+            u32::saturating_sub(a[3usize], b[3usize]),
         ]
         .simd_into(self)
     }
@@ -4632,12 +5017,21 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_u32x4(self, a: u32x4<Self>) -> u32 {
-        let sum_level_0: [u32; 2usize] = [
+        let add_level_0: [u32; 2usize] = [
             a[0usize].wrapping_add(a[1usize]),
             a[2usize].wrapping_add(a[3usize]),
         ];
-        let sum_level_1: [u32; 1usize] = [sum_level_0[0usize].wrapping_add(sum_level_0[1usize])];
-        sum_level_1[0]
+        let add_level_1: [u32; 1usize] = [add_level_0[0usize].wrapping_add(add_level_0[1usize])];
+        add_level_1[0]
+    }
+    #[inline(always)]
+    fn reduce_product_u32x4(self, a: u32x4<Self>) -> u32 {
+        let mul_level_0: [u32; 2usize] = [
+            a[0usize].wrapping_mul(a[1usize]),
+            a[2usize].wrapping_mul(a[3usize]),
+        ];
+        let mul_level_1: [u32; 1usize] = [mul_level_0[0usize].wrapping_mul(mul_level_0[1usize])];
+        mul_level_1[0]
     }
     #[inline(always)]
     fn max_u32x4(self, a: u32x4<Self>, b: u32x4<Self>) -> u32x4<Self> {
@@ -4876,6 +5270,36 @@ impl Simd for Fallback {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask32x4<const OFFSET: usize>(
+        self,
+        a: mask32x4<Self>,
+    ) -> mask32x4<Self> {
+        let int = i32x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x4<const OFFSET: usize>(
+        self,
+        a: mask32x4<Self>,
+    ) -> mask32x4<Self> {
+        let int = i32x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask32x4(self, a: mask32x4<Self>, b: mask32x4<Self>) -> mask32x4<Self> {
         [
             i32::bitand(a.val.0[0usize], &b.val.0[0usize]),
@@ -4990,6 +5414,10 @@ impl Simd for Fallback {
         result.simd_into(self)
     }
     #[inline(always)]
+    fn abs_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
+        [f64::abs(a[0usize]), f64::abs(a[1usize])].simd_into(self)
+    }
+    #[inline(always)]
     fn splat_f64x2(self, val: f64) -> f64x2<Self> {
         [val; 2usize].simd_into(self)
     }
@@ -5003,10 +5431,6 @@ impl Simd for Fallback {
         dest[..2usize - SHIFT].copy_from_slice(&a.val.0[SHIFT..]);
         dest[2usize - SHIFT..].copy_from_slice(&b.val.0[..SHIFT]);
         dest.simd_into(self)
-    }
-    #[inline(always)]
-    fn abs_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        [f64::abs(a[0usize]), f64::abs(a[1usize])].simd_into(self)
     }
     #[inline(always)]
     fn neg_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
@@ -5082,8 +5506,13 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_f64x2(self, a: f64x2<Self>) -> f64 {
-        let sum_level_0: [f64; 1usize] = [a[0usize] + a[1usize]];
-        sum_level_0[0]
+        let add_level_0: [f64; 1usize] = [a[0usize] + a[1usize]];
+        add_level_0[0]
+    }
+    #[inline(always)]
+    fn reduce_product_f64x2(self, a: f64x2<Self>) -> f64 {
+        let mul_level_0: [f64; 1usize] = [a[0usize] * a[1usize]];
+        mul_level_0[0]
     }
     #[inline(always)]
     fn max_f64x2(self, a: f64x2<Self>, b: f64x2<Self>) -> f64x2<Self> {
@@ -5299,6 +5728,10 @@ impl Simd for Fallback {
         [a[0usize] as i64, a[1usize] as i64].simd_into(self)
     }
     #[inline(always)]
+    fn abs_i64x2(self, a: i64x2<Self>) -> i64x2<Self> {
+        [i64::wrapping_abs(a[0usize]), i64::wrapping_abs(a[1usize])].simd_into(self)
+    }
+    #[inline(always)]
     fn splat_i64x2(self, val: i64) -> i64x2<Self> {
         [val; 2usize].simd_into(self)
     }
@@ -5338,10 +5771,26 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn saturating_add_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
+        [
+            i64::saturating_add(a[0usize], b[0usize]),
+            i64::saturating_add(a[1usize], b[1usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
         [
             i64::wrapping_sub(a[0usize], b[0usize]),
             i64::wrapping_sub(a[1usize], b[1usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
+    fn saturating_sub_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
+        [
+            i64::saturating_sub(a[0usize], b[0usize]),
+            i64::saturating_sub(a[1usize], b[1usize]),
         ]
         .simd_into(self)
     }
@@ -5425,8 +5874,13 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_i64x2(self, a: i64x2<Self>) -> i64 {
-        let sum_level_0: [i64; 1usize] = [a[0usize].wrapping_add(a[1usize])];
-        sum_level_0[0]
+        let add_level_0: [i64; 1usize] = [a[0usize].wrapping_add(a[1usize])];
+        add_level_0[0]
+    }
+    #[inline(always)]
+    fn reduce_product_i64x2(self, a: i64x2<Self>) -> i64 {
+        let mul_level_0: [i64; 1usize] = [a[0usize].wrapping_mul(a[1usize])];
+        mul_level_0[0]
     }
     #[inline(always)]
     fn max_i64x2(self, a: i64x2<Self>, b: i64x2<Self>) -> i64x2<Self> {
@@ -5620,10 +6074,26 @@ impl Simd for Fallback {
         .simd_into(self)
     }
     #[inline(always)]
+    fn saturating_add_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
+        [
+            u64::saturating_add(a[0usize], b[0usize]),
+            u64::saturating_add(a[1usize], b[1usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
     fn sub_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
         [
             u64::wrapping_sub(a[0usize], b[0usize]),
             u64::wrapping_sub(a[1usize], b[1usize]),
+        ]
+        .simd_into(self)
+    }
+    #[inline(always)]
+    fn saturating_sub_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
+        [
+            u64::saturating_sub(a[0usize], b[0usize]),
+            u64::saturating_sub(a[1usize], b[1usize]),
         ]
         .simd_into(self)
     }
@@ -5707,8 +6177,13 @@ impl Simd for Fallback {
     }
     #[inline(always)]
     fn reduce_sum_u64x2(self, a: u64x2<Self>) -> u64 {
-        let sum_level_0: [u64; 1usize] = [a[0usize].wrapping_add(a[1usize])];
-        sum_level_0[0]
+        let add_level_0: [u64; 1usize] = [a[0usize].wrapping_add(a[1usize])];
+        add_level_0[0]
+    }
+    #[inline(always)]
+    fn reduce_product_u64x2(self, a: u64x2<Self>) -> u64 {
+        let mul_level_0: [u64; 1usize] = [a[0usize].wrapping_mul(a[1usize])];
+        mul_level_0[0]
     }
     #[inline(always)]
     fn max_u64x2(self, a: u64x2<Self>, b: u64x2<Self>) -> u64x2<Self> {
@@ -5896,6 +6371,36 @@ impl Simd for Fallback {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask64x2<const OFFSET: usize>(
+        self,
+        a: mask64x2<Self>,
+    ) -> mask64x2<Self> {
+        let int = i64x2 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x2 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x2<const OFFSET: usize>(
+        self,
+        a: mask64x2<Self>,
+    ) -> mask64x2<Self> {
+        let int = i64x2 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x2 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn and_mask64x2(self, a: mask64x2<Self>, b: mask64x2<Self>) -> mask64x2<Self> {
         [
             i64::bitand(a.val.0[0usize], &b.val.0[0usize]),
@@ -6080,6 +6585,36 @@ impl Simd for Fallback {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x32<const OFFSET: usize>(
+        self,
+        a: mask8x32<Self>,
+    ) -> mask8x32<Self> {
+        let int = i8x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x32<const OFFSET: usize>(
+        self,
+        a: mask8x32<Self>,
+    ) -> mask8x32<Self> {
+        let int = i8x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn combine_mask8x32(self, a: mask8x32<Self>, b: mask8x32<Self>) -> mask8x64<Self> {
         let mut result = [0; 64usize];
         result[0..32usize].copy_from_slice(&a.val.0);
@@ -6150,6 +6685,36 @@ impl Simd for Fallback {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x16<const OFFSET: usize>(
+        self,
+        a: mask16x16<Self>,
+    ) -> mask16x16<Self> {
+        let int = i16x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x16<const OFFSET: usize>(
+        self,
+        a: mask16x16<Self>,
+    ) -> mask16x16<Self> {
+        let int = i16x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn combine_mask16x16(self, a: mask16x16<Self>, b: mask16x16<Self>) -> mask16x32<Self> {
         let mut result = [0; 32usize];
         result[0..16usize].copy_from_slice(&a.val.0);
@@ -6218,6 +6783,36 @@ impl Simd for Fallback {
         let mut lanes: [i32; 8usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask32x8<const OFFSET: usize>(
+        self,
+        a: mask32x8<Self>,
+    ) -> mask32x8<Self> {
+        let int = i32x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x8<const OFFSET: usize>(
+        self,
+        a: mask32x8<Self>,
+    ) -> mask32x8<Self> {
+        let int = i32x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn combine_mask32x8(self, a: mask32x8<Self>, b: mask32x8<Self>) -> mask32x16<Self> {
@@ -6310,6 +6905,36 @@ impl Simd for Fallback {
         let mut lanes: [i64; 4usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask64x4<const OFFSET: usize>(
+        self,
+        a: mask64x4<Self>,
+    ) -> mask64x4<Self> {
+        let int = i64x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x4<const OFFSET: usize>(
+        self,
+        a: mask64x4<Self>,
+    ) -> mask64x4<Self> {
+        let int = i64x4 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x4 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn combine_mask64x4(self, a: mask64x4<Self>, b: mask64x4<Self>) -> mask64x8<Self> {
@@ -6406,6 +7031,36 @@ impl Simd for Fallback {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask8x64<const OFFSET: usize>(
+        self,
+        a: mask8x64<Self>,
+    ) -> mask8x64<Self> {
+        let int = i8x64 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask8x64<const OFFSET: usize>(
+        self,
+        a: mask8x64<Self>,
+    ) -> mask8x64<Self> {
+        let int = i8x64 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn split_mask8x64(self, a: mask8x64<Self>) -> (mask8x32<Self>, mask8x32<Self>) {
         let mut b0 = [0; 32usize];
         let mut b1 = [0; 32usize];
@@ -6455,6 +7110,36 @@ impl Simd for Fallback {
         *a = lanes.simd_into(self);
     }
     #[inline(always)]
+    fn rotate_elements_left_mask16x32<const OFFSET: usize>(
+        self,
+        a: mask16x32<Self>,
+    ) -> mask16x32<Self> {
+        let int = i16x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask16x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask16x32<const OFFSET: usize>(
+        self,
+        a: mask16x32<Self>,
+    ) -> mask16x32<Self> {
+        let int = i16x32 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask16x32 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
     fn split_mask16x32(self, a: mask16x32<Self>) -> (mask16x16<Self>, mask16x16<Self>) {
         let mut b0 = [0; 16usize];
         let mut b1 = [0; 16usize];
@@ -6502,6 +7187,36 @@ impl Simd for Fallback {
         let mut lanes: [i32; 16usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask32x16<const OFFSET: usize>(
+        self,
+        a: mask32x16<Self>,
+    ) -> mask32x16<Self> {
+        let int = i32x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask32x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask32x16<const OFFSET: usize>(
+        self,
+        a: mask32x16<Self>,
+    ) -> mask32x16<Self> {
+        let int = i32x16 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask32x16 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn split_mask32x16(self, a: mask32x16<Self>) -> (mask32x8<Self>, mask32x8<Self>) {
@@ -6566,6 +7281,36 @@ impl Simd for Fallback {
         let mut lanes: [i64; 8usize] = (*a).into();
         lanes[index] = if value { !0 } else { 0 };
         *a = lanes.simd_into(self);
+    }
+    #[inline(always)]
+    fn rotate_elements_left_mask64x8<const OFFSET: usize>(
+        self,
+        a: mask64x8<Self>,
+    ) -> mask64x8<Self> {
+        let int = i64x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_left::<OFFSET>();
+        mask64x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
+    }
+    #[inline(always)]
+    fn rotate_elements_right_mask64x8<const OFFSET: usize>(
+        self,
+        a: mask64x8<Self>,
+    ) -> mask64x8<Self> {
+        let int = i64x8 {
+            val: crate::transmute::checked_transmute_copy(&a.val),
+            simd: self,
+        };
+        let rotated = int.rotate_elements_right::<OFFSET>();
+        mask64x8 {
+            val: crate::transmute::checked_transmute_copy(&rotated.val),
+            simd: self,
+        }
     }
     #[inline(always)]
     fn split_mask64x8(self, a: mask64x8<Self>) -> (mask64x4<Self>, mask64x4<Self>) {

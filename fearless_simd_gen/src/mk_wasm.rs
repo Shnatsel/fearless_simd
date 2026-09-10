@@ -7,11 +7,13 @@ use quote::{format_ident, quote};
 use crate::arch::wasm::{arch_prefix, v128_intrinsic};
 use crate::generic::{
     count_zeros_method, fallback_method, generic_block_combine, generic_block_split,
-    generic_mask_set, generic_op_name, integer_lane_mask_splat_arg,
+    generic_mask_set, generic_op_name, integer_lane_mask_rotate, integer_lane_mask_splat_arg,
     recursive_swizzle_dyn_precise_body, reverse_method, reverse_vector_mask_method,
 };
 use crate::level::Level;
-use crate::ops::{NarrowingMode, Op, Quantifier, SlideGranularity, relaxed_narrow_method};
+use crate::ops::{
+    NarrowingMode, Op, Quantifier, SaturatingOp, SlideGranularity, relaxed_narrow_method,
+};
 use crate::{
     arch::wasm::{self, simple_intrinsic},
     ops::OpSig,
@@ -219,6 +221,205 @@ fn reduce_sum(method_sig: TokenStream, vec_ty: &VecType) -> TokenStream {
     }
 }
 
+fn reduce_product(method_sig: TokenStream, vec_ty: &VecType) -> TokenStream {
+    assert_eq!(
+        vec_ty.n_bits(),
+        128,
+        "wide reductions must use the generic 128-bit-grained implementation"
+    );
+
+    let body = match (vec_ty.scalar, vec_ty.scalar_bits) {
+        (ScalarType::Float, 32) => quote! {
+            let a: v128 = a.into();
+            // Shifting each 64-bit half places lanes 1 and 3 in lanes 0 and 2,
+            // respectively. Only those two products feed the result, preserving
+            // the promised adjacent balanced tree exactly. The multiplications by
+            // zero in the unused lanes have no observable status flags in WASM.
+            let adjacent = f32x4_mul(a, u64x2_shr(a, 32));
+            f32x4_extract_lane::<0>(adjacent) * f32x4_extract_lane::<2>(adjacent)
+        },
+        (ScalarType::Float, 64) => quote! {
+            let a: v128 = a.into();
+            f64x2_extract_lane::<0>(a) * f64x2_extract_lane::<1>(a)
+        },
+        (ScalarType::Int | ScalarType::Unsigned, 8) => {
+            // WASM has no packed 8-bit multiply. Reinterpret each adjacent byte pair as
+            // the 16-bit value `even + 256 * odd`, shift out `odd`, and multiply. The low
+            // byte is `even * odd` modulo 2^8; pollution in the high byte cannot affect
+            // the final low byte through subsequent multiplications.
+            let widened_ty = VecType::new(vec_ty.scalar, 16, 8);
+            let mul = simple_intrinsic("mul", &widened_ty);
+            let extract = simple_intrinsic("extract_lane", &widened_ty);
+            let scalar = vec_ty.scalar.rust(vec_ty.scalar_bits);
+
+            quote! {
+                let a: v128 = a.into();
+                let product = #mul(a, u16x8_shr(a, 8));
+                let product = #mul(product, u64x2_shr(product, 32));
+                let product = #mul(product, u32x4_shr(product, 16));
+                #extract::<0>(product)
+                    .wrapping_mul(#extract::<4>(product)) as #scalar
+            }
+        }
+        (ScalarType::Int | ScalarType::Unsigned, 16) => {
+            let mul = simple_intrinsic("mul", vec_ty);
+            let extract = simple_intrinsic("extract_lane", vec_ty);
+
+            quote! {
+                let a: v128 = a.into();
+                let product = #mul(a, u64x2_shr(a, 32));
+                let product = #mul(product, u32x4_shr(product, 16));
+                #extract::<0>(product).wrapping_mul(#extract::<4>(product))
+            }
+        }
+        (ScalarType::Int | ScalarType::Unsigned, 32) => {
+            let mul = simple_intrinsic("mul", vec_ty);
+            let extract = simple_intrinsic("extract_lane", vec_ty);
+
+            quote! {
+                let a: v128 = a.into();
+                let product = #mul(a, u64x2_shr(a, 32));
+                #extract::<0>(product).wrapping_mul(#extract::<2>(product))
+            }
+        }
+        (ScalarType::Int | ScalarType::Unsigned, 64) => {
+            let extract = simple_intrinsic("extract_lane", vec_ty);
+            quote! {
+                let a: v128 = a.into();
+                #extract::<0>(a).wrapping_mul(#extract::<1>(a))
+            }
+        }
+        _ => unreachable!("reduce_product only operates on numeric vectors"),
+    };
+
+    quote! {
+        #method_sig {
+            #body
+        }
+    }
+}
+
+fn saturating_add_sub_method(op: Op, vec_ty: &VecType, arithmetic: SaturatingOp) -> TokenStream {
+    use SaturatingOp::{Add, Sub};
+
+    assert_eq!(
+        vec_ty.n_bits(),
+        128,
+        "WASM saturating add/sub lowering only handles one native vector"
+    );
+    assert!(
+        matches!(vec_ty.scalar, ScalarType::Int | ScalarType::Unsigned),
+        "saturating add/sub is only defined for integers"
+    );
+
+    let method_sig = op.simd_trait_method_sig(vec_ty);
+    if matches!(vec_ty.scalar_bits, 8 | 16) {
+        let method = match arithmetic {
+            Add => "saturating_add",
+            Sub => "saturating_sub",
+        };
+        let expr = wasm::expr(method, vec_ty, &[quote! { a.into() }, quote! { b.into() }]);
+        return quote! {
+            #method_sig {
+                #expr.simd_into(self)
+            }
+        };
+    }
+
+    let wrapping = simple_intrinsic(
+        match arithmetic {
+            Add => "add",
+            Sub => "sub",
+        },
+        vec_ty,
+    );
+    let body = match (vec_ty.scalar, vec_ty.scalar_bits) {
+        (ScalarType::Unsigned, 32) => {
+            let clamped = match arithmetic {
+                Add => {
+                    // Clamp `a` to the greatest value that can be added to `b`.
+                    // `!b` is `u32::MAX - b` lane-wise.
+                    let min = simple_intrinsic("min", vec_ty);
+                    quote! { #min(a, v128_not(b)) }
+                }
+                Sub => {
+                    // Raising `a` to at least `b` makes an underflowing difference zero.
+                    let max = simple_intrinsic("max", vec_ty);
+                    quote! { #max(a, b) }
+                }
+            };
+            quote! {
+                #wrapping(#clamped, b)
+            }
+        }
+        (ScalarType::Unsigned, 64) => {
+            let signed_ty = vec_ty.cast(ScalarType::Int);
+            let signed_gt = simple_intrinsic("gt", &signed_ty);
+            let signed_splat = simple_intrinsic("splat", &signed_ty);
+            let signed_scalar = signed_ty.scalar.rust(signed_ty.scalar_bits);
+            match arithmetic {
+                Add => quote! {
+                    // WebAssembly has no unsigned i64x2 comparison. Flip the sign
+                    // bit so signed ordering matches unsigned ordering, then detect
+                    // carry by checking whether the sum is less than `a`.
+                    let wrapped = #wrapping(a, b);
+                    let sign_bit = #signed_splat(#signed_scalar::MIN);
+                    let saturation_mask = #signed_gt(
+                        v128_xor(a, sign_bit),
+                        v128_xor(wrapped, sign_bit),
+                    );
+                    v128_or(wrapped, saturation_mask)
+                },
+                Sub => quote! {
+                    // In sign-biased unsigned ordering, `b > a` identifies the lanes
+                    // whose wrapping difference must be replaced with zero.
+                    let wrapped = #wrapping(a, b);
+                    let sign_bit = #signed_splat(#signed_scalar::MIN);
+                    let saturation_mask = #signed_gt(
+                        v128_xor(b, sign_bit),
+                        v128_xor(a, sign_bit),
+                    );
+                    v128_andnot(wrapped, saturation_mask)
+                },
+            }
+        }
+        (ScalarType::Int, 32 | 64) => {
+            let shr = simple_intrinsic("shr", vec_ty);
+            let splat = simple_intrinsic("splat", vec_ty);
+            let scalar = vec_ty.scalar.rust(vec_ty.scalar_bits);
+            let sign_shift = Literal::u32_unsuffixed((vec_ty.scalar_bits - 1).try_into().unwrap());
+            let overflow_bits = match arithmetic {
+                // `(a ^ wrapped) & (b ^ wrapped)` has its sign bit set exactly
+                // when signed addition overflows.
+                Add => quote! { v128_and(v128_xor(a, wrapped), v128_xor(b, wrapped)) },
+                // `(a ^ b) & (a ^ wrapped)` has its sign bit set exactly when
+                // signed subtraction overflows.
+                Sub => quote! { v128_and(v128_xor(a, b), v128_xor(a, wrapped)) },
+            };
+            quote! {
+                let wrapped = #wrapping(a, b);
+                let overflow_mask = #shr(#overflow_bits, #sign_shift);
+                // On overflow, the wrapped result has the opposite sign from the
+                // saturation endpoint. This bound works for both add and subtract.
+                let saturation = v128_xor(
+                    #shr(wrapped, #sign_shift),
+                    #splat(#scalar::MIN),
+                );
+                v128_bitselect(saturation, wrapped, overflow_mask)
+            }
+        }
+        _ => unreachable!(),
+    };
+
+    quote! {
+        #method_sig {
+            let a: v128 = a.into();
+            let b: v128 = b.into();
+            #body.simd_into(self)
+        }
+    }
+}
+
 impl Level for WasmSimd128 {
     fn name(&self) -> &'static str {
         "WasmSimd128"
@@ -344,6 +545,8 @@ impl Level for WasmSimd128 {
             OpSig::Reduce { lane_op } => {
                 if lane_op == "add" {
                     reduce_sum(method_sig, vec_ty)
+                } else if lane_op == "mul" {
+                    reduce_product(method_sig, vec_ty)
                 } else if vec_ty.scalar_bits == 64
                     && matches!(vec_ty.scalar, ScalarType::Int | ScalarType::Unsigned)
                 {
@@ -480,6 +683,15 @@ impl Level for WasmSimd128 {
                 mode: NarrowingMode::Relaxed,
             } => relaxed_narrow_method(op, vec_ty, target_ty, "narrow"),
             OpSig::Binary => {
+                let saturating_op = match method {
+                    "saturating_add" => Some(SaturatingOp::Add),
+                    "saturating_sub" => Some(SaturatingOp::Sub),
+                    _ => None,
+                };
+                if let Some(arithmetic) = saturating_op {
+                    return saturating_add_sub_method(op, vec_ty, arithmetic);
+                }
+
                 if matches!(method, "shlv" | "shrv")
                     || (matches!(method, "min" | "max")
                         && vec_ty.scalar_bits == 64
@@ -627,6 +839,7 @@ impl Level for WasmSimd128 {
                     }
                 }
             }
+            OpSig::RotateElements { .. } => integer_lane_mask_rotate(op, vec_ty),
             OpSig::Select => {
                 // Rust includes unsigned versions of the lane select intrinsics, but they're
                 // just aliases for the signed ones

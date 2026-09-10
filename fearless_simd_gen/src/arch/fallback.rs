@@ -7,7 +7,13 @@ use quote::quote;
 
 pub(crate) fn translate_op(op: &str, is_float: bool) -> Option<&'static str> {
     Some(match op {
-        "abs" => "abs",
+        "abs" => {
+            if is_float {
+                "abs"
+            } else {
+                "wrapping_abs"
+            }
+        }
         "copysign" => "copysign",
         "neg" => {
             if is_float {
@@ -29,6 +35,8 @@ pub(crate) fn translate_op(op: &str, is_float: bool) -> Option<&'static str> {
                 "wrapping_add"
             }
         }
+        "saturating_add" => "saturating_add",
+        "saturating_sub" => "saturating_sub",
         "sub" => {
             if is_float {
                 "sub"

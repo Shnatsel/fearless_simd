@@ -93,7 +93,7 @@ impl<S: Simd> Bytes for f32x4<S> {
 impl<S: Simd> SimdBase<S> for f32x4<S> {
     type Element = f32;
     type ByteVector = u8x16<S>;
-    const N: usize = 4;
+    const LEN: usize = 4;
     type Mask = mask32x4<S>;
     type Block = f32x4<S>;
     type Array = [f32; 4];
@@ -155,6 +155,10 @@ impl<S: Simd> SimdBase<S> for f32x4<S> {
             .swizzle_dyn_precise_f32x4(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_f32x4(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_f32x4(self)
     }
@@ -177,6 +181,10 @@ impl<S: Simd> SimdBase<S> for f32x4<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_f32x4(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_f32x4(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -240,10 +248,6 @@ impl<S: Simd> SimdBase<S> for f32x4<S> {
     }
 }
 impl<S: Simd> crate::SimdFloat<S> for f32x4<S> {
-    #[inline(always)]
-    fn abs(self) -> Self {
-        self.simd.abs_f32x4(self)
-    }
     #[inline(always)]
     fn sqrt(self) -> Self {
         self.simd.sqrt_f32x4(self)
@@ -423,7 +427,7 @@ impl<S: Simd> Bytes for i8x16<S> {
 impl<S: Simd> SimdBase<S> for i8x16<S> {
     type Element = i8;
     type ByteVector = u8x16<S>;
-    const N: usize = 16;
+    const LEN: usize = 16;
     type Mask = mask8x16<S>;
     type Block = i8x16<S>;
     type Array = [i8; 16];
@@ -505,6 +509,10 @@ impl<S: Simd> SimdBase<S> for i8x16<S> {
             .swizzle_dyn_precise_i8x16(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i8x16(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i8x16(self)
     }
@@ -527,6 +535,10 @@ impl<S: Simd> SimdBase<S> for i8x16<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i8x16(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i8x16(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -597,6 +609,16 @@ impl<S: Simd> crate::SimdInt<S> for i8x16<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i8x16(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i8x16(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i8x16(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for i8x16<S> {
@@ -711,7 +733,7 @@ impl<S: Simd> Bytes for u8x16<S> {
 impl<S: Simd> SimdBase<S> for u8x16<S> {
     type Element = u8;
     type ByteVector = u8x16<S>;
-    const N: usize = 16;
+    const LEN: usize = 16;
     type Mask = mask8x16<S>;
     type Block = u8x16<S>;
     type Array = [u8; 16];
@@ -793,6 +815,10 @@ impl<S: Simd> SimdBase<S> for u8x16<S> {
             .swizzle_dyn_precise_u8x16(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u8x16(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u8x16(self)
     }
@@ -815,6 +841,10 @@ impl<S: Simd> SimdBase<S> for u8x16<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u8x16(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u8x16(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -886,6 +916,16 @@ impl<S: Simd> crate::SimdInt<S> for u8x16<S> {
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u8x16(self)
     }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u8x16(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u8x16(self, rhs.simd_into(self.simd))
+    }
 }
 impl<S: Simd> SimdWiden<S> for u8x16<S> {
     type Widened = u16x8<S>;
@@ -955,7 +995,7 @@ impl<S: Simd> Select<mask8x16<S>> for mask8x16<S> {
 }
 impl<S: Simd> SimdMask<S> for mask8x16<S> {
     type Element = i8;
-    const N: usize = 16;
+    const LEN: usize = 16;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -985,6 +1025,14 @@ impl<S: Simd> SimdMask<S> for mask8x16<S> {
     fn store_slice(&self, slice: &mut [i8]) {
         let slice: &mut [i8; 16] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask8x16::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask8x16::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -1097,7 +1145,7 @@ impl<S: Simd> Bytes for i16x8<S> {
 impl<S: Simd> SimdBase<S> for i16x8<S> {
     type Element = i16;
     type ByteVector = u8x16<S>;
-    const N: usize = 8;
+    const LEN: usize = 8;
     type Mask = mask16x8<S>;
     type Block = i16x8<S>;
     type Array = [i16; 8];
@@ -1171,6 +1219,10 @@ impl<S: Simd> SimdBase<S> for i16x8<S> {
             .swizzle_dyn_precise_i16x8(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i16x8(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i16x8(self)
     }
@@ -1193,6 +1245,10 @@ impl<S: Simd> SimdBase<S> for i16x8<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i16x8(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i16x8(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -1263,6 +1319,16 @@ impl<S: Simd> crate::SimdInt<S> for i16x8<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i16x8(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i16x8(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i16x8(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for i16x8<S> {
@@ -1392,7 +1458,7 @@ impl<S: Simd> Bytes for u16x8<S> {
 impl<S: Simd> SimdBase<S> for u16x8<S> {
     type Element = u16;
     type ByteVector = u8x16<S>;
-    const N: usize = 8;
+    const LEN: usize = 8;
     type Mask = mask16x8<S>;
     type Block = u16x8<S>;
     type Array = [u16; 8];
@@ -1466,6 +1532,10 @@ impl<S: Simd> SimdBase<S> for u16x8<S> {
             .swizzle_dyn_precise_u16x8(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u16x8(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u16x8(self)
     }
@@ -1488,6 +1558,10 @@ impl<S: Simd> SimdBase<S> for u16x8<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u16x8(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u16x8(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -1558,6 +1632,16 @@ impl<S: Simd> crate::SimdInt<S> for u16x8<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u16x8(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u16x8(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u16x8(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for u16x8<S> {
@@ -1643,7 +1727,7 @@ impl<S: Simd> Select<mask16x8<S>> for mask16x8<S> {
 }
 impl<S: Simd> SimdMask<S> for mask16x8<S> {
     type Element = i16;
-    const N: usize = 8;
+    const LEN: usize = 8;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -1673,6 +1757,14 @@ impl<S: Simd> SimdMask<S> for mask16x8<S> {
     fn store_slice(&self, slice: &mut [i16]) {
         let slice: &mut [i16; 8] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask16x8::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask16x8::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -1785,7 +1877,7 @@ impl<S: Simd> Bytes for i32x4<S> {
 impl<S: Simd> SimdBase<S> for i32x4<S> {
     type Element = i32;
     type ByteVector = u8x16<S>;
-    const N: usize = 4;
+    const LEN: usize = 4;
     type Mask = mask32x4<S>;
     type Block = i32x4<S>;
     type Array = [i32; 4];
@@ -1847,6 +1939,10 @@ impl<S: Simd> SimdBase<S> for i32x4<S> {
             .swizzle_dyn_precise_i32x4(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i32x4(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i32x4(self)
     }
@@ -1869,6 +1965,10 @@ impl<S: Simd> SimdBase<S> for i32x4<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i32x4(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i32x4(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -1939,6 +2039,16 @@ impl<S: Simd> crate::SimdInt<S> for i32x4<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i32x4(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i32x4(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i32x4(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f32x4<S>> for i32x4<S> {
@@ -2080,7 +2190,7 @@ impl<S: Simd> Bytes for u32x4<S> {
 impl<S: Simd> SimdBase<S> for u32x4<S> {
     type Element = u32;
     type ByteVector = u8x16<S>;
-    const N: usize = 4;
+    const LEN: usize = 4;
     type Mask = mask32x4<S>;
     type Block = u32x4<S>;
     type Array = [u32; 4];
@@ -2142,6 +2252,10 @@ impl<S: Simd> SimdBase<S> for u32x4<S> {
             .swizzle_dyn_precise_u32x4(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u32x4(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u32x4(self)
     }
@@ -2164,6 +2278,10 @@ impl<S: Simd> SimdBase<S> for u32x4<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u32x4(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u32x4(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -2234,6 +2352,16 @@ impl<S: Simd> crate::SimdInt<S> for u32x4<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u32x4(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u32x4(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u32x4(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f32x4<S>> for u32x4<S> {
@@ -2331,7 +2459,7 @@ impl<S: Simd> Select<mask32x4<S>> for mask32x4<S> {
 }
 impl<S: Simd> SimdMask<S> for mask32x4<S> {
     type Element = i32;
-    const N: usize = 4;
+    const LEN: usize = 4;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -2361,6 +2489,14 @@ impl<S: Simd> SimdMask<S> for mask32x4<S> {
     fn store_slice(&self, slice: &mut [i32]) {
         let slice: &mut [i32; 4] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask32x4::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask32x4::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -2473,7 +2609,7 @@ impl<S: Simd> Bytes for f64x2<S> {
 impl<S: Simd> SimdBase<S> for f64x2<S> {
     type Element = f64;
     type ByteVector = u8x16<S>;
-    const N: usize = 2;
+    const LEN: usize = 2;
     type Mask = mask64x2<S>;
     type Block = f64x2<S>;
     type Array = [f64; 2];
@@ -2535,6 +2671,10 @@ impl<S: Simd> SimdBase<S> for f64x2<S> {
             .swizzle_dyn_precise_f64x2(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_f64x2(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_f64x2(self)
     }
@@ -2557,6 +2697,10 @@ impl<S: Simd> SimdBase<S> for f64x2<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_f64x2(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_f64x2(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -2620,10 +2764,6 @@ impl<S: Simd> SimdBase<S> for f64x2<S> {
     }
 }
 impl<S: Simd> crate::SimdFloat<S> for f64x2<S> {
-    #[inline(always)]
-    fn abs(self) -> Self {
-        self.simd.abs_f64x2(self)
-    }
     #[inline(always)]
     fn sqrt(self) -> Self {
         self.simd.sqrt_f64x2(self)
@@ -2811,7 +2951,7 @@ impl<S: Simd> Bytes for i64x2<S> {
 impl<S: Simd> SimdBase<S> for i64x2<S> {
     type Element = i64;
     type ByteVector = u8x16<S>;
-    const N: usize = 2;
+    const LEN: usize = 2;
     type Mask = mask64x2<S>;
     type Block = i64x2<S>;
     type Array = [i64; 2];
@@ -2873,6 +3013,10 @@ impl<S: Simd> SimdBase<S> for i64x2<S> {
             .swizzle_dyn_precise_i64x2(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i64x2(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i64x2(self)
     }
@@ -2895,6 +3039,10 @@ impl<S: Simd> SimdBase<S> for i64x2<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i64x2(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i64x2(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -2965,6 +3113,16 @@ impl<S: Simd> crate::SimdInt<S> for i64x2<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i64x2(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i64x2(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i64x2(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f64x2<S>> for i64x2<S> {
@@ -3099,7 +3257,7 @@ impl<S: Simd> Bytes for u64x2<S> {
 impl<S: Simd> SimdBase<S> for u64x2<S> {
     type Element = u64;
     type ByteVector = u8x16<S>;
-    const N: usize = 2;
+    const LEN: usize = 2;
     type Mask = mask64x2<S>;
     type Block = u64x2<S>;
     type Array = [u64; 2];
@@ -3161,6 +3319,10 @@ impl<S: Simd> SimdBase<S> for u64x2<S> {
             .swizzle_dyn_precise_u64x2(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u64x2(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u64x2(self)
     }
@@ -3183,6 +3345,10 @@ impl<S: Simd> SimdBase<S> for u64x2<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u64x2(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u64x2(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -3253,6 +3419,16 @@ impl<S: Simd> crate::SimdInt<S> for u64x2<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u64x2(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u64x2(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u64x2(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f64x2<S>> for u64x2<S> {
@@ -3343,7 +3519,7 @@ impl<S: Simd> Select<mask64x2<S>> for mask64x2<S> {
 }
 impl<S: Simd> SimdMask<S> for mask64x2<S> {
     type Element = i64;
-    const N: usize = 2;
+    const LEN: usize = 2;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -3373,6 +3549,14 @@ impl<S: Simd> SimdMask<S> for mask64x2<S> {
     fn store_slice(&self, slice: &mut [i64]) {
         let slice: &mut [i64; 2] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask64x2::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask64x2::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -3485,7 +3669,7 @@ impl<S: Simd> Bytes for f32x8<S> {
 impl<S: Simd> SimdBase<S> for f32x8<S> {
     type Element = f32;
     type ByteVector = u8x32<S>;
-    const N: usize = 8;
+    const LEN: usize = 8;
     type Mask = mask32x8<S>;
     type Block = f32x4<S>;
     type Array = [f32; 8];
@@ -3559,6 +3743,10 @@ impl<S: Simd> SimdBase<S> for f32x8<S> {
             .swizzle_dyn_precise_f32x8(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_f32x8(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_f32x8(self)
     }
@@ -3581,6 +3769,10 @@ impl<S: Simd> SimdBase<S> for f32x8<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_f32x8(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_f32x8(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -3644,10 +3836,6 @@ impl<S: Simd> SimdBase<S> for f32x8<S> {
     }
 }
 impl<S: Simd> crate::SimdFloat<S> for f32x8<S> {
-    #[inline(always)]
-    fn abs(self) -> Self {
-        self.simd.abs_f32x8(self)
-    }
     #[inline(always)]
     fn sqrt(self) -> Self {
         self.simd.sqrt_f32x8(self)
@@ -3822,7 +4010,7 @@ impl<S: Simd> Bytes for i8x32<S> {
 impl<S: Simd> SimdBase<S> for i8x32<S> {
     type Element = i8;
     type ByteVector = u8x32<S>;
-    const N: usize = 32;
+    const LEN: usize = 32;
     type Mask = mask8x32<S>;
     type Block = i8x16<S>;
     type Array = [i8; 32];
@@ -3920,6 +4108,10 @@ impl<S: Simd> SimdBase<S> for i8x32<S> {
             .swizzle_dyn_precise_i8x32(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i8x32(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i8x32(self)
     }
@@ -3942,6 +4134,10 @@ impl<S: Simd> SimdBase<S> for i8x32<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i8x32(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i8x32(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -4012,6 +4208,16 @@ impl<S: Simd> crate::SimdInt<S> for i8x32<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i8x32(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i8x32(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i8x32(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for i8x32<S> {
@@ -4121,7 +4327,7 @@ impl<S: Simd> Bytes for u8x32<S> {
 impl<S: Simd> SimdBase<S> for u8x32<S> {
     type Element = u8;
     type ByteVector = u8x32<S>;
-    const N: usize = 32;
+    const LEN: usize = 32;
     type Mask = mask8x32<S>;
     type Block = u8x16<S>;
     type Array = [u8; 32];
@@ -4219,6 +4425,10 @@ impl<S: Simd> SimdBase<S> for u8x32<S> {
             .swizzle_dyn_precise_u8x32(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u8x32(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u8x32(self)
     }
@@ -4241,6 +4451,10 @@ impl<S: Simd> SimdBase<S> for u8x32<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u8x32(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u8x32(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -4312,6 +4526,16 @@ impl<S: Simd> crate::SimdInt<S> for u8x32<S> {
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u8x32(self)
     }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u8x32(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u8x32(self, rhs.simd_into(self.simd))
+    }
 }
 impl<S: Simd> SimdWiden<S> for u8x32<S> {
     type Widened = u16x16<S>;
@@ -4376,7 +4600,7 @@ impl<S: Simd> Select<mask8x32<S>> for mask8x32<S> {
 }
 impl<S: Simd> SimdMask<S> for mask8x32<S> {
     type Element = i8;
-    const N: usize = 32;
+    const LEN: usize = 32;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -4406,6 +4630,14 @@ impl<S: Simd> SimdMask<S> for mask8x32<S> {
     fn store_slice(&self, slice: &mut [i8]) {
         let slice: &mut [i8; 32] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask8x32::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask8x32::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -4518,7 +4750,7 @@ impl<S: Simd> Bytes for i16x16<S> {
 impl<S: Simd> SimdBase<S> for i16x16<S> {
     type Element = i16;
     type ByteVector = u8x32<S>;
-    const N: usize = 16;
+    const LEN: usize = 16;
     type Mask = mask16x16<S>;
     type Block = i16x8<S>;
     type Array = [i16; 16];
@@ -4600,6 +4832,10 @@ impl<S: Simd> SimdBase<S> for i16x16<S> {
             .swizzle_dyn_precise_i16x16(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i16x16(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i16x16(self)
     }
@@ -4622,6 +4858,10 @@ impl<S: Simd> SimdBase<S> for i16x16<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i16x16(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i16x16(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -4693,6 +4933,16 @@ impl<S: Simd> crate::SimdInt<S> for i16x16<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i16x16(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i16x16(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i16x16(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for i16x16<S> {
@@ -4817,7 +5067,7 @@ impl<S: Simd> Bytes for u16x16<S> {
 impl<S: Simd> SimdBase<S> for u16x16<S> {
     type Element = u16;
     type ByteVector = u8x32<S>;
-    const N: usize = 16;
+    const LEN: usize = 16;
     type Mask = mask16x16<S>;
     type Block = u16x8<S>;
     type Array = [u16; 16];
@@ -4899,6 +5149,10 @@ impl<S: Simd> SimdBase<S> for u16x16<S> {
             .swizzle_dyn_precise_u16x16(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u16x16(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u16x16(self)
     }
@@ -4921,6 +5175,10 @@ impl<S: Simd> SimdBase<S> for u16x16<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u16x16(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u16x16(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -4992,6 +5250,16 @@ impl<S: Simd> crate::SimdInt<S> for u16x16<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u16x16(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u16x16(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u16x16(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for u16x16<S> {
@@ -5072,7 +5340,7 @@ impl<S: Simd> Select<mask16x16<S>> for mask16x16<S> {
 }
 impl<S: Simd> SimdMask<S> for mask16x16<S> {
     type Element = i16;
-    const N: usize = 16;
+    const LEN: usize = 16;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -5102,6 +5370,14 @@ impl<S: Simd> SimdMask<S> for mask16x16<S> {
     fn store_slice(&self, slice: &mut [i16]) {
         let slice: &mut [i16; 16] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask16x16::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask16x16::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -5214,7 +5490,7 @@ impl<S: Simd> Bytes for i32x8<S> {
 impl<S: Simd> SimdBase<S> for i32x8<S> {
     type Element = i32;
     type ByteVector = u8x32<S>;
-    const N: usize = 8;
+    const LEN: usize = 8;
     type Mask = mask32x8<S>;
     type Block = i32x4<S>;
     type Array = [i32; 8];
@@ -5288,6 +5564,10 @@ impl<S: Simd> SimdBase<S> for i32x8<S> {
             .swizzle_dyn_precise_i32x8(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i32x8(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i32x8(self)
     }
@@ -5310,6 +5590,10 @@ impl<S: Simd> SimdBase<S> for i32x8<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i32x8(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i32x8(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -5380,6 +5664,16 @@ impl<S: Simd> crate::SimdInt<S> for i32x8<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i32x8(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i32x8(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i32x8(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f32x8<S>> for i32x8<S> {
@@ -5516,7 +5810,7 @@ impl<S: Simd> Bytes for u32x8<S> {
 impl<S: Simd> SimdBase<S> for u32x8<S> {
     type Element = u32;
     type ByteVector = u8x32<S>;
-    const N: usize = 8;
+    const LEN: usize = 8;
     type Mask = mask32x8<S>;
     type Block = u32x4<S>;
     type Array = [u32; 8];
@@ -5590,6 +5884,10 @@ impl<S: Simd> SimdBase<S> for u32x8<S> {
             .swizzle_dyn_precise_u32x8(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u32x8(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u32x8(self)
     }
@@ -5612,6 +5910,10 @@ impl<S: Simd> SimdBase<S> for u32x8<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u32x8(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u32x8(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -5682,6 +5984,16 @@ impl<S: Simd> crate::SimdInt<S> for u32x8<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u32x8(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u32x8(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u32x8(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f32x8<S>> for u32x8<S> {
@@ -5774,7 +6086,7 @@ impl<S: Simd> Select<mask32x8<S>> for mask32x8<S> {
 }
 impl<S: Simd> SimdMask<S> for mask32x8<S> {
     type Element = i32;
-    const N: usize = 8;
+    const LEN: usize = 8;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -5804,6 +6116,14 @@ impl<S: Simd> SimdMask<S> for mask32x8<S> {
     fn store_slice(&self, slice: &mut [i32]) {
         let slice: &mut [i32; 8] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask32x8::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask32x8::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -5916,7 +6236,7 @@ impl<S: Simd> Bytes for f64x4<S> {
 impl<S: Simd> SimdBase<S> for f64x4<S> {
     type Element = f64;
     type ByteVector = u8x32<S>;
-    const N: usize = 4;
+    const LEN: usize = 4;
     type Mask = mask64x4<S>;
     type Block = f64x2<S>;
     type Array = [f64; 4];
@@ -5978,6 +6298,10 @@ impl<S: Simd> SimdBase<S> for f64x4<S> {
             .swizzle_dyn_precise_f64x4(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_f64x4(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_f64x4(self)
     }
@@ -6000,6 +6324,10 @@ impl<S: Simd> SimdBase<S> for f64x4<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_f64x4(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_f64x4(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -6063,10 +6391,6 @@ impl<S: Simd> SimdBase<S> for f64x4<S> {
     }
 }
 impl<S: Simd> crate::SimdFloat<S> for f64x4<S> {
-    #[inline(always)]
-    fn abs(self) -> Self {
-        self.simd.abs_f64x4(self)
-    }
     #[inline(always)]
     fn sqrt(self) -> Self {
         self.simd.sqrt_f64x4(self)
@@ -6249,7 +6573,7 @@ impl<S: Simd> Bytes for i64x4<S> {
 impl<S: Simd> SimdBase<S> for i64x4<S> {
     type Element = i64;
     type ByteVector = u8x32<S>;
-    const N: usize = 4;
+    const LEN: usize = 4;
     type Mask = mask64x4<S>;
     type Block = i64x2<S>;
     type Array = [i64; 4];
@@ -6311,6 +6635,10 @@ impl<S: Simd> SimdBase<S> for i64x4<S> {
             .swizzle_dyn_precise_i64x4(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i64x4(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i64x4(self)
     }
@@ -6333,6 +6661,10 @@ impl<S: Simd> SimdBase<S> for i64x4<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i64x4(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i64x4(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -6403,6 +6735,16 @@ impl<S: Simd> crate::SimdInt<S> for i64x4<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i64x4(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i64x4(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i64x4(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f64x4<S>> for i64x4<S> {
@@ -6532,7 +6874,7 @@ impl<S: Simd> Bytes for u64x4<S> {
 impl<S: Simd> SimdBase<S> for u64x4<S> {
     type Element = u64;
     type ByteVector = u8x32<S>;
-    const N: usize = 4;
+    const LEN: usize = 4;
     type Mask = mask64x4<S>;
     type Block = u64x2<S>;
     type Array = [u64; 4];
@@ -6594,6 +6936,10 @@ impl<S: Simd> SimdBase<S> for u64x4<S> {
             .swizzle_dyn_precise_u64x4(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u64x4(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u64x4(self)
     }
@@ -6616,6 +6962,10 @@ impl<S: Simd> SimdBase<S> for u64x4<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u64x4(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u64x4(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -6686,6 +7036,16 @@ impl<S: Simd> crate::SimdInt<S> for u64x4<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u64x4(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u64x4(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u64x4(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f64x4<S>> for u64x4<S> {
@@ -6771,7 +7131,7 @@ impl<S: Simd> Select<mask64x4<S>> for mask64x4<S> {
 }
 impl<S: Simd> SimdMask<S> for mask64x4<S> {
     type Element = i64;
-    const N: usize = 4;
+    const LEN: usize = 4;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -6801,6 +7161,14 @@ impl<S: Simd> SimdMask<S> for mask64x4<S> {
     fn store_slice(&self, slice: &mut [i64]) {
         let slice: &mut [i64; 4] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask64x4::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask64x4::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -6913,7 +7281,7 @@ impl<S: Simd> Bytes for f32x16<S> {
 impl<S: Simd> SimdBase<S> for f32x16<S> {
     type Element = f32;
     type ByteVector = u8x64<S>;
-    const N: usize = 16;
+    const LEN: usize = 16;
     type Mask = mask32x16<S>;
     type Block = f32x4<S>;
     type Array = [f32; 16];
@@ -6996,6 +7364,10 @@ impl<S: Simd> SimdBase<S> for f32x16<S> {
             .swizzle_dyn_precise_f32x16(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_f32x16(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_f32x16(self)
     }
@@ -7018,6 +7390,10 @@ impl<S: Simd> SimdBase<S> for f32x16<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_f32x16(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_f32x16(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -7082,10 +7458,6 @@ impl<S: Simd> SimdBase<S> for f32x16<S> {
     }
 }
 impl<S: Simd> crate::SimdFloat<S> for f32x16<S> {
-    #[inline(always)]
-    fn abs(self) -> Self {
-        self.simd.abs_f32x16(self)
-    }
     #[inline(always)]
     fn sqrt(self) -> Self {
         self.simd.sqrt_f32x16(self)
@@ -7253,7 +7625,7 @@ impl<S: Simd> Bytes for i8x64<S> {
 impl<S: Simd> SimdBase<S> for i8x64<S> {
     type Element = i8;
     type ByteVector = u8x64<S>;
-    const N: usize = 64;
+    const LEN: usize = 64;
     type Mask = mask8x64<S>;
     type Block = i8x16<S>;
     type Array = [i8; 64];
@@ -7384,6 +7756,10 @@ impl<S: Simd> SimdBase<S> for i8x64<S> {
             .swizzle_dyn_precise_i8x64(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i8x64(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i8x64(self)
     }
@@ -7406,6 +7782,10 @@ impl<S: Simd> SimdBase<S> for i8x64<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i8x64(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i8x64(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -7476,6 +7856,16 @@ impl<S: Simd> crate::SimdInt<S> for i8x64<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i8x64(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i8x64(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i8x64(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for i8x64<S> {
@@ -7578,7 +7968,7 @@ impl<S: Simd> Bytes for u8x64<S> {
 impl<S: Simd> SimdBase<S> for u8x64<S> {
     type Element = u8;
     type ByteVector = u8x64<S>;
-    const N: usize = 64;
+    const LEN: usize = 64;
     type Mask = mask8x64<S>;
     type Block = u8x16<S>;
     type Array = [u8; 64];
@@ -7709,6 +8099,10 @@ impl<S: Simd> SimdBase<S> for u8x64<S> {
             .swizzle_dyn_precise_u8x64(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u8x64(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u8x64(self)
     }
@@ -7731,6 +8125,10 @@ impl<S: Simd> SimdBase<S> for u8x64<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u8x64(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u8x64(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -7802,6 +8200,16 @@ impl<S: Simd> crate::SimdInt<S> for u8x64<S> {
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u8x64(self)
     }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u8x64(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u8x64(self, rhs.simd_into(self.simd))
+    }
 }
 impl<S: Simd> SimdWiden<S> for u8x64<S> {
     type Widened = u16x32<S>;
@@ -7859,7 +8267,7 @@ impl<S: Simd> Select<mask8x64<S>> for mask8x64<S> {
 }
 impl<S: Simd> SimdMask<S> for mask8x64<S> {
     type Element = i8;
-    const N: usize = 64;
+    const LEN: usize = 64;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -7889,6 +8297,14 @@ impl<S: Simd> SimdMask<S> for mask8x64<S> {
     fn store_slice(&self, slice: &mut [i8]) {
         let slice: &mut [i8; 64] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask8x64::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask8x64::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -8001,7 +8417,7 @@ impl<S: Simd> Bytes for i16x32<S> {
 impl<S: Simd> SimdBase<S> for i16x32<S> {
     type Element = i16;
     type ByteVector = u8x64<S>;
-    const N: usize = 32;
+    const LEN: usize = 32;
     type Mask = mask16x32<S>;
     type Block = i16x8<S>;
     type Array = [i16; 32];
@@ -8100,6 +8516,10 @@ impl<S: Simd> SimdBase<S> for i16x32<S> {
             .swizzle_dyn_precise_i16x32(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i16x32(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i16x32(self)
     }
@@ -8122,6 +8542,10 @@ impl<S: Simd> SimdBase<S> for i16x32<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i16x32(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i16x32(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -8193,6 +8617,16 @@ impl<S: Simd> crate::SimdInt<S> for i16x32<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i16x32(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i16x32(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i16x32(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for i16x32<S> {
@@ -8310,7 +8744,7 @@ impl<S: Simd> Bytes for u16x32<S> {
 impl<S: Simd> SimdBase<S> for u16x32<S> {
     type Element = u16;
     type ByteVector = u8x64<S>;
-    const N: usize = 32;
+    const LEN: usize = 32;
     type Mask = mask16x32<S>;
     type Block = u16x8<S>;
     type Array = [u16; 32];
@@ -8409,6 +8843,10 @@ impl<S: Simd> SimdBase<S> for u16x32<S> {
             .swizzle_dyn_precise_u16x32(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u16x32(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u16x32(self)
     }
@@ -8431,6 +8869,10 @@ impl<S: Simd> SimdBase<S> for u16x32<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u16x32(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u16x32(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -8502,6 +8944,16 @@ impl<S: Simd> crate::SimdInt<S> for u16x32<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u16x32(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u16x32(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u16x32(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdWiden<S> for u16x32<S> {
@@ -8575,7 +9027,7 @@ impl<S: Simd> Select<mask16x32<S>> for mask16x32<S> {
 }
 impl<S: Simd> SimdMask<S> for mask16x32<S> {
     type Element = i16;
-    const N: usize = 32;
+    const LEN: usize = 32;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -8605,6 +9057,14 @@ impl<S: Simd> SimdMask<S> for mask16x32<S> {
     fn store_slice(&self, slice: &mut [i16]) {
         let slice: &mut [i16; 32] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask16x32::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask16x32::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -8717,7 +9177,7 @@ impl<S: Simd> Bytes for i32x16<S> {
 impl<S: Simd> SimdBase<S> for i32x16<S> {
     type Element = i32;
     type ByteVector = u8x64<S>;
-    const N: usize = 16;
+    const LEN: usize = 16;
     type Mask = mask32x16<S>;
     type Block = i32x4<S>;
     type Array = [i32; 16];
@@ -8800,6 +9260,10 @@ impl<S: Simd> SimdBase<S> for i32x16<S> {
             .swizzle_dyn_precise_i32x16(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i32x16(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i32x16(self)
     }
@@ -8822,6 +9286,10 @@ impl<S: Simd> SimdBase<S> for i32x16<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i32x16(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i32x16(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -8893,6 +9361,16 @@ impl<S: Simd> crate::SimdInt<S> for i32x16<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i32x16(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i32x16(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i32x16(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f32x16<S>> for i32x16<S> {
@@ -9022,7 +9500,7 @@ impl<S: Simd> Bytes for u32x16<S> {
 impl<S: Simd> SimdBase<S> for u32x16<S> {
     type Element = u32;
     type ByteVector = u8x64<S>;
-    const N: usize = 16;
+    const LEN: usize = 16;
     type Mask = mask32x16<S>;
     type Block = u32x4<S>;
     type Array = [u32; 16];
@@ -9105,6 +9583,10 @@ impl<S: Simd> SimdBase<S> for u32x16<S> {
             .swizzle_dyn_precise_u32x16(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u32x16(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u32x16(self)
     }
@@ -9127,6 +9609,10 @@ impl<S: Simd> SimdBase<S> for u32x16<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u32x16(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u32x16(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -9198,6 +9684,16 @@ impl<S: Simd> crate::SimdInt<S> for u32x16<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u32x16(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u32x16(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u32x16(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f32x16<S>> for u32x16<S> {
@@ -9283,7 +9779,7 @@ impl<S: Simd> Select<mask32x16<S>> for mask32x16<S> {
 }
 impl<S: Simd> SimdMask<S> for mask32x16<S> {
     type Element = i32;
-    const N: usize = 16;
+    const LEN: usize = 16;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -9313,6 +9809,14 @@ impl<S: Simd> SimdMask<S> for mask32x16<S> {
     fn store_slice(&self, slice: &mut [i32]) {
         let slice: &mut [i32; 16] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask32x16::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask32x16::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {
@@ -9425,7 +9929,7 @@ impl<S: Simd> Bytes for f64x8<S> {
 impl<S: Simd> SimdBase<S> for f64x8<S> {
     type Element = f64;
     type ByteVector = u8x64<S>;
-    const N: usize = 8;
+    const LEN: usize = 8;
     type Mask = mask64x8<S>;
     type Block = f64x2<S>;
     type Array = [f64; 8];
@@ -9500,6 +10004,10 @@ impl<S: Simd> SimdBase<S> for f64x8<S> {
             .swizzle_dyn_precise_f64x8(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_f64x8(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_f64x8(self)
     }
@@ -9522,6 +10030,10 @@ impl<S: Simd> SimdBase<S> for f64x8<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_f64x8(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_f64x8(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -9585,10 +10097,6 @@ impl<S: Simd> SimdBase<S> for f64x8<S> {
     }
 }
 impl<S: Simd> crate::SimdFloat<S> for f64x8<S> {
-    #[inline(always)]
-    fn abs(self) -> Self {
-        self.simd.abs_f64x8(self)
-    }
     #[inline(always)]
     fn sqrt(self) -> Self {
         self.simd.sqrt_f64x8(self)
@@ -9764,7 +10272,7 @@ impl<S: Simd> Bytes for i64x8<S> {
 impl<S: Simd> SimdBase<S> for i64x8<S> {
     type Element = i64;
     type ByteVector = u8x64<S>;
-    const N: usize = 8;
+    const LEN: usize = 8;
     type Mask = mask64x8<S>;
     type Block = i64x2<S>;
     type Array = [i64; 8];
@@ -9839,6 +10347,10 @@ impl<S: Simd> SimdBase<S> for i64x8<S> {
             .swizzle_dyn_precise_i64x8(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_i64x8(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_i64x8(self)
     }
@@ -9861,6 +10373,10 @@ impl<S: Simd> SimdBase<S> for i64x8<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_i64x8(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_i64x8(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -9931,6 +10447,16 @@ impl<S: Simd> crate::SimdInt<S> for i64x8<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_i64x8(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_i64x8(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_i64x8(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f64x8<S>> for i64x8<S> {
@@ -10053,7 +10579,7 @@ impl<S: Simd> Bytes for u64x8<S> {
 impl<S: Simd> SimdBase<S> for u64x8<S> {
     type Element = u64;
     type ByteVector = u8x64<S>;
-    const N: usize = 8;
+    const LEN: usize = 8;
     type Mask = mask64x8<S>;
     type Block = u64x2<S>;
     type Array = [u64; 8];
@@ -10128,6 +10654,10 @@ impl<S: Simd> SimdBase<S> for u64x8<S> {
             .swizzle_dyn_precise_u64x8(self, indices.simd_into(self.simd))
     }
     #[inline(always)]
+    fn abs(self) -> Self {
+        self.simd.abs_u64x8(self)
+    }
+    #[inline(always)]
     fn reverse(self) -> Self {
         self.simd.reverse_u64x8(self)
     }
@@ -10150,6 +10680,10 @@ impl<S: Simd> SimdBase<S> for u64x8<S> {
     #[inline(always)]
     fn reduce_sum(self) -> Self::Element {
         self.simd.reduce_sum_u64x8(self)
+    }
+    #[inline(always)]
+    fn reduce_product(self) -> Self::Element {
+        self.simd.reduce_product_u64x8(self)
     }
     #[inline(always)]
     fn max(self, rhs: impl SimdInto<Self, S>) -> Self {
@@ -10220,6 +10754,16 @@ impl<S: Simd> crate::SimdInt<S> for u64x8<S> {
     #[inline(always)]
     fn count_zeros(self) -> Self {
         self.simd.count_zeros_u64x8(self)
+    }
+    #[inline(always)]
+    fn saturating_add(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_add_u64x8(self, rhs.simd_into(self.simd))
+    }
+    #[inline(always)]
+    fn saturating_sub(self, rhs: impl SimdInto<Self, S>) -> Self {
+        self.simd
+            .saturating_sub_u64x8(self, rhs.simd_into(self.simd))
     }
 }
 impl<S: Simd> SimdCvtTruncate<f64x8<S>> for u64x8<S> {
@@ -10298,7 +10842,7 @@ impl<S: Simd> Select<mask64x8<S>> for mask64x8<S> {
 }
 impl<S: Simd> SimdMask<S> for mask64x8<S> {
     type Element = i64;
-    const N: usize = 8;
+    const LEN: usize = 8;
     #[inline(always)]
     fn witness(&self) -> S {
         self.simd
@@ -10328,6 +10872,14 @@ impl<S: Simd> SimdMask<S> for mask64x8<S> {
     fn store_slice(&self, slice: &mut [i64]) {
         let slice: &mut [i64; 8] = slice.try_into().unwrap();
         *slice = (*self).into();
+    }
+    #[inline(always)]
+    fn rotate_elements_left<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_left_mask64x8::<OFFSET>(self)
+    }
+    #[inline(always)]
+    fn rotate_elements_right<const OFFSET: usize>(self) -> Self {
+        self.simd.rotate_elements_right_mask64x8::<OFFSET>(self)
     }
     #[inline(always)]
     fn reverse(self) -> Self {

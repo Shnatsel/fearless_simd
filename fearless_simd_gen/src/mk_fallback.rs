@@ -4,7 +4,7 @@
 use crate::arch::fallback;
 use crate::generic::{
     generic_mask_from_bitmask, generic_mask_set, generic_mask_to_bitmask, generic_op_name,
-    integer_lane_mask_splat_arg,
+    integer_lane_mask_rotate, integer_lane_mask_splat_arg,
 };
 use crate::level::Level;
 use crate::ops::{NarrowingMode, Op, OpSig, relaxed_narrow_method};
@@ -291,12 +291,13 @@ impl Level for Fallback {
                 }
             }
             OpSig::Reduce { lane_op } => {
-                if lane_op == "add" {
-                    fallback_reduce_sum(method_sig, vec_ty)
+                if matches!(lane_op, "add" | "mul") {
+                    fallback_reduce_arithmetic(method_sig, vec_ty, lane_op)
                 } else {
                     fallback_reduce_min_max(method_sig, vec_ty, lane_op)
                 }
             }
+            OpSig::RotateElements { .. } => integer_lane_mask_rotate(op, vec_ty),
             OpSig::Widen { target_ty } => {
                 let scalar = target_ty.scalar.rust(target_ty.scalar_bits);
                 let half_len = vec_ty.len / 2;
@@ -833,14 +834,19 @@ fn fallback_reduce_min_max(
     }
 }
 
-/// Build an adjacent balanced reduction one horizontal level at a time.
-fn fallback_reduce_sum(method_sig: TokenStream, vec_ty: &VecType) -> TokenStream {
+/// Build an adjacent balanced arithmetic reduction one horizontal level at a time.
+fn fallback_reduce_arithmetic(
+    method_sig: TokenStream,
+    vec_ty: &VecType,
+    lane_op: &str,
+) -> TokenStream {
     // The structure directly mirrors the SIMD constructions for two reasons:
     // 1. We promise the same output across all platforms, which means
-    //    we have to perform additions in the same SIMD-friendly order,
-    //    because floating-point addition is not associative.
+    //    we have to perform arithmetic in the same SIMD-friendly order,
+    //    because floating-point arithmetic is not associative.
     // 2. Expressing individual stages as arrays allows for autovectorization
     //    on platforms we don't have explicit intrinsics for.
+    assert!(matches!(lane_op, "add" | "mul"));
     assert_eq!(
         vec_ty.n_bits(),
         128,
@@ -854,19 +860,29 @@ fn fallback_reduce_sum(method_sig: TokenStream, vec_ty: &VecType) -> TokenStream
     let mut level = 0;
 
     while previous_len > 1 {
-        let name = format_ident!("sum_level_{level}");
+        let name = format_ident!("{lane_op}_level_{level}");
         let next_len = previous_len / 2;
-        let additions = (0..next_len).map(|index| {
+        let operations = (0..next_len).map(|index| {
             let left_index = index * 2;
             let right_index = left_index + 1;
-            if vec_ty.scalar == ScalarType::Float {
-                quote! { #previous[#left_index] + #previous[#right_index] }
-            } else {
-                quote! { #previous[#left_index].wrapping_add(#previous[#right_index]) }
+            match (lane_op, vec_ty.scalar) {
+                ("add", ScalarType::Float) => {
+                    quote! { #previous[#left_index] + #previous[#right_index] }
+                }
+                ("mul", ScalarType::Float) => {
+                    quote! { #previous[#left_index] * #previous[#right_index] }
+                }
+                ("add", ScalarType::Int | ScalarType::Unsigned) => {
+                    quote! { #previous[#left_index].wrapping_add(#previous[#right_index]) }
+                }
+                ("mul", ScalarType::Int | ScalarType::Unsigned) => {
+                    quote! { #previous[#left_index].wrapping_mul(#previous[#right_index]) }
+                }
+                _ => unreachable!("arithmetic reductions only operate on numeric vectors"),
             }
         });
         statements.push(quote! {
-            let #name: [#scalar; #next_len] = [#(#additions),*];
+            let #name: [#scalar; #next_len] = [#(#operations),*];
         });
         previous = quote! { #name };
         previous_len = next_len;
@@ -891,6 +907,8 @@ fn rhs_reference(method: &str) -> bool {
             | "wrapping_sub"
             | "wrapping_mul"
             | "wrapping_add"
+            | "saturating_add"
+            | "saturating_sub"
             | "wrapping_shl"
             | "wrapping_shr"
     )

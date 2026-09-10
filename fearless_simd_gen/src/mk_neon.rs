@@ -6,7 +6,8 @@ use quote::{ToTokens as _, format_ident, quote};
 
 use crate::generic::{
     count_zeros_method, fallback_method, generic_mask_set, generic_op_name,
-    integer_lane_mask_splat_arg, reverse_method, reverse_vector_mask_method,
+    integer_lane_mask_rotate, integer_lane_mask_splat_arg, reverse_method,
+    reverse_vector_mask_method,
 };
 use crate::level::Level;
 use crate::ops::{NarrowingMode, Op, SlideGranularity, relaxed_narrow_method};
@@ -61,6 +62,59 @@ impl Neon {
         self.kernel_method(op, vec_ty, |token| {
             quote! { #result.simd_into(#token) }
         })
+    }
+}
+
+/// Build the 128-bit leaf of the fixed balanced product tree.
+fn neon_reduce_product(vec_ty: &VecType) -> TokenStream {
+    assert_eq!(
+        vec_ty.n_bits(),
+        128,
+        "wide reductions must use the generic 128-bit-grained implementation"
+    );
+
+    match (vec_ty.scalar, vec_ty.scalar_bits) {
+        (ScalarType::Float, 64) => quote! {
+            let a: float64x2_t = a.into();
+            vgetq_lane_f64::<0>(a) * vgetq_lane_f64::<1>(a)
+        },
+        (ScalarType::Float, 32) | (ScalarType::Int | ScalarType::Unsigned, 8 | 16 | 32) => {
+            let native_ty = match (vec_ty.scalar, vec_ty.scalar_bits) {
+                (ScalarType::Float, 32) => quote! { float32x4_t },
+                (ScalarType::Int, 8) => quote! { int8x16_t },
+                (ScalarType::Int, 16) => quote! { int16x8_t },
+                (ScalarType::Int, 32) => quote! { int32x4_t },
+                (ScalarType::Unsigned, 8) => quote! { uint8x16_t },
+                (ScalarType::Unsigned, 16) => quote! { uint16x8_t },
+                (ScalarType::Unsigned, 32) => quote! { uint32x4_t },
+                _ => unreachable!(),
+            };
+            let mul = simple_intrinsic("vmul", vec_ty);
+            let extract = split_intrinsic("vget", "lane", vec_ty);
+            let rotate = simple_intrinsic("vext", vec_ty);
+            let mut stages = Vec::new();
+            let mut offset = 1;
+            while offset < vec_ty.len {
+                let offset_literal = Literal::i32_unsuffixed(i32::try_from(offset).unwrap());
+                stages.push(quote! {
+                    let product = #mul(
+                        product,
+                        #rotate::<#offset_literal>(product, product),
+                    );
+                });
+                offset *= 2;
+            }
+
+            quote! {
+                let product: #native_ty = a.into();
+                #(#stages)*
+                #extract::<0>(product)
+            }
+        }
+        (ScalarType::Int | ScalarType::Unsigned, 64) => {
+            unreachable!("64-bit integer products must use the fallback implementation")
+        }
+        _ => unreachable!("reduce_product only operates on numeric vectors"),
     }
 }
 
@@ -221,6 +275,11 @@ impl Level for Neon {
                     return fallback_method(op, vec_ty);
                 }
 
+                if lane_op == "mul" {
+                    let reduce = neon_reduce_product(vec_ty);
+                    return self.kernel_method(op, vec_ty, |_| reduce);
+                }
+
                 let intrinsic = match lane_op {
                     "add" => "vaddv",
                     "min" => "vminv",
@@ -232,6 +291,7 @@ impl Level for Neon {
                 let reduce = simple_intrinsic(intrinsic, vec_ty);
                 self.kernel_method(op, vec_ty, |_| quote! { #reduce(a.into()) })
             }
+            OpSig::RotateElements { .. } => integer_lane_mask_rotate(op, vec_ty),
             OpSig::LoadInterleaved {
                 block_size,
                 block_count,
