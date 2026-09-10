@@ -157,8 +157,9 @@ pub(crate) fn mk_simd_trait() -> TokenStream {
             /// whenever one is required.
             ///
             /// The [`#[simd]`](https://docs.rs/fearless_simd_macros/latest/fearless_simd_macros/attr.simd.html)
-            /// attribute from the separate `fearless_simd_macros` crate performs this wrapping
-            /// automatically. Calling `vectorize()` manually is the dependency-free equivalent.
+            /// attribute from the separate `fearless_simd_macros` crate establishes this context
+            /// automatically, passing ordinary function arguments separately to reduce capture
+            /// overhead. Calling `vectorize()` manually avoids the procedural-macro dependency.
             ///
             /// # Example
             ///

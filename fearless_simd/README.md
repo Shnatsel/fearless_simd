@@ -74,8 +74,9 @@ dispatch!(level, simd => double_u32s(simd, &mut values));
 assert_eq!(values, [2, 4, 6, 8, 10]);
 ```
 
-The attribute uses the public [`Simd::vectorize`] API. You can call it directly to get the same
-behavior without depending on the macro crate:
+The attribute generates helpers that pass ordinary arguments separately into a SIMD-enabled
+context. You can also establish that context directly with [`Simd::vectorize`] without
+depending on the macro crate, though captured arguments may require extra memory traffic:
 
 ```rust
 use fearless_simd::{dispatch, Level, Simd};

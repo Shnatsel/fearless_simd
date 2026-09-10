@@ -18,7 +18,7 @@ You can find its changes [documented below](#070-2026-08-11).
 - Added `mul_add_precise` and `mul_sub_precise` for floating-point vectors. They guarantee the infinite-precision product-plus-add rounded once, including on SIMD levels without hardware fused multiply-add instructions. They are not susceptible to the [bug](https://github.com/rust-lang/compiler-builtins/issues/1262) in Rust standard library, `std::simd` and musl libc that causes incorrect rounding for subnormal results. SSE4.2 gets SIMD emulation of these operations for better performance. ([#323][], [#324][] by [@Shnatsel][])
 - Documented the storage representation of the SIMD vector types. The documented representation will not change without a semver major version change.
 - Added `TryFrom` bounds to `SimdIntElement`, allowing attempted conversion from all primitive integer types.
-- Added the separately versioned `fearless_simd_macros` companion crate. Its `#[simd]` attribute wraps SIMD-generic function bodies using the public `Simd::vectorize` API, while the core `fearless_simd` crate remains dependency-free.
+- Added the separately versioned `fearless_simd_macros` companion crate. Its `#[simd]` attribute runs SIMD-generic function bodies in target-feature-enabled helpers, passing ordinary arguments separately to reduce closure overhead, while the core `fearless_simd` crate remains dependency-free.
 
 ### Changed
 

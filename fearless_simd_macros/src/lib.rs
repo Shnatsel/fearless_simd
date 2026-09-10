@@ -8,7 +8,9 @@ use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::fold::{self, Fold};
-use syn::{AttrStyle, Attribute, FnArg, ItemFn, Pat, PatIdent, Result};
+use syn::{AttrStyle, Attribute, FnArg, ItemFn, Pat, Result};
+
+mod dispatch;
 
 /// Run a SIMD-generic function body with the token's target features enabled.
 ///
@@ -17,12 +19,27 @@ use syn::{AttrStyle, Attribute, FnArg, ItemFn, Pat, PatIdent, Result};
 /// expansion, supported function forms, and semantic caveats.
 #[proc_macro_attribute]
 pub fn simd(args: TokenStream, item: TokenStream) -> TokenStream {
-    expand(args.into(), item.into())
+    library_path()
+        .and_then(|library| expand(args.into(), item.into(), &library))
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
 
-fn expand(args: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
+fn library_path() -> Result<syn::Path> {
+    match proc_macro_crate::crate_name("fearless_simd") {
+        Ok(proc_macro_crate::FoundCrate::Itself) => Ok(syn::parse_quote!(crate)),
+        Ok(proc_macro_crate::FoundCrate::Name(name)) => {
+            let name = Ident::new(&name, Span::call_site());
+            Ok(syn::parse_quote!(::#name))
+        }
+        Err(error) => Err(syn::Error::new(
+            Span::call_site(),
+            format!("`#[simd]` requires a `fearless_simd` dependency: {error}"),
+        )),
+    }
+}
+
+fn expand(args: TokenStream2, item: TokenStream2, library: &syn::Path) -> Result<TokenStream2> {
     if !args.is_empty() {
         return Err(syn::Error::new_spanned(
             args,
@@ -38,7 +55,10 @@ fn expand(args: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
     reject_unsupported_signature(&function)?;
     reject_unsupported_attributes(&function.attrs)?;
 
-    let token = simd_token(&mut function)?;
+    let original_token = validate_simd_token(&function)?;
+    // The old expansion used this binding for vectorize even when the body
+    // did not use it. Preserve that usage for unused-variable lint purposes.
+    let use_token = original_token.map(|token| quote!(let _ = #token;));
     let original_statements = mem::take(&mut function.block.stmts);
     // Give the closure the same expected return type so branch and early-return
     // coercions happen inside its body. Closures cannot name `impl Trait`, so
@@ -46,22 +66,53 @@ fn expand(args: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
     let output = &function.sig.output;
     let closure_output = InferImplTrait.fold_return_type(syn::parse_quote!(#output));
 
+    let mut parameters = Vec::new();
+    let mut arguments = Vec::new();
+    let mut argument_types = Vec::new();
+    for (index, argument) in function.sig.inputs.iter_mut().enumerate() {
+        let FnArg::Typed(argument) = argument else {
+            // Keep `self` captured so its uses, including inside nested macros,
+            // retain their original meaning without rewriting the body.
+            continue;
+        };
+        if has_conditional_attributes(&argument.attrs) {
+            // FnOnce's argument types cannot carry cfg attributes. Preserve
+            // conditional parameters as captures, just as in the old expansion.
+            continue;
+        }
+        let name = Ident::new(&format!("__fearless_argument_{index}"), Span::mixed_site());
+        let ty = Ident::new(&format!("__FearlessArgument{index}"), Span::mixed_site());
+        let pattern = mem::replace(&mut argument.pat, Box::new(syn::parse_quote!(#name)));
+        // Move lint attributes with the original binding. Duplicating `expect`
+        // on the now-used outer parameter would leave an unfulfilled expectation.
+        let attrs = mem::take(&mut argument.attrs);
+        parameters.push(quote!(#(#attrs)* #pattern));
+        arguments.push(name);
+        argument_types.push(ty);
+    }
+    // The first typed argument is the validated, unconditional SIMD token.
+    let token = &arguments[0];
+    let dispatcher = dispatch::dispatcher(library, &argument_types, &arguments);
+
     // Inner function attributes are held in function.attrs by Syn. Leaving
     // them there keeps them at the beginning of the outer function body,
     // rather than changing their scope by moving them into this closure.
     // Keep generated wrapper tokens on their normal macro-expansion spans.
     // Giving the entire call the token parameter's source span makes Clippy's
     // `semicolon_if_nothing_returned` lint fire on unit-returning functions.
-    let vectorize_call: syn::Expr = syn::parse_quote! {
-        #token.vectorize(
+    // Keep the closure directly in the call, after the arguments: the FnOnce
+    // bound then infers its parameter types and their borrowed-return lifetimes.
+    let dispatch_call: syn::Expr = syn::parse_quote! {
+        (#dispatcher).call(
+            #token, #(#arguments,)*
             #[inline(always)]
-            || #closure_output { #(#original_statements)* }
+            |#(#parameters),*| #closure_output { #use_token #(#original_statements)* }
         )
     };
     function
         .block
         .stmts
-        .push(syn::Stmt::Expr(vectorize_call, None));
+        .push(syn::Stmt::Expr(dispatch_call, None));
 
     Ok(quote!(#function))
 }
@@ -135,11 +186,11 @@ fn is_attribute(attr: &Attribute, name: &str) -> bool {
             .is_ok_and(|path| path.is_ident(name))
 }
 
-fn simd_token(function: &mut ItemFn) -> Result<Ident> {
+fn validate_simd_token(function: &ItemFn) -> Result<Option<Ident>> {
     let Some(argument) = function
         .sig
         .inputs
-        .iter_mut()
+        .iter()
         .find_map(|argument| match argument {
             FnArg::Receiver(_) => None,
             FnArg::Typed(argument) => Some(argument),
@@ -153,7 +204,7 @@ fn simd_token(function: &mut ItemFn) -> Result<Ident> {
 
     reject_conditional_attributes(&argument.attrs)?;
 
-    match &mut *argument.pat {
+    match &*argument.pat {
         Pat::Ident(pattern) => {
             reject_conditional_attributes(&pattern.attrs)?;
             if let Some(by_ref) = &pattern.by_ref {
@@ -168,20 +219,11 @@ fn simd_token(function: &mut ItemFn) -> Result<Ident> {
                     "the SIMD token parameter cannot use an `@` subpattern",
                 ));
             }
-            Ok(pattern.ident.clone())
+            Ok(Some(pattern.ident.clone()))
         }
         Pat::Wild(pattern) => {
             reject_conditional_attributes(&pattern.attrs)?;
-            let token = Ident::new("__fearless_simd_token", Span::mixed_site());
-            let attrs = mem::take(&mut pattern.attrs);
-            *argument.pat = Pat::Ident(PatIdent {
-                attrs,
-                by_ref: None,
-                mutability: None,
-                ident: token.clone(),
-                subpat: None,
-            });
-            Ok(token)
+            Ok(None)
         }
         pattern => Err(syn::Error::new_spanned(
             pattern,
@@ -203,11 +245,23 @@ fn reject_conditional_attributes(attrs: &[Attribute]) -> Result<()> {
     Ok(())
 }
 
+fn has_conditional_attributes(attrs: &[Attribute]) -> bool {
+    attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("cfg") || attr.path().is_ident("cfg_attr"))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::expand;
     use quote::{ToTokens, quote};
     use syn::{AttrStyle, Expr, ItemFn, Stmt};
+
+    fn expand(
+        args: proc_macro2::TokenStream,
+        item: proc_macro2::TokenStream,
+    ) -> syn::Result<proc_macro2::TokenStream> {
+        super::expand(args, item, &syn::parse_quote!(::fearless_simd))
+    }
 
     fn expand_ok(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
         expand(proc_macro2::TokenStream::new(), item).expect("macro expansion should succeed")
@@ -231,15 +285,15 @@ mod tests {
         let Some(Stmt::Expr(Expr::MethodCall(call), None)) = parsed.block.stmts.last() else {
             panic!("function tail should be a method call");
         };
-        let Some(Expr::Closure(closure)) = call.args.first() else {
-            panic!("vectorize argument should be a closure");
+        let Some(Expr::Closure(closure)) = call.args.last() else {
+            panic!("last dispatcher argument should be a closure");
         };
         let Expr::Block(body) = &*closure.body else {
             panic!("closure body should be a block");
         };
 
-        assert_eq!(call.method, "vectorize");
-        assert_eq!(call.args.len(), 1);
+        assert_eq!(call.args.len(), 5);
+        assert_eq!(closure.inputs.len(), 3);
         assert!(closure.capture.is_none());
         assert_eq!(closure.attrs.len(), 1);
         assert!(closure.attrs[0].path().is_ident("inline"));
@@ -247,7 +301,7 @@ mod tests {
             .parse_args()
             .expect("inline attribute has one identifier argument");
         assert_eq!(inline_kind, "always");
-        assert_eq!(body.block.stmts.len(), 2);
+        assert_eq!(body.block.stmts.len(), 3);
         assert!(
             parsed
                 .attrs
@@ -271,8 +325,8 @@ mod tests {
             let Some(Stmt::Expr(Expr::MethodCall(call), None)) = parsed.block.stmts.last() else {
                 panic!("unit function tail should be a method call");
             };
-            let Some(Expr::Closure(closure)) = call.args.first() else {
-                panic!("vectorize argument should be a closure");
+            let Some(Expr::Closure(closure)) = call.args.last() else {
+                panic!("last dispatcher argument should be a closure");
             };
 
             assert_eq!(
@@ -327,12 +381,10 @@ mod tests {
         let inner_attr = text
             .find("# ! [allow")
             .expect("inner attribute is retained");
-        let call = text
-            .find("simd . vectorize")
-            .expect("vectorize call exists");
+        let call = text.find("__FearlessDispatch").expect("dispatcher exists");
         assert!(inner_attr < call);
         assert_eq!(text.matches("inline (never)").count(), 1);
-        assert_eq!(text.matches("inline (always)").count(), 1);
+        assert_eq!(text.matches("inline (always)").count(), 2);
         assert!(text.contains("target_feature"));
     }
 
@@ -346,8 +398,8 @@ mod tests {
         });
         let text = expanded.to_string();
 
-        assert!(text.contains("mut backend : S"));
-        assert!(text.contains("backend . vectorize"));
+        assert!(text.contains("__fearless_argument_1 : S"));
+        assert!(text.contains("| mut backend , value |"));
     }
 
     #[test]
@@ -357,9 +409,9 @@ mod tests {
         });
         let text = expanded.to_string();
 
-        assert_eq!(text.matches("__fearless_simd_token").count(), 2);
-        assert!(text.contains("__fearless_simd_token : S"));
-        assert!(text.contains("__fearless_simd_token . vectorize"));
+        assert_eq!(text.matches("__fearless_simd_token").count(), 0);
+        assert!(text.contains("__fearless_argument_0 : S"));
+        assert!(text.contains("| _ , value |"));
     }
 
     #[test]
@@ -378,7 +430,7 @@ mod tests {
                 .to_string()
                 .matches("__fearless_simd_token")
                 .count(),
-            4
+            2
         );
     }
 
@@ -387,7 +439,7 @@ mod tests {
         let expanded = expand_ok(quote! {
             fn operation<S: Simd>(&self, simd: S) -> u32 { 42 }
         });
-        assert!(expanded.to_string().contains("simd . vectorize"));
+        assert!(expanded.to_string().contains("| simd |"));
     }
 
     #[test]

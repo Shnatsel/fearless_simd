@@ -13,8 +13,10 @@ fearless_simd = "1.0"
 fearless_simd_macros = "0.1"
 ```
 
-The macro also works with earlier `fearless_simd` versions that provide
-`Simd::vectorize`.
+The consumer must declare `fearless_simd` as a direct dependency; renamed Cargo
+dependencies are supported. The macro uses the library's internal
+`__fearless_simd_kernel_target_fn!` helper, so `Simd::vectorize` alone is no
+longer sufficient for compatibility with older library versions.
 
 Then apply `#[simd]` to a function whose first ordinary parameter is its SIMD
 token:
@@ -36,32 +38,45 @@ fn double_u32s<S: Simd>(simd: S, values: &mut [u32]) {
 }
 ```
 
-Conceptually, the macro expands the body to:
+Conceptually, the macro passes the body and its arguments to a generated
+dispatcher:
 
 ```rust,ignore
 fn double_u32s<S: Simd>(simd: S, values: &mut [u32]) {
-    simd.vectorize(
+    dispatcher.call(
+        simd,
+        simd,
+        values,
         #[inline(always)]
-        || {
+        |simd, values| {
             // Original body.
         },
     )
 }
 ```
 
+Here `dispatcher` represents generated helpers that select the token's backend
+and enable its target features. The first token selects the backend; the
+remaining values become arguments to the body. Each argument has a separate
+helper parameter, allowing the compiler to pass it in registers even when the
+helper remains out of line. There is no fixed argument-count limit.
+
 The attributed closure ensures that the original body is inlined into the
-target-feature-enabled function provided by `Simd::vectorize`. The macro does
-not add an `#[inline]` attribute to the annotated function. Any existing
-`#[inline]`, documentation, lint, conditional-compilation, or other function
-attributes remain on that function unchanged.
+target-feature-enabled helper. The helpers use ordinary `#[inline]` so large
+bodies can remain shared between callers. The macro does not add an `#[inline]`
+attribute to the annotated function. Any existing `#[inline]`, documentation,
+lint, conditional-compilation, or other function attributes remain on that
+function unchanged.
 Code-placement attributes such as `#[cold]` therefore continue to describe the
 outer wrapper; their effects are not transferred to the generated closure or
 the target-feature helper that executes it.
 
-The closure and `vectorize` call are tail expressions, so the original body's
+The closure and dispatcher call are tail expressions, so the original body's
 value is preserved. The closure also receives the function's declared return
 type to preserve return-value coercions. Any `impl Trait` within that annotation
-is replaced with `_` for inference; the function's signature remains unchanged.
+is replaced with `_` for inference; the function's argument and return types
+remain unchanged. Ordinary parameter bindings and their lint attributes move
+into the closure, and the outer parameters receive private names.
 
 ## Accepted functions
 
@@ -91,22 +106,27 @@ diagnose it.
 
 ## Execution boundaries and captures
 
-Only work performed while the function body is executing is covered by
-`vectorize`. Code inside a returned future, closure, or lazy iterator runs
+Only work performed while the function body is executing is covered by the
+SIMD context. Code inside a returned future, closure, or lazy iterator runs
 later and is not covered. Named helper functions do not inherit the enabled
 target features; make them inlineable or annotate their own SIMD-generic body.
-Recursive calls enter `vectorize` again.
+Recursive calls enter the dispatcher again.
 
-The original body becomes a non-`move` `FnOnce` closure. Rust infers each
-capture mode from how the body uses its parameters. As with any closure
+The original body becomes an always-inline `FnOnce` closure with explicit
+parameters. Receivers and parameters carrying `#[cfg]` or `#[cfg_attr]` remain
+captures, preserving their existing semantics and uses inside nested macros.
+These captures can still require memory when a helper remains out of line.
+Rust infers their capture modes from how the body uses them. As with any closure
 conversion, the destruction order of captured values is not a stable
 substitute for function-parameter destruction order. Avoid relying on the
 relative drop order of by-value parameters with observable destructors in a
 `#[simd]` function.
 
-This procedural macro intentionally has no dependency on `fearless_simd`.
-The selected token's type must therefore make the `vectorize` trait method
-available, normally through an `S: Simd` bound.
+The selected token must implement `fearless_simd::Simd`, normally through an
+`S: Simd` bound. The macro generates paths to the consumer's library dependency;
+the procedural-macro crate itself does not depend on `fearless_simd`.
+Unknown future backends retain the existing `Simd::vectorize` path until the
+macro is updated to generate helpers for them.
 
 ## Minimum supported Rust version
 

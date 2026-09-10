@@ -145,6 +145,9 @@ macro_rules! __fearless_simd_kernel_cfg {
     };
 }
 
+// Internal interface for `kernel!` and the argument-taking
+// `#[simd]` expansion in `fearless_simd_macros`. Keep the `(level, item)` syntax
+// and support for generic function items compatible with that consumer.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __fearless_simd_kernel_target_fn {
