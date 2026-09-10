@@ -48,8 +48,7 @@ fn expand(args: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
     // Give the closure the same expected return type so branch and early-return
     // coercions happen inside its body. Closures cannot name `impl Trait`, so
     // infer those parts while preserving the surrounding type structure.
-    let output = &function.sig.output;
-    let closure_output = InferImplTrait.fold_return_type(syn::parse_quote!(#output));
+    let closure_output = InferImplTrait.fold_return_type(function.sig.output.clone());
 
     // Wrapping the body in simd.vectorize(|| ...) puts its captured arguments
     // into a closure struct. If the target-feature helper remains out of line,

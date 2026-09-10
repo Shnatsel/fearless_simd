@@ -145,7 +145,7 @@ macro_rules! __fearless_simd_kernel_cfg {
     };
 }
 
-// Internal interface for `kernel!` and `__fearless_simd_dispatch!`, which backs
+// Internal interface for `kernel!` and `__fearless_simd_dispatch_entry!`, which backs
 // the argument-taking `#[simd]` expansion in `fearless_simd_macros`.
 #[doc(hidden)]
 #[macro_export]
@@ -215,83 +215,33 @@ macro_rules! __fearless_simd_dispatch {
                 match $crate::Simd::level(simd) {
                     #[cfg(target_arch = "aarch64")]
                     $crate::Level::Neon(proof) => {
-                        $crate::__fearless_simd_kernel_target_fn! {
-                            Neon,
-                            #[inline]
-                            fn entry<$($argument_type,)* F, R>(
-                                _: $crate::Neon, $($argument: $argument_type,)* f: F,
-                            ) -> R
-                            where F: ::core::ops::FnOnce($($argument_type),*) -> R {
-                                f($($argument),*)
-                            }
+                        $crate::__fearless_simd_dispatch_entry! {
+                            Neon, proof, f; $($argument_type => $argument),*
                         }
-                        // SAFETY: the genuine proof token establishes all the
-                        // target features attached by the library's helper.
-                        unsafe { entry(proof, $($argument,)* f) }
                     }
                     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                     $crate::Level::Sse2(proof) => {
-                        $crate::__fearless_simd_kernel_target_fn! {
-                            Sse2,
-                            #[inline]
-                            fn entry<$($argument_type,)* F, R>(
-                                _: $crate::Sse2, $($argument: $argument_type,)* f: F,
-                            ) -> R
-                            where F: ::core::ops::FnOnce($($argument_type),*) -> R {
-                                f($($argument),*)
-                            }
+                        $crate::__fearless_simd_dispatch_entry! {
+                            Sse2, proof, f; $($argument_type => $argument),*
                         }
-                        // SAFETY: the genuine proof token establishes all the
-                        // target features attached by the library's helper.
-                        unsafe { entry(proof, $($argument,)* f) }
                     }
                     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                     $crate::Level::Sse4_2(proof) => {
-                        $crate::__fearless_simd_kernel_target_fn! {
-                            Sse4_2,
-                            #[inline]
-                            fn entry<$($argument_type,)* F, R>(
-                                _: $crate::Sse4_2, $($argument: $argument_type,)* f: F,
-                            ) -> R
-                            where F: ::core::ops::FnOnce($($argument_type),*) -> R {
-                                f($($argument),*)
-                            }
+                        $crate::__fearless_simd_dispatch_entry! {
+                            Sse4_2, proof, f; $($argument_type => $argument),*
                         }
-                        // SAFETY: the genuine proof token establishes all the
-                        // target features attached by the library's helper.
-                        unsafe { entry(proof, $($argument,)* f) }
                     }
                     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                     $crate::Level::Avx2(proof) => {
-                        $crate::__fearless_simd_kernel_target_fn! {
-                            Avx2,
-                            #[inline]
-                            fn entry<$($argument_type,)* F, R>(
-                                _: $crate::Avx2, $($argument: $argument_type,)* f: F,
-                            ) -> R
-                            where F: ::core::ops::FnOnce($($argument_type),*) -> R {
-                                f($($argument),*)
-                            }
+                        $crate::__fearless_simd_dispatch_entry! {
+                            Avx2, proof, f; $($argument_type => $argument),*
                         }
-                        // SAFETY: the genuine proof token establishes all the
-                        // target features attached by the library's helper.
-                        unsafe { entry(proof, $($argument,)* f) }
                     }
                     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                     $crate::Level::Avx512(proof) => {
-                        $crate::__fearless_simd_kernel_target_fn! {
-                            Avx512,
-                            #[inline]
-                            fn entry<$($argument_type,)* F, R>(
-                                _: $crate::Avx512, $($argument: $argument_type,)* f: F,
-                            ) -> R
-                            where F: ::core::ops::FnOnce($($argument_type),*) -> R {
-                                f($($argument),*)
-                            }
+                        $crate::__fearless_simd_dispatch_entry! {
+                            Avx512, proof, f; $($argument_type => $argument),*
                         }
-                        // SAFETY: the genuine proof token establishes all the
-                        // target features attached by the library's helper.
-                        unsafe { entry(proof, $($argument,)* f) }
                     }
                     #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
                     $crate::Level::WasmSimd128(_) => f($($argument),*),
@@ -309,6 +259,33 @@ macro_rules! __fearless_simd_dispatch {
             }
         }
         __FearlessDispatch
+    }};
+}
+
+// Generate and call one backend entry for `__fearless_simd_dispatch!`.
+// Keep even direct invocations safe: the selected level determines both
+// the genuine proof type and its target features. Bind inputs outside the
+// unsafe block: even an identifier could name a mutable or extern static.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __fearless_simd_dispatch_entry {
+    ($level:ident, $proof:ident, $f:ident; $($argument_type:ident => $argument:ident),*) => {{
+        $crate::__fearless_simd_kernel_target_fn! {
+            $level,
+            #[inline]
+            fn entry<$($argument_type,)* F, R>(
+                _: $crate::$level, $($argument: $argument_type,)* f: F,
+            ) -> R
+            where F: ::core::ops::FnOnce($($argument_type),*) -> R {
+                f($($argument),*)
+            }
+        }
+        let proof = $proof;
+        $(let $argument = $argument;)*
+        let f = $f;
+        // SAFETY: the genuine proof token establishes all the target features
+        // attached by the library's helper for this same level.
+        unsafe { entry(proof, $($argument,)* f) }
     }};
 }
 
