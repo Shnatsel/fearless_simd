@@ -1,0 +1,11 @@
+error[E0133]: use of mutable static is unsafe and requires unsafe block
+  --> tests/ui/simd/fail/entry_static.rs:11:5
+   |
+11 | /     fearless_simd::__fearless_simd_dispatch_entry! {
+12 | |         Sse2, proof, CALLBACK;
+13 | |         A => value
+14 | |     }
+   | |_____^ use of mutable static
+   |
+   = note: mutable statics can be mutated by multiple threads: aliasing violations or data races will cause undefined behavior
+   = note: this error originates in the macro `fearless_simd::__fearless_simd_dispatch_entry` (in Nightly builds, run with -Z macro-backtrace for more info)

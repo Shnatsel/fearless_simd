@@ -1,0 +1,20 @@
+error[E0277]: the trait bound `S: fearless_simd::Simd` is not satisfied
+  --> tests/ui/simd/fail/counterfeit_library.rs:39:1
+   |
+39 | #[simd]
+   | ^^^^^^^
+   | |
+   | the trait `fearless_simd::Simd` is not implemented for `S`
+   | required by a bound introduced by this call
+   |
+   = note: `S` implements similarly named trait `fearless_simd::Simd`, but not `fearless_simd::Simd`
+note: required by a bound in `__FearlessDispatch::call`
+  --> tests/ui/simd/fail/counterfeit_library.rs:39:1
+   |
+39 | #[simd]
+   | ^^^^^^^ required by this bound in `__FearlessDispatch::call`
+   = note: this error originates in the attribute macro `simd` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider further restricting type parameter `S` with trait `Simd`
+   |
+40 | fn counterfeit<S: fearless_simd::Simd + fearless_simd::Simd>(simd: S, value: u32) -> u32 {
+   |                                       +++++++++++++++++++++
