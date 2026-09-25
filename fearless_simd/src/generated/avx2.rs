@@ -1392,7 +1392,30 @@ impl Simd for Avx2 {
         b: u8x16<Self>,
         indices: u8x16<Self>,
     ) -> u8x16<Self> {
-        self.concat_swizzle_dyn_precise_u8x16(a, b, indices)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(
+                token: Avx2,
+                a: u8x16<Avx2>,
+                b: u8x16<Avx2>,
+                indices: u8x16<Avx2>,
+            ) -> u8x16<Avx2> {
+                let delta_0 = Bytes::to_bytes(a).val.0;
+                let delta_1 = _mm_xor_si128(Bytes::to_bytes(a).val.0, Bytes::to_bytes(b).val.0);
+                let result = {
+                    let index = indices.val.0;
+                    _mm_xor_si128(
+                        _mm_shuffle_epi8(delta_0, index),
+                        _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                    )
+                };
+                Bytes::from_bytes(u8x16 {
+                    val: crate::support::Aligned128(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, b, indices)
     }
     #[inline(always)]
     fn concat_swizzle_dyn_precise_u8x16(
@@ -7669,7 +7692,45 @@ impl Simd for Avx2 {
         b: u8x32<Self>,
         indices: u8x32<Self>,
     ) -> u8x32<Self> {
-        self.concat_swizzle_dyn_precise_u8x32(a, b, indices)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(
+                token: Avx2,
+                a: u8x32<Avx2>,
+                b: u8x32<Avx2>,
+                indices: u8x32<Avx2>,
+            ) -> u8x32<Avx2> {
+                let local_0 = Bytes::to_bytes(a).val.0;
+                let remote_0 = _mm256_permute2x128_si256::<0x01>(local_0, local_0);
+                let local_1 = _mm256_xor_si256(Bytes::to_bytes(a).val.0, Bytes::to_bytes(b).val.0);
+                let remote_1 = _mm256_permute2x128_si256::<0x01>(local_1, local_1);
+                let result = {
+                    let index = indices.val.0;
+                    let control_0 = index;
+                    let control_1 = _mm256_add_epi8(index, _mm256_set1_epi8(-32));
+                    let select_remote = _mm256_xor_si256(
+                        _mm256_slli_epi16::<3>(index),
+                        _mm256_set_m128i(_mm_set1_epi8(i8::MIN), _mm_setzero_si128()),
+                    );
+                    _mm256_blendv_epi8(
+                        _mm256_xor_si256(
+                            _mm256_shuffle_epi8(local_0, control_0),
+                            _mm256_shuffle_epi8(local_1, control_1),
+                        ),
+                        _mm256_xor_si256(
+                            _mm256_shuffle_epi8(remote_0, control_0),
+                            _mm256_shuffle_epi8(remote_1, control_1),
+                        ),
+                        select_remote,
+                    )
+                };
+                Bytes::from_bytes(u8x32 {
+                    val: crate::support::Aligned256(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, b, indices)
     }
     #[inline(always)]
     fn concat_swizzle_dyn_precise_u8x32(
@@ -12546,7 +12607,63 @@ impl Simd for Avx2 {
     }
     #[inline(always)]
     fn swizzle_dyn_u8x64(self, a: u8x64<Self>, indices: u8x64<Self>) -> u8x64<Self> {
-        self.swizzle_dyn_precise_u8x64(a, indices)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Avx2, a: u8x64<Avx2>, indices: u8x64<Avx2>) -> u8x64<Avx2> {
+                let local_0 = Bytes::to_bytes(a).val.0[0];
+                let remote_0 = _mm256_permute2x128_si256::<0x01>(local_0, local_0);
+                let local_1 =
+                    _mm256_xor_si256(Bytes::to_bytes(a).val.0[0], Bytes::to_bytes(a).val.0[1]);
+                let remote_1 = _mm256_permute2x128_si256::<0x01>(local_1, local_1);
+                let result = [
+                    {
+                        let index = indices.val.0[0];
+                        let control_0 = index;
+                        let control_1 = _mm256_add_epi8(index, _mm256_set1_epi8(-32));
+                        let select_remote = _mm256_xor_si256(
+                            _mm256_slli_epi16::<3>(index),
+                            _mm256_set_m128i(_mm_set1_epi8(i8::MIN), _mm_setzero_si128()),
+                        );
+                        _mm256_blendv_epi8(
+                            _mm256_xor_si256(
+                                _mm256_shuffle_epi8(local_0, control_0),
+                                _mm256_shuffle_epi8(local_1, control_1),
+                            ),
+                            _mm256_xor_si256(
+                                _mm256_shuffle_epi8(remote_0, control_0),
+                                _mm256_shuffle_epi8(remote_1, control_1),
+                            ),
+                            select_remote,
+                        )
+                    },
+                    {
+                        let index = indices.val.0[1];
+                        let control_0 = index;
+                        let control_1 = _mm256_add_epi8(index, _mm256_set1_epi8(-32));
+                        let select_remote = _mm256_xor_si256(
+                            _mm256_slli_epi16::<3>(index),
+                            _mm256_set_m128i(_mm_set1_epi8(i8::MIN), _mm_setzero_si128()),
+                        );
+                        _mm256_blendv_epi8(
+                            _mm256_xor_si256(
+                                _mm256_shuffle_epi8(local_0, control_0),
+                                _mm256_shuffle_epi8(local_1, control_1),
+                            ),
+                            _mm256_xor_si256(
+                                _mm256_shuffle_epi8(remote_0, control_0),
+                                _mm256_shuffle_epi8(remote_1, control_1),
+                            ),
+                            select_remote,
+                        )
+                    },
+                ];
+                Bytes::from_bytes(u8x64 {
+                    val: crate::support::Aligned512(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, indices)
     }
     #[inline(always)]
     fn swizzle_dyn_precise_u8x64(self, a: u8x64<Self>, indices: u8x64<Self>) -> u8x64<Self> {
@@ -12582,7 +12699,102 @@ impl Simd for Avx2 {
         b: u8x64<Self>,
         indices: u8x64<Self>,
     ) -> u8x64<Self> {
-        self.concat_swizzle_dyn_precise_u8x64(a, b, indices)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(
+                token: Avx2,
+                a: u8x64<Avx2>,
+                b: u8x64<Avx2>,
+                indices: u8x64<Avx2>,
+            ) -> u8x64<Avx2> {
+                let local_0 = Bytes::to_bytes(a).val.0[0];
+                let remote_0 = _mm256_permute2x128_si256::<0x01>(local_0, local_0);
+                let local_1 =
+                    _mm256_xor_si256(Bytes::to_bytes(a).val.0[0], Bytes::to_bytes(a).val.0[1]);
+                let remote_1 = _mm256_permute2x128_si256::<0x01>(local_1, local_1);
+                let local_2 =
+                    _mm256_xor_si256(Bytes::to_bytes(a).val.0[1], Bytes::to_bytes(b).val.0[0]);
+                let remote_2 = _mm256_permute2x128_si256::<0x01>(local_2, local_2);
+                let local_3 =
+                    _mm256_xor_si256(Bytes::to_bytes(b).val.0[0], Bytes::to_bytes(b).val.0[1]);
+                let remote_3 = _mm256_permute2x128_si256::<0x01>(local_3, local_3);
+                let result = [
+                    {
+                        let index = indices.val.0[0];
+                        let control_0 = index;
+                        let control_1 = _mm256_add_epi8(index, _mm256_set1_epi8(-32));
+                        let control_2 = _mm256_add_epi8(index, _mm256_set1_epi8(-64));
+                        let control_3 = _mm256_add_epi8(index, _mm256_set1_epi8(-96));
+                        let select_remote = _mm256_xor_si256(
+                            _mm256_slli_epi16::<3>(index),
+                            _mm256_set_m128i(_mm_set1_epi8(i8::MIN), _mm_setzero_si128()),
+                        );
+                        _mm256_blendv_epi8(
+                            _mm256_xor_si256(
+                                _mm256_xor_si256(
+                                    _mm256_shuffle_epi8(local_0, control_0),
+                                    _mm256_shuffle_epi8(local_1, control_1),
+                                ),
+                                _mm256_xor_si256(
+                                    _mm256_shuffle_epi8(local_2, control_2),
+                                    _mm256_shuffle_epi8(local_3, control_3),
+                                ),
+                            ),
+                            _mm256_xor_si256(
+                                _mm256_xor_si256(
+                                    _mm256_shuffle_epi8(remote_0, control_0),
+                                    _mm256_shuffle_epi8(remote_1, control_1),
+                                ),
+                                _mm256_xor_si256(
+                                    _mm256_shuffle_epi8(remote_2, control_2),
+                                    _mm256_shuffle_epi8(remote_3, control_3),
+                                ),
+                            ),
+                            select_remote,
+                        )
+                    },
+                    {
+                        let index = indices.val.0[1];
+                        let control_0 = index;
+                        let control_1 = _mm256_add_epi8(index, _mm256_set1_epi8(-32));
+                        let control_2 = _mm256_add_epi8(index, _mm256_set1_epi8(-64));
+                        let control_3 = _mm256_add_epi8(index, _mm256_set1_epi8(-96));
+                        let select_remote = _mm256_xor_si256(
+                            _mm256_slli_epi16::<3>(index),
+                            _mm256_set_m128i(_mm_set1_epi8(i8::MIN), _mm_setzero_si128()),
+                        );
+                        _mm256_blendv_epi8(
+                            _mm256_xor_si256(
+                                _mm256_xor_si256(
+                                    _mm256_shuffle_epi8(local_0, control_0),
+                                    _mm256_shuffle_epi8(local_1, control_1),
+                                ),
+                                _mm256_xor_si256(
+                                    _mm256_shuffle_epi8(local_2, control_2),
+                                    _mm256_shuffle_epi8(local_3, control_3),
+                                ),
+                            ),
+                            _mm256_xor_si256(
+                                _mm256_xor_si256(
+                                    _mm256_shuffle_epi8(remote_0, control_0),
+                                    _mm256_shuffle_epi8(remote_1, control_1),
+                                ),
+                                _mm256_xor_si256(
+                                    _mm256_shuffle_epi8(remote_2, control_2),
+                                    _mm256_shuffle_epi8(remote_3, control_3),
+                                ),
+                            ),
+                            select_remote,
+                        )
+                    },
+                ];
+                Bytes::from_bytes(u8x64 {
+                    val: crate::support::Aligned512(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, b, indices)
     }
     #[inline(always)]
     fn concat_swizzle_dyn_precise_u8x64(

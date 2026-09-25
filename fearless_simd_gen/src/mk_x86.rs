@@ -1044,6 +1044,177 @@ fn avx512_mask_blend_intrinsic(vec_ty: &VecType) -> Ident {
     intrinsic_ident("mask_blend", suffix, vec_ty.n_bits())
 }
 
+/// Select from up to eight 128-bit quarters using adjacent XOR differences.
+fn sse42_swizzle_relaxed(n_bits: usize, concat: bool) -> TokenStream {
+    let outputs = n_bits / 128;
+    let tables = outputs * if concat { 2 } else { 1 };
+    assert!(matches!(tables, 2 | 4 | 8));
+    let table = (0..tables)
+        .map(|i| {
+            let source = if i < outputs { quote!(a) } else { quote!(b) };
+            let i = Literal::usize_unsuffixed(i % outputs);
+            if outputs == 1 {
+                quote!(Bytes::to_bytes(#source).val.0)
+            } else {
+                quote!(Bytes::to_bytes(#source).val.0[#i])
+            }
+        })
+        .collect::<Vec<_>>();
+    let deltas = (0..tables).map(|i| {
+        let name = format_ident!("delta_{i}");
+        let value = &table[i];
+        if i == 0 {
+            quote!(let #name = #value;)
+        } else {
+            let previous = &table[i - 1];
+            quote!(let #name = _mm_xor_si128(#previous, #value);)
+        }
+    });
+    let chunks = (0..outputs)
+        .map(|chunk| {
+            let chunk = Literal::usize_unsuffixed(chunk);
+            let index = if outputs == 1 {
+                quote!(indices.val.0)
+            } else {
+                quote!(indices.val.0[#chunk])
+            };
+            let mut terms = (0..tables)
+                .map(|i| {
+                    let delta = format_ident!("delta_{i}");
+                    let control = if i == 0 {
+                        quote!(index)
+                    } else {
+                        let offset = Literal::i8_unsuffixed(-(i as i8 * 16));
+                        quote!(_mm_add_epi8(index, _mm_set1_epi8(#offset)))
+                    };
+                    quote!(_mm_shuffle_epi8(#delta, #control))
+                })
+                .collect::<Vec<_>>();
+            while terms.len() > 1 {
+                terms = terms
+                    .chunks_exact(2)
+                    .map(|pair| {
+                        let (a, b) = (&pair[0], &pair[1]);
+                        quote!(_mm_xor_si128(#a, #b))
+                    })
+                    .collect();
+            }
+            let result = &terms[0];
+            quote!({ let index = #index; #result })
+        })
+        .collect::<Vec<_>>();
+    let result = if outputs == 1 {
+        chunks[0].clone()
+    } else {
+        quote!([#(#chunks),*])
+    };
+    quote! {
+        // Valid indices are below 128. Subtracting a multiple of 16 preserves
+        // the selector nibble and sets the sign bit iff below that threshold.
+        // PSHUFB includes a prefix of adjacent XOR differences; cancellation
+        // leaves precisely the selected quarter. Out-of-range bytes are arbitrary.
+        #(#deltas)*
+        let result = #result;
+    }
+}
+
+/// Telescope differences between 32-byte pairs, then select the 128-bit lane.
+fn avx2_swizzle_relaxed(n_bits: usize, concat: bool) -> TokenStream {
+    let outputs = n_bits / 256;
+    let tables = outputs * if concat { 2 } else { 1 };
+    assert!(matches!(tables, 2 | 4));
+    let table = (0..tables)
+        .map(|i| {
+            let source = if i < outputs { quote!(a) } else { quote!(b) };
+            let i = Literal::usize_unsuffixed(i % outputs);
+            if outputs == 1 {
+                quote!(Bytes::to_bytes(#source).val.0)
+            } else {
+                quote!(Bytes::to_bytes(#source).val.0[#i])
+            }
+        })
+        .collect::<Vec<_>>();
+    let deltas = (0..tables).map(|i| {
+        let local = format_ident!("local_{i}");
+        let remote = format_ident!("remote_{i}");
+        let value = &table[i];
+        let value = if i == 0 {
+            value.clone()
+        } else {
+            let previous = &table[i - 1];
+            quote!(_mm256_xor_si256(#previous, #value))
+        };
+        quote! {
+            let #local = #value;
+            let #remote = _mm256_permute2x128_si256::<0x01>(#local, #local);
+        }
+    });
+    let chunks = (0..outputs)
+        .map(|chunk| {
+            let chunk = Literal::usize_unsuffixed(chunk);
+            let index = if outputs == 1 {
+                quote!(indices.val.0)
+            } else {
+                quote!(indices.val.0[#chunk])
+            };
+            let controls = (0..tables).map(|i| {
+                let control = format_ident!("control_{i}");
+                let value = if i == 0 {
+                    quote!(index)
+                } else {
+                    let offset = Literal::i8_unsuffixed(-(i as i8 * 32));
+                    quote!(_mm256_add_epi8(index, _mm256_set1_epi8(#offset)))
+                };
+                quote!(let #control = #value;)
+            });
+            let lookups = ["local", "remote"].map(|prefix| {
+                let mut terms = (0..tables)
+                    .map(|i| {
+                        let table = format_ident!("{prefix}_{i}");
+                        let control = format_ident!("control_{i}");
+                        quote!(_mm256_shuffle_epi8(#table, #control))
+                    })
+                    .collect::<Vec<_>>();
+                while terms.len() > 1 {
+                    terms = terms
+                        .chunks_exact(2)
+                        .map(|pair| {
+                            let (a, b) = (&pair[0], &pair[1]);
+                            quote!(_mm256_xor_si256(#a, #b))
+                        })
+                        .collect();
+                }
+                terms.pop().unwrap()
+            });
+            let [local, remote] = lookups;
+            quote!({
+                let index = #index;
+                #(#controls)*
+                // Move bit 4 into the sign bit. The high output lane has the
+                // opposite local/remote mapping; crossing byte boundaries is safe
+                // because the blend observes only each byte's sign bit.
+                let select_remote = _mm256_xor_si256(
+                    _mm256_slli_epi16::<3>(index),
+                    _mm256_set_m128i(_mm_set1_epi8(i8::MIN), _mm_setzero_si128()),
+                );
+                _mm256_blendv_epi8(#local, #remote, select_remote)
+            })
+        })
+        .collect::<Vec<_>>();
+    let result = if outputs == 1 {
+        chunks[0].clone()
+    } else {
+        quote!([#(#chunks),*])
+    };
+    quote! {
+        // For valid indices (<128), each threshold control enables a prefix
+        // of the adjacent 32-byte XOR differences. Local and lane-swapped
+        // lookups share these controls, then one blend selects the right lane.
+        #(#deltas)*
+        let result = #result;
+    }
+}
+
 /// Three-blend AVX2 implementation for selecting from a concatenated pair of 256-bit tables.
 ///
 /// This uses one fewer live YMM register than the zeroing-shuffle-and-OR formulation and has better
@@ -4429,29 +4600,15 @@ impl X86 {
             return fallback_method(op, vec_ty);
         }
 
-        // Emulated wider variants delegate to swizzle_dyn_precise
-        // because zeroes let us cheaply join table parts, and on AVX2 zeroing is already very cheap
-        // through a clever trick: https://shnatsel.github.io/improving-std-simd-swizzle-dyn/#optimizing-avx2
-        if matches!(
-            (*self, vec_ty.n_bits()),
-            (Self::Sse4_2, 256 | 512) | (Self::Avx2, 512)
-        ) {
-            let method_sig = op.simd_trait_method_sig(vec_ty);
-            let precise = generic_op_name("swizzle_dyn_precise", vec_ty);
-            return quote! {
-                #method_sig {
-                    self.#precise(a, indices)
-                }
-            };
-        }
-
-        // lower into native ops for native-width vectors
+        // Lower the remaining variants into native operations.
         self.kernel_method(op, vec_ty, |token| {
             let body = match (*self, vec_ty.n_bits()) {
                 (Self::Sse4_2 | Self::Avx2, 128) => quote! {
                     let result =
                         _mm_shuffle_epi8(Bytes::to_bytes(a).val.0, indices.into());
                 },
+                (Self::Sse4_2, 256 | 512) => sse42_swizzle_relaxed(vec_ty.n_bits(), false),
+                (Self::Avx2, 512) => avx2_swizzle_relaxed(512, false),
                 (Self::Avx2, 256) => quote! {
                     let bytes = Bytes::to_bytes(a).val.0;
                     let indices = indices.into();
@@ -4575,28 +4732,16 @@ impl X86 {
         let bytes = bytes_ty.rust();
         let wrapper = bytes_ty.aligned_wrapper();
 
-        if *self == Self::Sse2 || (*self == Self::Sse4_2 && vec_ty.n_bits() == 512) {
+        if *self == Self::Sse2 {
             return fallback_method(op, vec_ty);
-        }
-
-        // These paths already have cheap precise building blocks. Using them here also keeps the
-        // concat implementation shared with wider recursive expansions. AVX2 deliberately uses
-        // the lower-register-pressure precise formulation for relaxed 256-bit swizzles.
-        if matches!(
-            (*self, vec_ty.n_bits()),
-            (Self::Sse4_2, 128 | 256) | (Self::Avx2, 128 | 256 | 512)
-        ) {
-            let method_sig = op.simd_trait_method_sig(vec_ty);
-            let precise = generic_op_name("concat_swizzle_dyn_precise", vec_ty);
-            return quote! {
-                #method_sig {
-                    self.#precise(a, b, indices)
-                }
-            };
         }
 
         self.kernel_method(op, vec_ty, |token| {
             let body = match (*self, vec_ty.n_bits()) {
+                (Self::Sse4_2, 128 | 256 | 512) | (Self::Avx2, 128) => {
+                    sse42_swizzle_relaxed(vec_ty.n_bits(), true)
+                }
+                (Self::Avx2, 256 | 512) => avx2_swizzle_relaxed(vec_ty.n_bits(), true),
                 (Self::Avx512, 128 | 256 | 512) => {
                     let permute = intrinsic_ident("permutex2var", "epi8", vec_ty.n_bits());
                     quote! {

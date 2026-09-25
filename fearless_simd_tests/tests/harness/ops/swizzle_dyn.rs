@@ -59,6 +59,31 @@ fn swizzle_dyn_u8x32_every_valid_index_in_both_lanes<S: Simd>(simd: S) {
 }
 
 #[simd_test]
+fn swizzle_dyn_u8x32_isolates_each_source_byte<S: Simd>(simd: S) {
+    // Isolate each source byte so contributions from the other half cannot
+    // hide an incorrect XOR cancellation or a reversed lane-selection mask.
+    for source_lane in 0..32 {
+        let mut bytes = [0u8; 32];
+        bytes[source_lane] = 255;
+
+        for start in 0..32 {
+            let indices: [u8; 32] =
+                core::array::from_fn(|lane| u8::try_from((start + lane) % 32).unwrap());
+            let expected: [u8; 32] = core::array::from_fn(|lane| bytes[usize::from(indices[lane])]);
+
+            let value = u8x32::simd_from(simd, bytes);
+            let index_vec = u8x32::simd_from(simd, indices);
+            let result = value.swizzle_dyn(index_vec);
+
+            assert_eq!(
+                *result, expected,
+                "source lane {source_lane}, start {start}"
+            );
+        }
+    }
+}
+
+#[simd_test]
 fn swizzle_dyn_u8x64_crosses_blocks<S: Simd>(simd: S) {
     let bytes: [u8; 64] = core::array::from_fn(|i| u8::try_from(i + 1).unwrap());
     let indices: [u8; 64] = core::array::from_fn(|i| {
@@ -74,6 +99,115 @@ fn swizzle_dyn_u8x64_crosses_blocks<S: Simd>(simd: S) {
     let result = value.swizzle_dyn(index_vec);
 
     assert_swizzle_dyn(bytes, indices, *result);
+}
+
+#[simd_test]
+fn swizzle_dyn_u8x64_isolates_each_source_byte<S: Simd>(simd: S) {
+    // A single nonzero source byte makes unwanted contributions visible,
+    // including adjacent XOR differences that must cancel for other quarters.
+    for source_lane in 0..64 {
+        let mut bytes = [0u8; 64];
+        bytes[source_lane] = 255;
+
+        for start in 0..64 {
+            let indices: [u8; 64] =
+                core::array::from_fn(|lane| u8::try_from((start + lane) % 64).unwrap());
+            let expected: [u8; 64] = core::array::from_fn(|lane| bytes[usize::from(indices[lane])]);
+
+            let value = u8x64::simd_from(simd, bytes);
+            let index_vec = u8x64::simd_from(simd, indices);
+            let result = value.swizzle_dyn(index_vec);
+
+            assert_eq!(
+                *result, expected,
+                "source lane {source_lane}, start {start}"
+            );
+        }
+    }
+}
+
+#[simd_test]
+fn swizzle_dyn_u8x16_all_indices<S: Simd>(simd: S) {
+    let bytes: [u8; 16] = core::array::from_fn(|lane| {
+        u8::try_from(lane)
+            .unwrap()
+            .wrapping_mul(137)
+            .wrapping_add(19)
+    });
+    let value = u8x16::simd_from(simd, bytes);
+
+    for start in 0..=255u8 {
+        let indices: [u8; 16] = core::array::from_fn(|lane| {
+            start.wrapping_add(u8::try_from(lane).unwrap().wrapping_mul(37))
+        });
+        let result = value.swizzle_dyn(u8x16::simd_from(simd, indices));
+
+        for lane in 0..16 {
+            let index = usize::from(indices[lane]);
+            if index < 16 {
+                assert_eq!(
+                    result[lane], bytes[index],
+                    "output lane {lane}, index {index}"
+                );
+            }
+        }
+    }
+}
+
+#[simd_test]
+fn swizzle_dyn_u8x32_all_indices<S: Simd>(simd: S) {
+    let bytes: [u8; 32] = core::array::from_fn(|lane| {
+        u8::try_from(lane)
+            .unwrap()
+            .wrapping_mul(137)
+            .wrapping_add(19)
+    });
+    let value = u8x32::simd_from(simd, bytes);
+
+    for start in 0..=255u8 {
+        let indices: [u8; 32] = core::array::from_fn(|lane| {
+            start.wrapping_add(u8::try_from(lane).unwrap().wrapping_mul(37))
+        });
+        let result = value.swizzle_dyn(u8x32::simd_from(simd, indices));
+
+        for lane in 0..32 {
+            let index = usize::from(indices[lane]);
+            if index < 32 {
+                assert_eq!(
+                    result[lane], bytes[index],
+                    "output lane {lane}, index {index}"
+                );
+            }
+        }
+    }
+}
+
+#[simd_test]
+fn swizzle_dyn_u8x64_all_indices<S: Simd>(simd: S) {
+    let bytes: [u8; 64] = core::array::from_fn(|lane| {
+        u8::try_from(lane)
+            .unwrap()
+            .wrapping_mul(137)
+            .wrapping_add(19)
+    });
+    let value = u8x64::simd_from(simd, bytes);
+
+    for start in 0..=255u8 {
+        let indices: [u8; 64] = core::array::from_fn(|lane| {
+            start.wrapping_add(u8::try_from(lane).unwrap().wrapping_mul(37))
+        });
+        let result = value.swizzle_dyn(u8x64::simd_from(simd, indices));
+
+        for lane in 0..64 {
+            let index = usize::from(indices[lane]);
+            if index < 64 {
+                assert_eq!(
+                    result[lane], bytes[index],
+                    "output lane {lane}, index {index}"
+                );
+            }
+        }
+    }
 }
 
 #[simd_test]

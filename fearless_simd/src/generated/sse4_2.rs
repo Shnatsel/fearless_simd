@@ -1547,7 +1547,30 @@ impl Simd for Sse4_2 {
         b: u8x16<Self>,
         indices: u8x16<Self>,
     ) -> u8x16<Self> {
-        self.concat_swizzle_dyn_precise_u8x16(a, b, indices)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(
+                token: Sse4_2,
+                a: u8x16<Sse4_2>,
+                b: u8x16<Sse4_2>,
+                indices: u8x16<Sse4_2>,
+            ) -> u8x16<Sse4_2> {
+                let delta_0 = Bytes::to_bytes(a).val.0;
+                let delta_1 = _mm_xor_si128(Bytes::to_bytes(a).val.0, Bytes::to_bytes(b).val.0);
+                let result = {
+                    let index = indices.val.0;
+                    _mm_xor_si128(
+                        _mm_shuffle_epi8(delta_0, index),
+                        _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                    )
+                };
+                Bytes::from_bytes(u8x16 {
+                    val: crate::support::Aligned128(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, b, indices)
     }
     #[inline(always)]
     fn concat_swizzle_dyn_precise_u8x16(
@@ -6792,7 +6815,35 @@ impl Simd for Sse4_2 {
     }
     #[inline(always)]
     fn swizzle_dyn_u8x32(self, a: u8x32<Self>, indices: u8x32<Self>) -> u8x32<Self> {
-        self.swizzle_dyn_precise_u8x32(a, indices)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse4_2, a: u8x32<Sse4_2>, indices: u8x32<Sse4_2>) -> u8x32<Sse4_2> {
+                let delta_0 = Bytes::to_bytes(a).val.0[0];
+                let delta_1 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[0], Bytes::to_bytes(a).val.0[1]);
+                let result = [
+                    {
+                        let index = indices.val.0[0];
+                        _mm_xor_si128(
+                            _mm_shuffle_epi8(delta_0, index),
+                            _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                        )
+                    },
+                    {
+                        let index = indices.val.0[1];
+                        _mm_xor_si128(
+                            _mm_shuffle_epi8(delta_0, index),
+                            _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                        )
+                    },
+                ];
+                Bytes::from_bytes(u8x32 {
+                    val: crate::support::Aligned256(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, indices)
     }
     #[inline(always)]
     fn swizzle_dyn_precise_u8x32(self, a: u8x32<Self>, indices: u8x32<Self>) -> u8x32<Self> {
@@ -6828,7 +6879,56 @@ impl Simd for Sse4_2 {
         b: u8x32<Self>,
         indices: u8x32<Self>,
     ) -> u8x32<Self> {
-        self.concat_swizzle_dyn_precise_u8x32(a, b, indices)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(
+                token: Sse4_2,
+                a: u8x32<Sse4_2>,
+                b: u8x32<Sse4_2>,
+                indices: u8x32<Sse4_2>,
+            ) -> u8x32<Sse4_2> {
+                let delta_0 = Bytes::to_bytes(a).val.0[0];
+                let delta_1 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[0], Bytes::to_bytes(a).val.0[1]);
+                let delta_2 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[1], Bytes::to_bytes(b).val.0[0]);
+                let delta_3 =
+                    _mm_xor_si128(Bytes::to_bytes(b).val.0[0], Bytes::to_bytes(b).val.0[1]);
+                let result = [
+                    {
+                        let index = indices.val.0[0];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_0, index),
+                                _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                            ),
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_2, _mm_add_epi8(index, _mm_set1_epi8(-32))),
+                                _mm_shuffle_epi8(delta_3, _mm_add_epi8(index, _mm_set1_epi8(-48))),
+                            ),
+                        )
+                    },
+                    {
+                        let index = indices.val.0[1];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_0, index),
+                                _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                            ),
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_2, _mm_add_epi8(index, _mm_set1_epi8(-32))),
+                                _mm_shuffle_epi8(delta_3, _mm_add_epi8(index, _mm_set1_epi8(-48))),
+                            ),
+                        )
+                    },
+                ];
+                Bytes::from_bytes(u8x32 {
+                    val: crate::support::Aligned256(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, b, indices)
     }
     #[inline(always)]
     fn concat_swizzle_dyn_precise_u8x32(
@@ -7451,7 +7551,77 @@ impl Simd for Sse4_2 {
     }
     #[inline(always)]
     fn swizzle_dyn_u8x64(self, a: u8x64<Self>, indices: u8x64<Self>) -> u8x64<Self> {
-        self.swizzle_dyn_precise_u8x64(a, indices)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse4_2, a: u8x64<Sse4_2>, indices: u8x64<Sse4_2>) -> u8x64<Sse4_2> {
+                let delta_0 = Bytes::to_bytes(a).val.0[0];
+                let delta_1 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[0], Bytes::to_bytes(a).val.0[1]);
+                let delta_2 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[1], Bytes::to_bytes(a).val.0[2]);
+                let delta_3 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[2], Bytes::to_bytes(a).val.0[3]);
+                let result = [
+                    {
+                        let index = indices.val.0[0];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_0, index),
+                                _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                            ),
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_2, _mm_add_epi8(index, _mm_set1_epi8(-32))),
+                                _mm_shuffle_epi8(delta_3, _mm_add_epi8(index, _mm_set1_epi8(-48))),
+                            ),
+                        )
+                    },
+                    {
+                        let index = indices.val.0[1];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_0, index),
+                                _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                            ),
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_2, _mm_add_epi8(index, _mm_set1_epi8(-32))),
+                                _mm_shuffle_epi8(delta_3, _mm_add_epi8(index, _mm_set1_epi8(-48))),
+                            ),
+                        )
+                    },
+                    {
+                        let index = indices.val.0[2];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_0, index),
+                                _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                            ),
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_2, _mm_add_epi8(index, _mm_set1_epi8(-32))),
+                                _mm_shuffle_epi8(delta_3, _mm_add_epi8(index, _mm_set1_epi8(-48))),
+                            ),
+                        )
+                    },
+                    {
+                        let index = indices.val.0[3];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_0, index),
+                                _mm_shuffle_epi8(delta_1, _mm_add_epi8(index, _mm_set1_epi8(-16))),
+                            ),
+                            _mm_xor_si128(
+                                _mm_shuffle_epi8(delta_2, _mm_add_epi8(index, _mm_set1_epi8(-32))),
+                                _mm_shuffle_epi8(delta_3, _mm_add_epi8(index, _mm_set1_epi8(-48))),
+                            ),
+                        )
+                    },
+                ];
+                Bytes::from_bytes(u8x64 {
+                    val: crate::support::Aligned512(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, indices)
     }
     #[inline(always)]
     fn swizzle_dyn_precise_u8x64(self, a: u8x64<Self>, indices: u8x64<Self>) -> u8x64<Self> {
@@ -7487,19 +7657,222 @@ impl Simd for Sse4_2 {
         b: u8x64<Self>,
         indices: u8x64<Self>,
     ) -> u8x64<Self> {
-        let first_table = Bytes::to_bytes(a);
-        let second_table = Bytes::to_bytes(b);
-        let mut output = [0u8; 64usize];
-        for lane in 0..64usize {
-            let index = indices[lane] as usize % 128usize;
-            output[lane] = if index < 64usize {
-                first_table[index]
-            } else {
-                second_table[index - 64usize]
-            };
-        }
-        let result: u8x64<Self> = output.simd_into(self);
-        Bytes::from_bytes(result)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(
+                token: Sse4_2,
+                a: u8x64<Sse4_2>,
+                b: u8x64<Sse4_2>,
+                indices: u8x64<Sse4_2>,
+            ) -> u8x64<Sse4_2> {
+                let delta_0 = Bytes::to_bytes(a).val.0[0];
+                let delta_1 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[0], Bytes::to_bytes(a).val.0[1]);
+                let delta_2 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[1], Bytes::to_bytes(a).val.0[2]);
+                let delta_3 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[2], Bytes::to_bytes(a).val.0[3]);
+                let delta_4 =
+                    _mm_xor_si128(Bytes::to_bytes(a).val.0[3], Bytes::to_bytes(b).val.0[0]);
+                let delta_5 =
+                    _mm_xor_si128(Bytes::to_bytes(b).val.0[0], Bytes::to_bytes(b).val.0[1]);
+                let delta_6 =
+                    _mm_xor_si128(Bytes::to_bytes(b).val.0[1], Bytes::to_bytes(b).val.0[2]);
+                let delta_7 =
+                    _mm_xor_si128(Bytes::to_bytes(b).val.0[2], Bytes::to_bytes(b).val.0[3]);
+                let result = [
+                    {
+                        let index = indices.val.0[0];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(delta_0, index),
+                                    _mm_shuffle_epi8(
+                                        delta_1,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-16)),
+                                    ),
+                                ),
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_2,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-32)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_3,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-48)),
+                                    ),
+                                ),
+                            ),
+                            _mm_xor_si128(
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_4,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-64)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_5,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-80)),
+                                    ),
+                                ),
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_6,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-96)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_7,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-112)),
+                                    ),
+                                ),
+                            ),
+                        )
+                    },
+                    {
+                        let index = indices.val.0[1];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(delta_0, index),
+                                    _mm_shuffle_epi8(
+                                        delta_1,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-16)),
+                                    ),
+                                ),
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_2,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-32)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_3,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-48)),
+                                    ),
+                                ),
+                            ),
+                            _mm_xor_si128(
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_4,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-64)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_5,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-80)),
+                                    ),
+                                ),
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_6,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-96)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_7,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-112)),
+                                    ),
+                                ),
+                            ),
+                        )
+                    },
+                    {
+                        let index = indices.val.0[2];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(delta_0, index),
+                                    _mm_shuffle_epi8(
+                                        delta_1,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-16)),
+                                    ),
+                                ),
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_2,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-32)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_3,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-48)),
+                                    ),
+                                ),
+                            ),
+                            _mm_xor_si128(
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_4,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-64)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_5,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-80)),
+                                    ),
+                                ),
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_6,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-96)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_7,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-112)),
+                                    ),
+                                ),
+                            ),
+                        )
+                    },
+                    {
+                        let index = indices.val.0[3];
+                        _mm_xor_si128(
+                            _mm_xor_si128(
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(delta_0, index),
+                                    _mm_shuffle_epi8(
+                                        delta_1,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-16)),
+                                    ),
+                                ),
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_2,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-32)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_3,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-48)),
+                                    ),
+                                ),
+                            ),
+                            _mm_xor_si128(
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_4,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-64)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_5,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-80)),
+                                    ),
+                                ),
+                                _mm_xor_si128(
+                                    _mm_shuffle_epi8(
+                                        delta_6,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-96)),
+                                    ),
+                                    _mm_shuffle_epi8(
+                                        delta_7,
+                                        _mm_add_epi8(index, _mm_set1_epi8(-112)),
+                                    ),
+                                ),
+                            ),
+                        )
+                    },
+                ];
+                Bytes::from_bytes(u8x64 {
+                    val: crate::support::Aligned512(result),
+                    simd: token,
+                })
+            }
+        );
+        kernel(self, a, b, indices)
     }
     #[inline(always)]
     fn concat_swizzle_dyn_precise_u8x64(

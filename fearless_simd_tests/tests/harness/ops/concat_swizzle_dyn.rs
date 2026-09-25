@@ -84,6 +84,110 @@ fn concat_swizzle_dyn_u8x64<S: Simd>(simd: S) {
 }
 
 #[simd_test]
+fn concat_swizzle_dyn_u8x16_isolates_each_source_byte<S: Simd>(simd: S) {
+    // A source byte appears in several XOR differences. Only its requested
+    // output may survive, including when the byte belongs to the second table.
+    for source_lane in 0..32 {
+        let mut a_bytes = [0u8; 16];
+        let mut b_bytes = [0u8; 16];
+        if source_lane < 16 {
+            a_bytes[source_lane] = 255;
+        } else {
+            b_bytes[source_lane - 16] = 255;
+        }
+        let a = u8x16::simd_from(simd, a_bytes);
+        let b = u8x16::simd_from(simd, b_bytes);
+
+        for start in 0..32 {
+            let indices: [u8; 16] =
+                core::array::from_fn(|lane| u8::try_from((start + lane) % 32).unwrap());
+            let expected: [u8; 16] = core::array::from_fn(|lane| {
+                let index = usize::from(indices[lane]);
+                if index < 16 {
+                    a_bytes[index]
+                } else {
+                    b_bytes[index - 16]
+                }
+            });
+            let result = a.concat_swizzle_dyn(b, u8x16::simd_from(simd, indices));
+
+            assert_eq!(
+                *result, expected,
+                "source lane {source_lane}, start {start}"
+            );
+        }
+    }
+}
+
+#[simd_test]
+fn concat_swizzle_dyn_u8x32_isolates_each_source_byte<S: Simd>(simd: S) {
+    for source_lane in 0..64 {
+        let mut a_bytes = [0u8; 32];
+        let mut b_bytes = [0u8; 32];
+        if source_lane < 32 {
+            a_bytes[source_lane] = 255;
+        } else {
+            b_bytes[source_lane - 32] = 255;
+        }
+        let a = u8x32::simd_from(simd, a_bytes);
+        let b = u8x32::simd_from(simd, b_bytes);
+
+        for start in 0..64 {
+            let indices: [u8; 32] =
+                core::array::from_fn(|lane| u8::try_from((start + lane) % 64).unwrap());
+            let expected: [u8; 32] = core::array::from_fn(|lane| {
+                let index = usize::from(indices[lane]);
+                if index < 32 {
+                    a_bytes[index]
+                } else {
+                    b_bytes[index - 32]
+                }
+            });
+            let result = a.concat_swizzle_dyn(b, u8x32::simd_from(simd, indices));
+
+            assert_eq!(
+                *result, expected,
+                "source lane {source_lane}, start {start}"
+            );
+        }
+    }
+}
+
+#[simd_test]
+fn concat_swizzle_dyn_u8x64_isolates_each_source_byte<S: Simd>(simd: S) {
+    for source_lane in 0..128 {
+        let mut a_bytes = [0u8; 64];
+        let mut b_bytes = [0u8; 64];
+        if source_lane < 64 {
+            a_bytes[source_lane] = 255;
+        } else {
+            b_bytes[source_lane - 64] = 255;
+        }
+        let a = u8x64::simd_from(simd, a_bytes);
+        let b = u8x64::simd_from(simd, b_bytes);
+
+        for start in 0..128 {
+            let indices: [u8; 64] =
+                core::array::from_fn(|lane| u8::try_from((start + lane) % 128).unwrap());
+            let expected: [u8; 64] = core::array::from_fn(|lane| {
+                let index = usize::from(indices[lane]);
+                if index < 64 {
+                    a_bytes[index]
+                } else {
+                    b_bytes[index - 64]
+                }
+            });
+            let result = a.concat_swizzle_dyn(b, u8x64::simd_from(simd, indices));
+
+            assert_eq!(
+                *result, expected,
+                "source lane {source_lane}, start {start}"
+            );
+        }
+    }
+}
+
+#[simd_test]
 fn concat_swizzle_dyn_f32x8_bytes<S: Simd>(simd: S) {
     let a_bytes = [
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
@@ -110,7 +214,88 @@ fn concat_swizzle_dyn_f32x8_bytes<S: Simd>(simd: S) {
     assert_eq!(*result, expected);
 }
 
-#[ignore = "exhaustive test, takes a while"]
+#[simd_test]
+fn concat_swizzle_dyn_u8x16_all_indices<S: Simd>(simd: S) {
+    let a_bytes: [u8; 16] = core::array::from_fn(|lane| {
+        u8::try_from(lane)
+            .unwrap()
+            .wrapping_mul(137)
+            .wrapping_add(19)
+    });
+    let b_bytes: [u8; 16] = core::array::from_fn(|lane| {
+        u8::try_from(lane)
+            .unwrap()
+            .wrapping_mul(73)
+            .wrapping_add(151)
+    });
+    let a = u8x16::simd_from(simd, a_bytes);
+    let b = u8x16::simd_from(simd, b_bytes);
+
+    for start in 0..=255u8 {
+        let indices: [u8; 16] = core::array::from_fn(|lane| {
+            start.wrapping_add(u8::try_from(lane).unwrap().wrapping_mul(37))
+        });
+        let result = a.concat_swizzle_dyn(b, u8x16::simd_from(simd, indices));
+
+        for lane in 0..16 {
+            let index = usize::from(indices[lane]);
+            if index < 16 {
+                assert_eq!(
+                    result[lane], a_bytes[index],
+                    "output lane {lane}, index {index}"
+                );
+            } else if index < 32 {
+                assert_eq!(
+                    result[lane],
+                    b_bytes[index - 16],
+                    "output lane {lane}, index {index}"
+                );
+            }
+        }
+    }
+}
+
+#[simd_test]
+fn concat_swizzle_dyn_u8x32_all_indices<S: Simd>(simd: S) {
+    let a_bytes: [u8; 32] = core::array::from_fn(|lane| {
+        u8::try_from(lane)
+            .unwrap()
+            .wrapping_mul(137)
+            .wrapping_add(19)
+    });
+    let b_bytes: [u8; 32] = core::array::from_fn(|lane| {
+        u8::try_from(lane)
+            .unwrap()
+            .wrapping_mul(73)
+            .wrapping_add(151)
+    });
+    let a = u8x32::simd_from(simd, a_bytes);
+    let b = u8x32::simd_from(simd, b_bytes);
+
+    for start in 0..=255u8 {
+        let indices: [u8; 32] = core::array::from_fn(|lane| {
+            start.wrapping_add(u8::try_from(lane).unwrap().wrapping_mul(37))
+        });
+        let result = a.concat_swizzle_dyn(b, u8x32::simd_from(simd, indices));
+
+        for lane in 0..32 {
+            let index = usize::from(indices[lane]);
+            if index < 32 {
+                assert_eq!(
+                    result[lane], a_bytes[index],
+                    "output lane {lane}, index {index}"
+                );
+            } else if index < 64 {
+                assert_eq!(
+                    result[lane],
+                    b_bytes[index - 32],
+                    "output lane {lane}, index {index}"
+                );
+            }
+        }
+    }
+}
+
 #[simd_test]
 fn concat_swizzle_dyn_u8x64_all_indices<S: Simd>(simd: S) {
     let a_bytes = [
