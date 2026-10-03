@@ -2191,3 +2191,54 @@ fn compress_u8x16_exhaustive_masks<S: Simd>(simd: S) {
         );
     }
 }
+
+#[simd_test]
+fn compact_u8x32_half_boundaries<S: Simd>(simd: S) {
+    let values: [u8; 32] = core::array::from_fn(|lane| (lane * 7 + 1) as u8);
+    let merge: [u8; 32] = core::array::from_fn(|lane| 255 - lane as u8);
+    let values_vec = u8x32::simd_from(simd, values);
+    let merge_vec = u8x32::simd_from(simd, merge);
+    for low_count in 0..=16 {
+        for high_count in 0..=16 {
+            // Select a suffix of each half so the input and output positions differ.
+            let low_bits = ((1_u64 << low_count) - 1) << (16 - low_count);
+            let high_bits = ((1_u64 << high_count) - 1) << (32 - high_count);
+            let bits = low_bits | high_bits;
+            let mask = mask8x32::from_bitmask(simd, bits);
+            let mut expected_compress = [0; 32];
+            let mut expected_compress_merge = merge;
+            let mut expected_expand = [0; 32];
+            let mut expected_expand_merge = merge;
+            let mut selected = 0;
+            for lane in 0..32 {
+                if bits & (1_u64 << lane) != 0 {
+                    expected_compress[selected] = values[lane];
+                    expected_compress_merge[selected] = values[lane];
+                    expected_expand[lane] = values[selected];
+                    expected_expand_merge[lane] = values[selected];
+                    selected += 1;
+                }
+            }
+            assert_eq!(
+                *values_vec.compress(mask),
+                expected_compress,
+                "mask {bits:#010x}"
+            );
+            assert_eq!(
+                *values_vec.compress_merge(mask, merge_vec),
+                expected_compress_merge,
+                "mask {bits:#010x}"
+            );
+            assert_eq!(
+                *values_vec.expand(mask),
+                expected_expand,
+                "mask {bits:#010x}"
+            );
+            assert_eq!(
+                *values_vec.expand_merge(mask, merge_vec),
+                expected_expand_merge,
+                "mask {bits:#010x}"
+            );
+        }
+    }
+}

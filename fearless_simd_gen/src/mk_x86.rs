@@ -357,6 +357,8 @@ impl Level for X86 {
                     self.handle_x86_compact_16(op, vec_ty)
                 } else if *self == Self::Avx2 && matches!(sig, OpSig::Compress { .. }) {
                     self.handle_avx2_shuffle_compact(op, vec_ty)
+                } else if *self == Self::Sse4_2 && vec_ty.len == 32 {
+                    self.handle_sse4_2_compact_32(op, vec_ty)
                 } else if matches!(*self, Self::Sse4_2 | Self::Avx2) {
                     self.handle_x86_wide_compact(op, vec_ty)
                 } else {
@@ -1538,6 +1540,79 @@ impl X86 {
                 }
             }
             _ => unreachable!("only compact operations use the x86 implementation"),
+        })
+    }
+
+    /// Join 128-bit halves in registers, avoiding overlapping stack stores/loads.
+    /// Improves performance by over 2.5x.
+    ///
+    /// Extending the same approach to 64-byte/512-bit vectors works,
+    /// but only shows a 1.5x improvement and causes a lot of register pressure.
+    fn handle_sse4_2_compact_32(&self, op: Op, vec_ty: &VecType) -> TokenStream {
+        assert!(*self == Self::Sse4_2, "requires SSE4.2");
+        assert_eq!(vec_ty.len, 32, "requires a 32-byte vector");
+        self.kernel_method(op, vec_ty, |token| {
+            let body = match op.sig {
+                OpSig::Compress { merge } => {
+                    let finish = if merge {
+                        quote! {
+                            let count = low_count + high_mask.to_bitmask().count_ones() as usize;
+                            let [prefix_low, prefix_high] = crate::transmute::checked_transmute_copy::<_, [__m128i; 2]>(
+                                &crate::support::COMPACT_PREFIX_MASKS[count],
+                            );
+                            let result_low = _mm_blendv_epi8(merge.val.0[0], result_low, prefix_low);
+                            let result_high = _mm_blendv_epi8(merge.val.0[1], result_high, prefix_high);
+                        }
+                    } else {
+                        TokenStream::new()
+                    };
+                    quote! {
+                        let low: __m128i = low.compress(low_mask).into();
+                        let high: __m128i = high.compress(high_mask).into();
+                        let [left, right] = crate::transmute::checked_transmute_copy::<_, [__m128i; 2]>(
+                            &crate::support::COMPACT_16_SPLICE_CONTROLS[low_count],
+                        );
+                        let result_low = _mm_or_si128(low, _mm_shuffle_epi8(high, left));
+                        let result_high = _mm_shuffle_epi8(high, right);
+                        #finish
+                        u8x32 {
+                            val: crate::support::Aligned256([result_low, result_high]),
+                            simd: #token,
+                        }
+                    }
+                }
+                OpSig::Expand { merge } => {
+                    let finish = if merge {
+                        quote! {
+                            let (merge_low, merge_high) = merge.split();
+                            low.expand_merge(low_mask, merge_low)
+                                .combine(packed.expand_merge(high_mask, merge_high))
+                        }
+                    } else {
+                        quote! { low.expand(low_mask).combine(packed.expand(high_mask)) }
+                    };
+                    quote! {
+                        // A right shift by low_count is the inverse of the compression
+                        // splice with a first-half length of 16 - low_count.
+                        let [left, right] = crate::transmute::checked_transmute_copy::<_, [__m128i; 2]>(
+                            &crate::support::COMPACT_16_SPLICE_CONTROLS[16 - low_count],
+                        );
+                        let packed = _mm_or_si128(
+                            _mm_shuffle_epi8(low.into(), right),
+                            _mm_shuffle_epi8(high.into(), left),
+                        );
+                        let packed: u8x16<_> = packed.simd_into(#token);
+                        #finish
+                    }
+                }
+                _ => unreachable!("only compact operations use this implementation"),
+            };
+            quote! {
+                let (low, high) = values.split();
+                let (low_mask, high_mask) = #token.split_mask8x32(mask);
+                let low_count = low_mask.to_bitmask().count_ones() as usize;
+                #body
+            }
         })
     }
 

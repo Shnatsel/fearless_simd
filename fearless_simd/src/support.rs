@@ -392,7 +392,7 @@ pub(crate) const COMPACT_8_COUNTS: [u8; 256] = compact_count_table();
 pub(crate) const COMPACT_8_SPLICE_CONTROLS: [u128; 9] = compact_splice_control_table();
 
 /// Shuffle controls that append a compacted 16-byte high lane after a compacted low lane.
-#[allow(dead_code, reason = "Used only by AVX2 byte compression")]
+#[allow(dead_code, reason = "Used only by x86 byte compression and expansion")]
 pub(crate) const COMPACT_16_SPLICE_CONTROLS: [Aligned256<[u8; 32]>; 17] =
     compact_16_splice_control_table();
 
