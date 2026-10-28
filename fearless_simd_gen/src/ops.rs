@@ -2070,6 +2070,14 @@ impl CoreOpTrait {
 }
 
 impl OpSig {
+    /// Compression and expansion move bits without interpreting the element type.
+    /// Share signed and floating-point implementations with the unsigned type of
+    /// the same lane width, including on backends with compact predicate masks.
+    pub(crate) fn should_route_compact_through_unsigned(&self, vec_ty: &VecType) -> bool {
+        matches!(self, Self::Compress { .. } | Self::Expand { .. })
+            && matches!(vec_ty.scalar, ScalarType::Int | ScalarType::Float)
+    }
+
     /// Whether this typed swizzle can be implemented by bitcasting to bytes and forwarding to the
     /// corresponding byte-vector operation.
     pub(crate) fn should_route_swizzle_through_bytes(&self, vec_ty: &VecType) -> bool {

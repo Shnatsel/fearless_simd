@@ -67,6 +67,25 @@ pub(crate) fn byte_swizzle_op(op: &Op, vec_ty: &VecType) -> TokenStream {
     }
 }
 
+/// Reuse the unsigned implementation without changing lane widths or mask representation.
+pub(crate) fn unsigned_compact_op(op: Op, vec_ty: &VecType) -> TokenStream {
+    assert!(op.sig.should_route_compact_through_unsigned(vec_ty));
+    let method_sig = op.simd_trait_method_sig(vec_ty);
+    let unsigned_method = generic_op_name(op.method, &vec_ty.cast(ScalarType::Unsigned));
+    let merge_arg = match op.sig {
+        OpSig::Compress { merge: true } | OpSig::Expand { merge: true } => {
+            quote! { , merge.bitcast() }
+        }
+        OpSig::Compress { merge: false } | OpSig::Expand { merge: false } => TokenStream::new(),
+        _ => unreachable!(),
+    };
+    quote! {
+        #method_sig {
+            self.#unsigned_method(values.bitcast(), mask #merge_arg).bitcast()
+        }
+    }
+}
+
 /// Forward typed compression/expansion through bytes on vector-backed mask backends.
 ///
 /// Each all-zero/all-one mask lane becomes a group of identical byte lanes, so entire
@@ -777,6 +796,13 @@ pub(crate) fn compact_128_op(
     ty: &VecType,
     merge_swizzle: Option<CompactMergeSwizzle>,
 ) -> TokenStream {
+    // Keep floating-point selection for expansion's merge lanes: some x86
+    // backends can blend whole float lanes more cheaply than byte lanes.
+    if op.sig.should_route_compact_through_unsigned(ty)
+        && !(ty.scalar == ScalarType::Float && matches!(op.sig, OpSig::Expand { merge: true }))
+    {
+        return unsigned_compact_op(op, ty);
+    }
     assert_eq!(ty.n_bits(), 128, "compact tables cover one 128-bit vector");
     assert!(
         matches!(ty.scalar_bits, 16 | 32 | 64),

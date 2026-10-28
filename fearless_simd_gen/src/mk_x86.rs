@@ -12,7 +12,7 @@ use crate::generic::{
     generic_classify, generic_mask_from_bitmask, generic_mask_from_vector, generic_mask_set,
     generic_mask_to_vector, generic_op, generic_op_name, generic_round, generic_to_degrees_radians,
     integer_lane_mask_rotate, integer_lane_mask_splat_arg, recursive_swizzle_dyn_precise_body,
-    reverse_method, reverse_vector_mask_method,
+    reverse_method, reverse_vector_mask_method, unsigned_compact_op,
 };
 use crate::level::Level;
 use crate::ops::{
@@ -1334,6 +1334,11 @@ fn expand_16_control(block_bits: TokenStream) -> TokenStream {
 impl X86 {
     /// Reuse native dword/qword compaction, joining the halves with register permutations.
     fn handle_avx2_wide_dword_compact(&self, op: Op, vec_ty: &VecType) -> TokenStream {
+        // Keep float-lane blends in the floating-point implementations: routing
+        // them through integers makes the final merge more expensive on AVX2.
+        if vec_ty.scalar == ScalarType::Int {
+            return unsigned_compact_op(op, vec_ty);
+        }
         assert!(*self == Self::Avx2, "wide dword compaction requires AVX2");
         assert_eq!(vec_ty.n_bits(), 512, "requires two native AVX2 vectors");
         assert!(
@@ -1439,6 +1444,9 @@ impl X86 {
 
     /// Compact whole dwords/qwords with a single full-width AVX2 permutation.
     fn handle_avx2_dword_compact(&self, op: Op, vec_ty: &VecType) -> TokenStream {
+        if op.sig.should_route_compact_through_unsigned(vec_ty) {
+            return unsigned_compact_op(op, vec_ty);
+        }
         assert!(*self == Self::Avx2, "dword compaction requires AVX2");
         assert_eq!(vec_ty.n_bits(), 256, "requires one native AVX2 vector");
         assert!(
@@ -1917,6 +1925,9 @@ impl X86 {
     }
 
     fn handle_avx512_compact_op(&self, op: Op, vec_ty: &VecType) -> TokenStream {
+        if op.sig.should_route_compact_through_unsigned(vec_ty) {
+            return unsigned_compact_op(op, vec_ty);
+        }
         assert!(*self == Self::Avx512, "compact intrinsics require AVX-512");
         let prefix = match vec_ty.n_bits() {
             128 => "_mm",

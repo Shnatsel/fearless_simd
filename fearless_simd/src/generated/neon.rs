@@ -160,9 +160,7 @@ impl Simd for Neon {
     }
     #[inline(always)]
     fn compress_f32x4(self, values: f32x4<Self>, mask: mask32x4<Self>) -> f32x4<Self> {
-        let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_32[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.compress_u32x4(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn compress_merge_f32x4(
@@ -171,40 +169,12 @@ impl Simd for Neon {
         mask: mask32x4<Self>,
         merge: f32x4<Self>,
     ) -> f32x4<Self> {
-        let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_32[bits].0);
-        Bytes::from_bytes({
-            crate::kernel!(
-                #[inline(always)]
-                fn merge_swizzle(
-                    token: Neon,
-                    values: u8x16<Neon>,
-                    control: u8x16<Neon>,
-                    merge: u8x16<Neon>,
-                ) -> u8x16<Neon> {
-                    let values: uint8x16_t = values.into();
-                    let control: uint8x16_t = control.into();
-                    let merge: uint8x16_t = merge.into();
-                    let result = vqtbx1q_u8(merge, values, control);
-                    u8x16 {
-                        val: crate::support::Aligned128(result),
-                        simd: token,
-                    }
-                }
-            );
-            merge_swizzle(
-                self,
-                Bytes::to_bytes(values),
-                control,
-                Bytes::to_bytes(merge),
-            )
-        })
+        self.compress_merge_u32x4(values.bitcast(), mask, merge.bitcast())
+            .bitcast()
     }
     #[inline(always)]
     fn expand_f32x4(self, values: f32x4<Self>, mask: mask32x4<Self>) -> f32x4<Self> {
-        let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
-        let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_32[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.expand_u32x4(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn expand_merge_f32x4(
@@ -2159,9 +2129,7 @@ impl Simd for Neon {
     }
     #[inline(always)]
     fn compress_i16x8(self, values: i16x8<Self>, mask: mask16x8<Self>) -> i16x8<Self> {
-        let bits = self.to_bitmask_mask16x8(mask) as usize & 255;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_16[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.compress_u16x8(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn compress_merge_i16x8(
@@ -2170,40 +2138,12 @@ impl Simd for Neon {
         mask: mask16x8<Self>,
         merge: i16x8<Self>,
     ) -> i16x8<Self> {
-        let bits = self.to_bitmask_mask16x8(mask) as usize & 255;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_16[bits].0);
-        Bytes::from_bytes({
-            crate::kernel!(
-                #[inline(always)]
-                fn merge_swizzle(
-                    token: Neon,
-                    values: u8x16<Neon>,
-                    control: u8x16<Neon>,
-                    merge: u8x16<Neon>,
-                ) -> u8x16<Neon> {
-                    let values: uint8x16_t = values.into();
-                    let control: uint8x16_t = control.into();
-                    let merge: uint8x16_t = merge.into();
-                    let result = vqtbx1q_u8(merge, values, control);
-                    u8x16 {
-                        val: crate::support::Aligned128(result),
-                        simd: token,
-                    }
-                }
-            );
-            merge_swizzle(
-                self,
-                Bytes::to_bytes(values),
-                control,
-                Bytes::to_bytes(merge),
-            )
-        })
+        self.compress_merge_u16x8(values.bitcast(), mask, merge.bitcast())
+            .bitcast()
     }
     #[inline(always)]
     fn expand_i16x8(self, values: i16x8<Self>, mask: mask16x8<Self>) -> i16x8<Self> {
-        let bits = self.to_bitmask_mask16x8(mask) as usize & 255;
-        let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_16[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.expand_u16x8(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn expand_merge_i16x8(
@@ -2212,34 +2152,8 @@ impl Simd for Neon {
         mask: mask16x8<Self>,
         merge: i16x8<Self>,
     ) -> i16x8<Self> {
-        let bits = self.to_bitmask_mask16x8(mask) as usize & 255;
-        let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_16[bits].0);
-        Bytes::from_bytes({
-            crate::kernel!(
-                #[inline(always)]
-                fn merge_swizzle(
-                    token: Neon,
-                    values: u8x16<Neon>,
-                    control: u8x16<Neon>,
-                    merge: u8x16<Neon>,
-                ) -> u8x16<Neon> {
-                    let values: uint8x16_t = values.into();
-                    let control: uint8x16_t = control.into();
-                    let merge: uint8x16_t = merge.into();
-                    let result = vqtbx1q_u8(merge, values, control);
-                    u8x16 {
-                        val: crate::support::Aligned128(result),
-                        simd: token,
-                    }
-                }
-            );
-            merge_swizzle(
-                self,
-                Bytes::to_bytes(values),
-                control,
-                Bytes::to_bytes(merge),
-            )
-        })
+        self.expand_merge_u16x8(values.bitcast(), mask, merge.bitcast())
+            .bitcast()
     }
     #[inline(always)]
     fn count_ones_i16x8(self, a: i16x8<Self>) -> i16x8<Self> {
@@ -3537,9 +3451,7 @@ impl Simd for Neon {
     }
     #[inline(always)]
     fn compress_i32x4(self, values: i32x4<Self>, mask: mask32x4<Self>) -> i32x4<Self> {
-        let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_32[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.compress_u32x4(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn compress_merge_i32x4(
@@ -3548,40 +3460,12 @@ impl Simd for Neon {
         mask: mask32x4<Self>,
         merge: i32x4<Self>,
     ) -> i32x4<Self> {
-        let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_32[bits].0);
-        Bytes::from_bytes({
-            crate::kernel!(
-                #[inline(always)]
-                fn merge_swizzle(
-                    token: Neon,
-                    values: u8x16<Neon>,
-                    control: u8x16<Neon>,
-                    merge: u8x16<Neon>,
-                ) -> u8x16<Neon> {
-                    let values: uint8x16_t = values.into();
-                    let control: uint8x16_t = control.into();
-                    let merge: uint8x16_t = merge.into();
-                    let result = vqtbx1q_u8(merge, values, control);
-                    u8x16 {
-                        val: crate::support::Aligned128(result),
-                        simd: token,
-                    }
-                }
-            );
-            merge_swizzle(
-                self,
-                Bytes::to_bytes(values),
-                control,
-                Bytes::to_bytes(merge),
-            )
-        })
+        self.compress_merge_u32x4(values.bitcast(), mask, merge.bitcast())
+            .bitcast()
     }
     #[inline(always)]
     fn expand_i32x4(self, values: i32x4<Self>, mask: mask32x4<Self>) -> i32x4<Self> {
-        let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
-        let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_32[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.expand_u32x4(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn expand_merge_i32x4(
@@ -3590,34 +3474,8 @@ impl Simd for Neon {
         mask: mask32x4<Self>,
         merge: i32x4<Self>,
     ) -> i32x4<Self> {
-        let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
-        let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_32[bits].0);
-        Bytes::from_bytes({
-            crate::kernel!(
-                #[inline(always)]
-                fn merge_swizzle(
-                    token: Neon,
-                    values: u8x16<Neon>,
-                    control: u8x16<Neon>,
-                    merge: u8x16<Neon>,
-                ) -> u8x16<Neon> {
-                    let values: uint8x16_t = values.into();
-                    let control: uint8x16_t = control.into();
-                    let merge: uint8x16_t = merge.into();
-                    let result = vqtbx1q_u8(merge, values, control);
-                    u8x16 {
-                        val: crate::support::Aligned128(result),
-                        simd: token,
-                    }
-                }
-            );
-            merge_swizzle(
-                self,
-                Bytes::to_bytes(values),
-                control,
-                Bytes::to_bytes(merge),
-            )
-        })
+        self.expand_merge_u32x4(values.bitcast(), mask, merge.bitcast())
+            .bitcast()
     }
     #[inline(always)]
     fn count_ones_i32x4(self, a: i32x4<Self>) -> i32x4<Self> {
@@ -4934,9 +4792,7 @@ impl Simd for Neon {
     }
     #[inline(always)]
     fn compress_f64x2(self, values: f64x2<Self>, mask: mask64x2<Self>) -> f64x2<Self> {
-        let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_64[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.compress_u64x2(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn compress_merge_f64x2(
@@ -4945,40 +4801,12 @@ impl Simd for Neon {
         mask: mask64x2<Self>,
         merge: f64x2<Self>,
     ) -> f64x2<Self> {
-        let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_64[bits].0);
-        Bytes::from_bytes({
-            crate::kernel!(
-                #[inline(always)]
-                fn merge_swizzle(
-                    token: Neon,
-                    values: u8x16<Neon>,
-                    control: u8x16<Neon>,
-                    merge: u8x16<Neon>,
-                ) -> u8x16<Neon> {
-                    let values: uint8x16_t = values.into();
-                    let control: uint8x16_t = control.into();
-                    let merge: uint8x16_t = merge.into();
-                    let result = vqtbx1q_u8(merge, values, control);
-                    u8x16 {
-                        val: crate::support::Aligned128(result),
-                        simd: token,
-                    }
-                }
-            );
-            merge_swizzle(
-                self,
-                Bytes::to_bytes(values),
-                control,
-                Bytes::to_bytes(merge),
-            )
-        })
+        self.compress_merge_u64x2(values.bitcast(), mask, merge.bitcast())
+            .bitcast()
     }
     #[inline(always)]
     fn expand_f64x2(self, values: f64x2<Self>, mask: mask64x2<Self>) -> f64x2<Self> {
-        let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
-        let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_64[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.expand_u64x2(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn expand_merge_f64x2(
@@ -5556,9 +5384,7 @@ impl Simd for Neon {
     }
     #[inline(always)]
     fn compress_i64x2(self, values: i64x2<Self>, mask: mask64x2<Self>) -> i64x2<Self> {
-        let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_64[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.compress_u64x2(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn compress_merge_i64x2(
@@ -5567,40 +5393,12 @@ impl Simd for Neon {
         mask: mask64x2<Self>,
         merge: i64x2<Self>,
     ) -> i64x2<Self> {
-        let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
-        let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_64[bits].0);
-        Bytes::from_bytes({
-            crate::kernel!(
-                #[inline(always)]
-                fn merge_swizzle(
-                    token: Neon,
-                    values: u8x16<Neon>,
-                    control: u8x16<Neon>,
-                    merge: u8x16<Neon>,
-                ) -> u8x16<Neon> {
-                    let values: uint8x16_t = values.into();
-                    let control: uint8x16_t = control.into();
-                    let merge: uint8x16_t = merge.into();
-                    let result = vqtbx1q_u8(merge, values, control);
-                    u8x16 {
-                        val: crate::support::Aligned128(result),
-                        simd: token,
-                    }
-                }
-            );
-            merge_swizzle(
-                self,
-                Bytes::to_bytes(values),
-                control,
-                Bytes::to_bytes(merge),
-            )
-        })
+        self.compress_merge_u64x2(values.bitcast(), mask, merge.bitcast())
+            .bitcast()
     }
     #[inline(always)]
     fn expand_i64x2(self, values: i64x2<Self>, mask: mask64x2<Self>) -> i64x2<Self> {
-        let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
-        let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_64[bits].0);
-        Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
+        self.expand_u64x2(values.bitcast(), mask).bitcast()
     }
     #[inline(always)]
     fn expand_merge_i64x2(
@@ -5609,34 +5407,8 @@ impl Simd for Neon {
         mask: mask64x2<Self>,
         merge: i64x2<Self>,
     ) -> i64x2<Self> {
-        let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
-        let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_64[bits].0);
-        Bytes::from_bytes({
-            crate::kernel!(
-                #[inline(always)]
-                fn merge_swizzle(
-                    token: Neon,
-                    values: u8x16<Neon>,
-                    control: u8x16<Neon>,
-                    merge: u8x16<Neon>,
-                ) -> u8x16<Neon> {
-                    let values: uint8x16_t = values.into();
-                    let control: uint8x16_t = control.into();
-                    let merge: uint8x16_t = merge.into();
-                    let result = vqtbx1q_u8(merge, values, control);
-                    u8x16 {
-                        val: crate::support::Aligned128(result),
-                        simd: token,
-                    }
-                }
-            );
-            merge_swizzle(
-                self,
-                Bytes::to_bytes(values),
-                control,
-                Bytes::to_bytes(merge),
-            )
-        })
+        self.expand_merge_u64x2(values.bitcast(), mask, merge.bitcast())
+            .bitcast()
     }
     #[inline(always)]
     fn count_ones_i64x2(self, a: i64x2<Self>) -> i64x2<Self> {
