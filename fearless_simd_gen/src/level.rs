@@ -5,8 +5,8 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 
 use crate::{
-    generic::generic_op,
-    ops::{Op, ops_for_type},
+    generic::{fallback_method, generic_op},
+    ops::{Op, OpSig, ops_for_type},
     types::{SIMD_TYPES, ScalarType, VecType, type_imports},
 };
 
@@ -165,7 +165,23 @@ pub(crate) trait Level {
                 }
 
                 let method = self.make_method(op, vec_ty);
-                methods.push(method);
+                if matches!(op.sig, OpSig::Compress { .. } | OpSig::Expand { .. })
+                    && matches!(self.name(), "Sse4_2" | "Avx2" | "Neon" | "WasmSimd128")
+                {
+                    // Keep native AVX-512 and the existing scalar/SSE2 implementations
+                    // unconditional. Other backends can opt into the larger shuffle paths.
+                    let fallback = fallback_method(op, vec_ty);
+                    methods.push(quote! {
+                        #[cfg(feature = "compress-expand")]
+                        #method
+                    });
+                    methods.push(quote! {
+                        #[cfg(not(feature = "compress-expand"))]
+                        #fallback
+                    });
+                } else {
+                    methods.push(method);
+                }
             }
         }
 

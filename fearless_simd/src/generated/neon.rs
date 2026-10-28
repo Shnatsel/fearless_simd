@@ -159,12 +159,23 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_f32x4(self, values: f32x4<Self>, mask: mask32x4<Self>) -> f32x4<Self> {
         let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
         let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_32[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_f32x4(self, values: f32x4<Self>, mask: mask32x4<Self>) -> f32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_f32x4(
         self,
         values: f32x4<Self>,
@@ -201,12 +212,41 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_f32x4(
+        self,
+        values: f32x4<Self>,
+        mask: mask32x4<Self>,
+        merge: f32x4<Self>,
+    ) -> f32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_f32x4(self, values: f32x4<Self>, mask: mask32x4<Self>) -> f32x4<Self> {
         let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
         let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_32[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_f32x4(self, values: f32x4<Self>, mask: mask32x4<Self>) -> f32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_f32x4(
         self,
         values: f32x4<Self>,
@@ -241,6 +281,24 @@ impl Simd for Neon {
                 Bytes::to_bytes(merge),
             )
         })
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_f32x4(
+        self,
+        values: f32x4<Self>,
+        mask: mask32x4<Self>,
+        merge: f32x4<Self>,
+    ) -> f32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
     }
     #[inline(always)]
     fn neg_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
@@ -778,6 +836,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i8x16(self, values: i8x16<Self>, mask: mask8x16<Self>) -> i8x16<Self> {
         let mask = mask8x16 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -786,6 +845,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i8x16(self, values: i8x16<Self>, mask: mask8x16<Self>) -> i8x16<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i8x16(
         self,
         values: i8x16<Self>,
@@ -803,6 +872,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i8x16(
+        self,
+        values: i8x16<Self>,
+        mask: mask8x16<Self>,
+        merge: i8x16<Self>,
+    ) -> i8x16<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i8x16(self, values: i8x16<Self>, mask: mask8x16<Self>) -> i8x16<Self> {
         let mask = mask8x16 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -811,6 +899,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i8x16(self, values: i8x16<Self>, mask: mask8x16<Self>) -> i8x16<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i8x16(
+        self,
+        values: i8x16<Self>,
+        mask: mask8x16<Self>,
+        merge: i8x16<Self>,
+    ) -> i8x16<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i8x16(
         self,
         values: i8x16<Self>,
@@ -1349,6 +1465,7 @@ impl Simd for Neon {
         kernel(self, a, b, indices)
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u8x16(self, values: u8x16<Self>, mask: mask8x16<Self>) -> u8x16<Self> {
         let mask_bits = self.to_bitmask_mask8x16(mask);
         let mut control = [u8::MAX; 16];
@@ -1367,6 +1484,12 @@ impl Simd for Neon {
         self.swizzle_dyn_precise_u8x16(values, control)
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u8x16(self, values: u8x16<Self>, mask: mask8x16<Self>) -> u8x16<Self> {
+        self.compress_merge_u8x16(values, mask, u8x16::splat(self, 0))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u8x16(
         self,
         values: u8x16<Self>,
@@ -1410,6 +1533,29 @@ impl Simd for Neon {
         }
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u8x16(
+        self,
+        values: u8x16<Self>,
+        mask: mask8x16<Self>,
+        merge: u8x16<Self>,
+    ) -> u8x16<Self> {
+        let mask = self.to_bitmask_mask8x16(mask);
+        let mut merge_padded = [0u8; 16 + 1];
+        merge_padded[..16].copy_from_slice(&*merge);
+        let mut compacted = merge_padded;
+        let mut output_lane = 0;
+        for input_lane in 0..16 {
+            compacted[output_lane] = values[input_lane];
+            output_lane += ((mask >> input_lane) & 1) as usize;
+        }
+        compacted[output_lane] = merge_padded[output_lane];
+        let mut result = merge;
+        result.copy_from_slice(&compacted[..16]);
+        result
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u8x16(self, values: u8x16<Self>, mask: mask8x16<Self>) -> u8x16<Self> {
         let mask_bits = self.to_bitmask_mask8x16(mask);
         let mut control = [u8::MAX; 16];
@@ -1427,6 +1573,12 @@ impl Simd for Neon {
         self.swizzle_dyn_precise_u8x16(values, control)
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u8x16(self, values: u8x16<Self>, mask: mask8x16<Self>) -> u8x16<Self> {
+        self.expand_merge_u8x16(values, mask, u8x16::splat(self, 0))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_u8x16(
         self,
         values: u8x16<Self>,
@@ -1467,6 +1619,25 @@ impl Simd for Neon {
             );
             merge_swizzle(self, values, control, merge)
         }
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_u8x16(
+        self,
+        values: u8x16<Self>,
+        mask: mask8x16<Self>,
+        merge: u8x16<Self>,
+    ) -> u8x16<Self> {
+        let mask = self.to_bitmask_mask8x16(mask);
+        let mut result = merge;
+        let mut input_lane = 0;
+        for output_lane in 0..16 {
+            let bit = ((mask >> output_lane) & 1) as u8;
+            let keep = 0u8.wrapping_sub(bit);
+            result[output_lane] = (values[input_lane] & keep) | (result[output_lane] & !keep);
+            input_lane += usize::from(bit);
+        }
+        result
     }
     #[inline(always)]
     fn count_ones_u8x16(self, a: u8x16<Self>) -> u8x16<Self> {
@@ -2166,12 +2337,23 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i16x8(self, values: i16x8<Self>, mask: mask16x8<Self>) -> i16x8<Self> {
         let bits = self.to_bitmask_mask16x8(mask) as usize & 255;
         let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_16[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i16x8(self, values: i16x8<Self>, mask: mask16x8<Self>) -> i16x8<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i16x8(
         self,
         values: i16x8<Self>,
@@ -2208,12 +2390,41 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i16x8(
+        self,
+        values: i16x8<Self>,
+        mask: mask16x8<Self>,
+        merge: i16x8<Self>,
+    ) -> i16x8<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i16x8(self, values: i16x8<Self>, mask: mask16x8<Self>) -> i16x8<Self> {
         let bits = self.to_bitmask_mask16x8(mask) as usize & 255;
         let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_16[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i16x8(self, values: i16x8<Self>, mask: mask16x8<Self>) -> i16x8<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_i16x8(
         self,
         values: i16x8<Self>,
@@ -2248,6 +2459,24 @@ impl Simd for Neon {
                 Bytes::to_bytes(merge),
             )
         })
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_i16x8(
+        self,
+        values: i16x8<Self>,
+        mask: mask16x8<Self>,
+        merge: i16x8<Self>,
+    ) -> i16x8<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
     }
     #[inline(always)]
     fn count_ones_i16x8(self, a: i16x8<Self>) -> i16x8<Self> {
@@ -2742,12 +2971,23 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u16x8(self, values: u16x8<Self>, mask: mask16x8<Self>) -> u16x8<Self> {
         let bits = self.to_bitmask_mask16x8(mask) as usize & 255;
         let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_16[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u16x8(self, values: u16x8<Self>, mask: mask16x8<Self>) -> u16x8<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u16x8(
         self,
         values: u16x8<Self>,
@@ -2784,12 +3024,41 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u16x8(
+        self,
+        values: u16x8<Self>,
+        mask: mask16x8<Self>,
+        merge: u16x8<Self>,
+    ) -> u16x8<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u16x8(self, values: u16x8<Self>, mask: mask16x8<Self>) -> u16x8<Self> {
         let bits = self.to_bitmask_mask16x8(mask) as usize & 255;
         let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_16[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u16x8(self, values: u16x8<Self>, mask: mask16x8<Self>) -> u16x8<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_u16x8(
         self,
         values: u16x8<Self>,
@@ -2824,6 +3093,24 @@ impl Simd for Neon {
                 Bytes::to_bytes(merge),
             )
         })
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_u16x8(
+        self,
+        values: u16x8<Self>,
+        mask: mask16x8<Self>,
+        merge: u16x8<Self>,
+    ) -> u16x8<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
     }
     #[inline(always)]
     fn count_ones_u16x8(self, a: u16x8<Self>) -> u16x8<Self> {
@@ -3564,12 +3851,23 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i32x4(self, values: i32x4<Self>, mask: mask32x4<Self>) -> i32x4<Self> {
         let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
         let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_32[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i32x4(self, values: i32x4<Self>, mask: mask32x4<Self>) -> i32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i32x4(
         self,
         values: i32x4<Self>,
@@ -3606,12 +3904,41 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i32x4(
+        self,
+        values: i32x4<Self>,
+        mask: mask32x4<Self>,
+        merge: i32x4<Self>,
+    ) -> i32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i32x4(self, values: i32x4<Self>, mask: mask32x4<Self>) -> i32x4<Self> {
         let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
         let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_32[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i32x4(self, values: i32x4<Self>, mask: mask32x4<Self>) -> i32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_i32x4(
         self,
         values: i32x4<Self>,
@@ -3646,6 +3973,24 @@ impl Simd for Neon {
                 Bytes::to_bytes(merge),
             )
         })
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_i32x4(
+        self,
+        values: i32x4<Self>,
+        mask: mask32x4<Self>,
+        merge: i32x4<Self>,
+    ) -> i32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
     }
     #[inline(always)]
     fn count_ones_i32x4(self, a: i32x4<Self>) -> i32x4<Self> {
@@ -4151,12 +4496,23 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u32x4(self, values: u32x4<Self>, mask: mask32x4<Self>) -> u32x4<Self> {
         let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
         let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_32[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u32x4(self, values: u32x4<Self>, mask: mask32x4<Self>) -> u32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u32x4(
         self,
         values: u32x4<Self>,
@@ -4193,12 +4549,41 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u32x4(
+        self,
+        values: u32x4<Self>,
+        mask: mask32x4<Self>,
+        merge: u32x4<Self>,
+    ) -> u32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u32x4(self, values: u32x4<Self>, mask: mask32x4<Self>) -> u32x4<Self> {
         let bits = self.to_bitmask_mask32x4(mask) as usize & 15;
         let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_32[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u32x4(self, values: u32x4<Self>, mask: mask32x4<Self>) -> u32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_u32x4(
         self,
         values: u32x4<Self>,
@@ -4233,6 +4618,24 @@ impl Simd for Neon {
                 Bytes::to_bytes(merge),
             )
         })
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_u32x4(
+        self,
+        values: u32x4<Self>,
+        mask: mask32x4<Self>,
+        merge: u32x4<Self>,
+    ) -> u32x4<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
     }
     #[inline(always)]
     fn count_ones_u32x4(self, a: u32x4<Self>) -> u32x4<Self> {
@@ -4981,12 +5384,23 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_f64x2(self, values: f64x2<Self>, mask: mask64x2<Self>) -> f64x2<Self> {
         let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
         let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_64[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_f64x2(self, values: f64x2<Self>, mask: mask64x2<Self>) -> f64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_f64x2(
         self,
         values: f64x2<Self>,
@@ -5023,12 +5437,41 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_f64x2(
+        self,
+        values: f64x2<Self>,
+        mask: mask64x2<Self>,
+        merge: f64x2<Self>,
+    ) -> f64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_f64x2(self, values: f64x2<Self>, mask: mask64x2<Self>) -> f64x2<Self> {
         let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
         let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_64[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_f64x2(self, values: f64x2<Self>, mask: mask64x2<Self>) -> f64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_f64x2(
         self,
         values: f64x2<Self>,
@@ -5063,6 +5506,24 @@ impl Simd for Neon {
                 Bytes::to_bytes(merge),
             )
         })
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_f64x2(
+        self,
+        values: f64x2<Self>,
+        mask: mask64x2<Self>,
+        merge: f64x2<Self>,
+    ) -> f64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
     }
     #[inline(always)]
     fn neg_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
@@ -5603,12 +6064,23 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i64x2(self, values: i64x2<Self>, mask: mask64x2<Self>) -> i64x2<Self> {
         let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
         let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_64[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i64x2(self, values: i64x2<Self>, mask: mask64x2<Self>) -> i64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i64x2(
         self,
         values: i64x2<Self>,
@@ -5645,12 +6117,41 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i64x2(
+        self,
+        values: i64x2<Self>,
+        mask: mask64x2<Self>,
+        merge: i64x2<Self>,
+    ) -> i64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i64x2(self, values: i64x2<Self>, mask: mask64x2<Self>) -> i64x2<Self> {
         let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
         let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_64[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i64x2(self, values: i64x2<Self>, mask: mask64x2<Self>) -> i64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_i64x2(
         self,
         values: i64x2<Self>,
@@ -5685,6 +6186,24 @@ impl Simd for Neon {
                 Bytes::to_bytes(merge),
             )
         })
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_i64x2(
+        self,
+        values: i64x2<Self>,
+        mask: mask64x2<Self>,
+        merge: i64x2<Self>,
+    ) -> i64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
     }
     #[inline(always)]
     fn count_ones_i64x2(self, a: i64x2<Self>) -> i64x2<Self> {
@@ -6106,12 +6625,23 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u64x2(self, values: u64x2<Self>, mask: mask64x2<Self>) -> u64x2<Self> {
         let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
         let control = u8x16::simd_from(self, crate::support::compact_128::COMPRESS_64[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u64x2(self, values: u64x2<Self>, mask: mask64x2<Self>) -> u64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u64x2(
         self,
         values: u64x2<Self>,
@@ -6148,12 +6678,41 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u64x2(
+        self,
+        values: u64x2<Self>,
+        mask: mask64x2<Self>,
+        merge: u64x2<Self>,
+    ) -> u64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u64x2(self, values: u64x2<Self>, mask: mask64x2<Self>) -> u64x2<Self> {
         let bits = self.to_bitmask_mask64x2(mask) as usize & 3;
         let control = u8x16::simd_from(self, crate::support::compact_128::EXPAND_64[bits].0);
         Bytes::from_bytes(self.swizzle_dyn_precise_u8x16(Bytes::to_bytes(values), control))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u64x2(self, values: u64x2<Self>, mask: mask64x2<Self>) -> u64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x16(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_u64x2(
         self,
         values: u64x2<Self>,
@@ -6188,6 +6747,24 @@ impl Simd for Neon {
                 Bytes::to_bytes(merge),
             )
         })
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_u64x2(
+        self,
+        values: u64x2<Self>,
+        mask: mask64x2<Self>,
+        merge: u64x2<Self>,
+    ) -> u64x2<Self> {
+        let mask = mask8x16 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x16(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
     }
     #[inline(always)]
     fn count_ones_u64x2(self, a: u64x2<Self>) -> u64x2<Self> {
@@ -6836,6 +7413,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_f32x8(self, values: f32x8<Self>, mask: mask32x8<Self>) -> f32x8<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -6844,6 +7422,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_f32x8(self, values: f32x8<Self>, mask: mask32x8<Self>) -> f32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_f32x8(
         self,
         values: f32x8<Self>,
@@ -6861,6 +7449,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_f32x8(
+        self,
+        values: f32x8<Self>,
+        mask: mask32x8<Self>,
+        merge: f32x8<Self>,
+    ) -> f32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_f32x8(self, values: f32x8<Self>, mask: mask32x8<Self>) -> f32x8<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -6869,6 +7476,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_f32x8(self, values: f32x8<Self>, mask: mask32x8<Self>) -> f32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_f32x8(
+        self,
+        values: f32x8<Self>,
+        mask: mask32x8<Self>,
+        merge: f32x8<Self>,
+    ) -> f32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_f32x8(
         self,
         values: f32x8<Self>,
@@ -6977,6 +7612,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i8x32(self, values: i8x32<Self>, mask: mask8x32<Self>) -> i8x32<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -6985,6 +7621,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i8x32(self, values: i8x32<Self>, mask: mask8x32<Self>) -> i8x32<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i8x32(
         self,
         values: i8x32<Self>,
@@ -7002,6 +7648,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i8x32(
+        self,
+        values: i8x32<Self>,
+        mask: mask8x32<Self>,
+        merge: i8x32<Self>,
+    ) -> i8x32<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i8x32(self, values: i8x32<Self>, mask: mask8x32<Self>) -> i8x32<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7010,6 +7675,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i8x32(self, values: i8x32<Self>, mask: mask8x32<Self>) -> i8x32<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i8x32(
+        self,
+        values: i8x32<Self>,
+        mask: mask8x32<Self>,
+        merge: i8x32<Self>,
+    ) -> i8x32<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i8x32(
         self,
         values: i8x32<Self>,
@@ -7145,6 +7838,7 @@ impl Simd for Neon {
         kernel(self, a, b, indices)
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u8x32(self, values: u8x32<Self>, mask: mask8x32<Self>) -> u8x32<Self> {
         let mask_bits = self.to_bitmask_mask8x32(mask);
         let mut control = [u8::MAX; 32];
@@ -7163,6 +7857,12 @@ impl Simd for Neon {
         self.swizzle_dyn_precise_u8x32(values, control)
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u8x32(self, values: u8x32<Self>, mask: mask8x32<Self>) -> u8x32<Self> {
+        self.compress_merge_u8x32(values, mask, u8x32::splat(self, 0))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u8x32(
         self,
         values: u8x32<Self>,
@@ -7209,6 +7909,29 @@ impl Simd for Neon {
         }
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u8x32(
+        self,
+        values: u8x32<Self>,
+        mask: mask8x32<Self>,
+        merge: u8x32<Self>,
+    ) -> u8x32<Self> {
+        let mask = self.to_bitmask_mask8x32(mask);
+        let mut merge_padded = [0u8; 32 + 1];
+        merge_padded[..32].copy_from_slice(&*merge);
+        let mut compacted = merge_padded;
+        let mut output_lane = 0;
+        for input_lane in 0..32 {
+            compacted[output_lane] = values[input_lane];
+            output_lane += ((mask >> input_lane) & 1) as usize;
+        }
+        compacted[output_lane] = merge_padded[output_lane];
+        let mut result = merge;
+        result.copy_from_slice(&compacted[..32]);
+        result
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u8x32(self, values: u8x32<Self>, mask: mask8x32<Self>) -> u8x32<Self> {
         let mask_bits = self.to_bitmask_mask8x32(mask);
         let mut control = [u8::MAX; 32];
@@ -7226,6 +7949,12 @@ impl Simd for Neon {
         self.swizzle_dyn_precise_u8x32(values, control)
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u8x32(self, values: u8x32<Self>, mask: mask8x32<Self>) -> u8x32<Self> {
+        self.expand_merge_u8x32(values, mask, u8x32::splat(self, 0))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_u8x32(
         self,
         values: u8x32<Self>,
@@ -7269,6 +7998,25 @@ impl Simd for Neon {
             );
             merge_swizzle(self, values, control, merge)
         }
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_u8x32(
+        self,
+        values: u8x32<Self>,
+        mask: mask8x32<Self>,
+        merge: u8x32<Self>,
+    ) -> u8x32<Self> {
+        let mask = self.to_bitmask_mask8x32(mask);
+        let mut result = merge;
+        let mut input_lane = 0;
+        for output_lane in 0..32 {
+            let bit = ((mask >> output_lane) & 1) as u8;
+            let keep = 0u8.wrapping_sub(bit);
+            result[output_lane] = (values[input_lane] & keep) | (result[output_lane] & !keep);
+            input_lane += usize::from(bit);
+        }
+        result
     }
     #[inline(always)]
     fn combine_u8x32(self, a: u8x32<Self>, b: u8x32<Self>) -> u8x64<Self> {
@@ -7429,6 +8177,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i16x16(self, values: i16x16<Self>, mask: mask16x16<Self>) -> i16x16<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7437,6 +8186,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i16x16(self, values: i16x16<Self>, mask: mask16x16<Self>) -> i16x16<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i16x16(
         self,
         values: i16x16<Self>,
@@ -7454,6 +8213,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i16x16(
+        self,
+        values: i16x16<Self>,
+        mask: mask16x16<Self>,
+        merge: i16x16<Self>,
+    ) -> i16x16<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i16x16(self, values: i16x16<Self>, mask: mask16x16<Self>) -> i16x16<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7462,6 +8240,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i16x16(self, values: i16x16<Self>, mask: mask16x16<Self>) -> i16x16<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i16x16(
+        self,
+        values: i16x16<Self>,
+        mask: mask16x16<Self>,
+        merge: i16x16<Self>,
+    ) -> i16x16<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i16x16(
         self,
         values: i16x16<Self>,
@@ -7538,6 +8344,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u16x16(self, values: u16x16<Self>, mask: mask16x16<Self>) -> u16x16<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7546,6 +8353,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u16x16(self, values: u16x16<Self>, mask: mask16x16<Self>) -> u16x16<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u16x16(
         self,
         values: u16x16<Self>,
@@ -7563,6 +8380,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u16x16(
+        self,
+        values: u16x16<Self>,
+        mask: mask16x16<Self>,
+        merge: u16x16<Self>,
+    ) -> u16x16<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u16x16(self, values: u16x16<Self>, mask: mask16x16<Self>) -> u16x16<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7571,6 +8407,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u16x16(self, values: u16x16<Self>, mask: mask16x16<Self>) -> u16x16<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_u16x16(
+        self,
+        values: u16x16<Self>,
+        mask: mask16x16<Self>,
+        merge: u16x16<Self>,
+    ) -> u16x16<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_u16x16(
         self,
         values: u16x16<Self>,
@@ -7739,6 +8603,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i32x8(self, values: i32x8<Self>, mask: mask32x8<Self>) -> i32x8<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7747,6 +8612,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i32x8(self, values: i32x8<Self>, mask: mask32x8<Self>) -> i32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i32x8(
         self,
         values: i32x8<Self>,
@@ -7764,6 +8639,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i32x8(
+        self,
+        values: i32x8<Self>,
+        mask: mask32x8<Self>,
+        merge: i32x8<Self>,
+    ) -> i32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i32x8(self, values: i32x8<Self>, mask: mask32x8<Self>) -> i32x8<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7772,6 +8666,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i32x8(self, values: i32x8<Self>, mask: mask32x8<Self>) -> i32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i32x8(
+        self,
+        values: i32x8<Self>,
+        mask: mask32x8<Self>,
+        merge: i32x8<Self>,
+    ) -> i32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i32x8(
         self,
         values: i32x8<Self>,
@@ -7848,6 +8770,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u32x8(self, values: u32x8<Self>, mask: mask32x8<Self>) -> u32x8<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7856,6 +8779,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u32x8(self, values: u32x8<Self>, mask: mask32x8<Self>) -> u32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u32x8(
         self,
         values: u32x8<Self>,
@@ -7873,6 +8806,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u32x8(
+        self,
+        values: u32x8<Self>,
+        mask: mask32x8<Self>,
+        merge: u32x8<Self>,
+    ) -> u32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u32x8(self, values: u32x8<Self>, mask: mask32x8<Self>) -> u32x8<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -7881,6 +8833,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u32x8(self, values: u32x8<Self>, mask: mask32x8<Self>) -> u32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_u32x8(
+        self,
+        values: u32x8<Self>,
+        mask: mask32x8<Self>,
+        merge: u32x8<Self>,
+    ) -> u32x8<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_u32x8(
         self,
         values: u32x8<Self>,
@@ -8049,6 +9029,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_f64x4(self, values: f64x4<Self>, mask: mask64x4<Self>) -> f64x4<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8057,6 +9038,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_f64x4(self, values: f64x4<Self>, mask: mask64x4<Self>) -> f64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_f64x4(
         self,
         values: f64x4<Self>,
@@ -8074,6 +9065,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_f64x4(
+        self,
+        values: f64x4<Self>,
+        mask: mask64x4<Self>,
+        merge: f64x4<Self>,
+    ) -> f64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_f64x4(self, values: f64x4<Self>, mask: mask64x4<Self>) -> f64x4<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8082,6 +9092,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_f64x4(self, values: f64x4<Self>, mask: mask64x4<Self>) -> f64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_f64x4(
+        self,
+        values: f64x4<Self>,
+        mask: mask64x4<Self>,
+        merge: f64x4<Self>,
+    ) -> f64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_f64x4(
         self,
         values: f64x4<Self>,
@@ -8190,6 +9228,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i64x4(self, values: i64x4<Self>, mask: mask64x4<Self>) -> i64x4<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8198,6 +9237,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i64x4(self, values: i64x4<Self>, mask: mask64x4<Self>) -> i64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i64x4(
         self,
         values: i64x4<Self>,
@@ -8215,6 +9264,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i64x4(
+        self,
+        values: i64x4<Self>,
+        mask: mask64x4<Self>,
+        merge: i64x4<Self>,
+    ) -> i64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i64x4(self, values: i64x4<Self>, mask: mask64x4<Self>) -> i64x4<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8223,6 +9291,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i64x4(self, values: i64x4<Self>, mask: mask64x4<Self>) -> i64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i64x4(
+        self,
+        values: i64x4<Self>,
+        mask: mask64x4<Self>,
+        merge: i64x4<Self>,
+    ) -> i64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i64x4(
         self,
         values: i64x4<Self>,
@@ -8299,6 +9395,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u64x4(self, values: u64x4<Self>, mask: mask64x4<Self>) -> u64x4<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8307,6 +9404,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u64x4(self, values: u64x4<Self>, mask: mask64x4<Self>) -> u64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u64x4(
         self,
         values: u64x4<Self>,
@@ -8324,6 +9431,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u64x4(
+        self,
+        values: u64x4<Self>,
+        mask: mask64x4<Self>,
+        merge: u64x4<Self>,
+    ) -> u64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u64x4(self, values: u64x4<Self>, mask: mask64x4<Self>) -> u64x4<Self> {
         let mask = mask8x32 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8332,6 +9458,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u64x4(self, values: u64x4<Self>, mask: mask64x4<Self>) -> u64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x32(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_u64x4(
+        self,
+        values: u64x4<Self>,
+        mask: mask64x4<Self>,
+        merge: u64x4<Self>,
+    ) -> u64x4<Self> {
+        let mask = mask8x32 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x32(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_u64x4(
         self,
         values: u64x4<Self>,
@@ -8518,6 +9672,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_f32x16(self, values: f32x16<Self>, mask: mask32x16<Self>) -> f32x16<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8526,6 +9681,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_f32x16(self, values: f32x16<Self>, mask: mask32x16<Self>) -> f32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_f32x16(
         self,
         values: f32x16<Self>,
@@ -8543,6 +9708,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_f32x16(
+        self,
+        values: f32x16<Self>,
+        mask: mask32x16<Self>,
+        merge: f32x16<Self>,
+    ) -> f32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_f32x16(self, values: f32x16<Self>, mask: mask32x16<Self>) -> f32x16<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8551,6 +9735,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_f32x16(self, values: f32x16<Self>, mask: mask32x16<Self>) -> f32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_f32x16(
+        self,
+        values: f32x16<Self>,
+        mask: mask32x16<Self>,
+        merge: f32x16<Self>,
+    ) -> f32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_f32x16(
         self,
         values: f32x16<Self>,
@@ -8668,6 +9880,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i8x64(self, values: i8x64<Self>, mask: mask8x64<Self>) -> i8x64<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8676,6 +9889,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i8x64(self, values: i8x64<Self>, mask: mask8x64<Self>) -> i8x64<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i8x64(
         self,
         values: i8x64<Self>,
@@ -8693,6 +9916,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i8x64(
+        self,
+        values: i8x64<Self>,
+        mask: mask8x64<Self>,
+        merge: i8x64<Self>,
+    ) -> i8x64<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i8x64(self, values: i8x64<Self>, mask: mask8x64<Self>) -> i8x64<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -8701,6 +9943,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i8x64(self, values: i8x64<Self>, mask: mask8x64<Self>) -> i8x64<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i8x64(
+        self,
+        values: i8x64<Self>,
+        mask: mask8x64<Self>,
+        merge: i8x64<Self>,
+    ) -> i8x64<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i8x64(
         self,
         values: i8x64<Self>,
@@ -8853,6 +10123,7 @@ impl Simd for Neon {
         kernel(self, a, b, indices)
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u8x64(self, values: u8x64<Self>, mask: mask8x64<Self>) -> u8x64<Self> {
         let mask_bits = self.to_bitmask_mask8x64(mask);
         let mut control = [u8::MAX; 64];
@@ -8871,6 +10142,12 @@ impl Simd for Neon {
         self.swizzle_dyn_precise_u8x64(values, control)
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u8x64(self, values: u8x64<Self>, mask: mask8x64<Self>) -> u8x64<Self> {
+        self.compress_merge_u8x64(values, mask, u8x64::splat(self, 0))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u8x64(
         self,
         values: u8x64<Self>,
@@ -8919,6 +10196,29 @@ impl Simd for Neon {
         }
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u8x64(
+        self,
+        values: u8x64<Self>,
+        mask: mask8x64<Self>,
+        merge: u8x64<Self>,
+    ) -> u8x64<Self> {
+        let mask = self.to_bitmask_mask8x64(mask);
+        let mut merge_padded = [0u8; 64 + 1];
+        merge_padded[..64].copy_from_slice(&*merge);
+        let mut compacted = merge_padded;
+        let mut output_lane = 0;
+        for input_lane in 0..64 {
+            compacted[output_lane] = values[input_lane];
+            output_lane += ((mask >> input_lane) & 1) as usize;
+        }
+        compacted[output_lane] = merge_padded[output_lane];
+        let mut result = merge;
+        result.copy_from_slice(&compacted[..64]);
+        result
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u8x64(self, values: u8x64<Self>, mask: mask8x64<Self>) -> u8x64<Self> {
         let mask_bits = self.to_bitmask_mask8x64(mask);
         let mut control = [u8::MAX; 64];
@@ -8936,6 +10236,12 @@ impl Simd for Neon {
         self.swizzle_dyn_precise_u8x64(values, control)
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u8x64(self, values: u8x64<Self>, mask: mask8x64<Self>) -> u8x64<Self> {
+        self.expand_merge_u8x64(values, mask, u8x64::splat(self, 0))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_merge_u8x64(
         self,
         values: u8x64<Self>,
@@ -8981,6 +10287,25 @@ impl Simd for Neon {
             );
             merge_swizzle(self, values, control, merge)
         }
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_merge_u8x64(
+        self,
+        values: u8x64<Self>,
+        mask: mask8x64<Self>,
+        merge: u8x64<Self>,
+    ) -> u8x64<Self> {
+        let mask = self.to_bitmask_mask8x64(mask);
+        let mut result = merge;
+        let mut input_lane = 0;
+        for output_lane in 0..64 {
+            let bit = ((mask >> output_lane) & 1) as u8;
+            let keep = 0u8.wrapping_sub(bit);
+            result[output_lane] = (values[input_lane] & keep) | (result[output_lane] & !keep);
+            input_lane += usize::from(bit);
+        }
+        result
     }
     #[inline(always)]
     fn split_u8x64(self, a: u8x64<Self>) -> (u8x32<Self>, u8x32<Self>) {
@@ -9140,6 +10465,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i16x32(self, values: i16x32<Self>, mask: mask16x32<Self>) -> i16x32<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9148,6 +10474,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i16x32(self, values: i16x32<Self>, mask: mask16x32<Self>) -> i16x32<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i16x32(
         self,
         values: i16x32<Self>,
@@ -9165,6 +10501,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i16x32(
+        self,
+        values: i16x32<Self>,
+        mask: mask16x32<Self>,
+        merge: i16x32<Self>,
+    ) -> i16x32<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i16x32(self, values: i16x32<Self>, mask: mask16x32<Self>) -> i16x32<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9173,6 +10528,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i16x32(self, values: i16x32<Self>, mask: mask16x32<Self>) -> i16x32<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i16x32(
+        self,
+        values: i16x32<Self>,
+        mask: mask16x32<Self>,
+        merge: i16x32<Self>,
+    ) -> i16x32<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i16x32(
         self,
         values: i16x32<Self>,
@@ -9258,6 +10641,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u16x32(self, values: u16x32<Self>, mask: mask16x32<Self>) -> u16x32<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9266,6 +10650,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u16x32(self, values: u16x32<Self>, mask: mask16x32<Self>) -> u16x32<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u16x32(
         self,
         values: u16x32<Self>,
@@ -9283,6 +10677,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u16x32(
+        self,
+        values: u16x32<Self>,
+        mask: mask16x32<Self>,
+        merge: u16x32<Self>,
+    ) -> u16x32<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u16x32(self, values: u16x32<Self>, mask: mask16x32<Self>) -> u16x32<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9291,6 +10704,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u16x32(self, values: u16x32<Self>, mask: mask16x32<Self>) -> u16x32<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_u16x32(
+        self,
+        values: u16x32<Self>,
+        mask: mask16x32<Self>,
+        merge: u16x32<Self>,
+    ) -> u16x32<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_u16x32(
         self,
         values: u16x32<Self>,
@@ -9464,6 +10905,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i32x16(self, values: i32x16<Self>, mask: mask32x16<Self>) -> i32x16<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9472,6 +10914,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i32x16(self, values: i32x16<Self>, mask: mask32x16<Self>) -> i32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i32x16(
         self,
         values: i32x16<Self>,
@@ -9489,6 +10941,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i32x16(
+        self,
+        values: i32x16<Self>,
+        mask: mask32x16<Self>,
+        merge: i32x16<Self>,
+    ) -> i32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i32x16(self, values: i32x16<Self>, mask: mask32x16<Self>) -> i32x16<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9497,6 +10968,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i32x16(self, values: i32x16<Self>, mask: mask32x16<Self>) -> i32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i32x16(
+        self,
+        values: i32x16<Self>,
+        mask: mask32x16<Self>,
+        merge: i32x16<Self>,
+    ) -> i32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i32x16(
         self,
         values: i32x16<Self>,
@@ -9582,6 +11081,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u32x16(self, values: u32x16<Self>, mask: mask32x16<Self>) -> u32x16<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9590,6 +11090,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u32x16(self, values: u32x16<Self>, mask: mask32x16<Self>) -> u32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u32x16(
         self,
         values: u32x16<Self>,
@@ -9607,6 +11117,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u32x16(
+        self,
+        values: u32x16<Self>,
+        mask: mask32x16<Self>,
+        merge: u32x16<Self>,
+    ) -> u32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u32x16(self, values: u32x16<Self>, mask: mask32x16<Self>) -> u32x16<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9615,6 +11144,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u32x16(self, values: u32x16<Self>, mask: mask32x16<Self>) -> u32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_u32x16(
+        self,
+        values: u32x16<Self>,
+        mask: mask32x16<Self>,
+        merge: u32x16<Self>,
+    ) -> u32x16<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_u32x16(
         self,
         values: u32x16<Self>,
@@ -9788,6 +11345,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_f64x8(self, values: f64x8<Self>, mask: mask64x8<Self>) -> f64x8<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9796,6 +11354,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_f64x8(self, values: f64x8<Self>, mask: mask64x8<Self>) -> f64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_f64x8(
         self,
         values: f64x8<Self>,
@@ -9813,6 +11381,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_f64x8(
+        self,
+        values: f64x8<Self>,
+        mask: mask64x8<Self>,
+        merge: f64x8<Self>,
+    ) -> f64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_f64x8(self, values: f64x8<Self>, mask: mask64x8<Self>) -> f64x8<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9821,6 +11408,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_f64x8(self, values: f64x8<Self>, mask: mask64x8<Self>) -> f64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_f64x8(
+        self,
+        values: f64x8<Self>,
+        mask: mask64x8<Self>,
+        merge: f64x8<Self>,
+    ) -> f64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_f64x8(
         self,
         values: f64x8<Self>,
@@ -9938,6 +11553,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_i64x8(self, values: i64x8<Self>, mask: mask64x8<Self>) -> i64x8<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9946,6 +11562,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_i64x8(self, values: i64x8<Self>, mask: mask64x8<Self>) -> i64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_i64x8(
         self,
         values: i64x8<Self>,
@@ -9963,6 +11589,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_i64x8(
+        self,
+        values: i64x8<Self>,
+        mask: mask64x8<Self>,
+        merge: i64x8<Self>,
+    ) -> i64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_i64x8(self, values: i64x8<Self>, mask: mask64x8<Self>) -> i64x8<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -9971,6 +11616,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_i64x8(self, values: i64x8<Self>, mask: mask64x8<Self>) -> i64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_i64x8(
+        self,
+        values: i64x8<Self>,
+        mask: mask64x8<Self>,
+        merge: i64x8<Self>,
+    ) -> i64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_i64x8(
         self,
         values: i64x8<Self>,
@@ -10056,6 +11729,7 @@ impl Simd for Neon {
         })
     }
     #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_u64x8(self, values: u64x8<Self>, mask: mask64x8<Self>) -> u64x8<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -10064,6 +11738,16 @@ impl Simd for Neon {
         Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_u64x8(self, values: u64x8<Self>, mask: mask64x8<Self>) -> u64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn compress_merge_u64x8(
         self,
         values: u64x8<Self>,
@@ -10081,6 +11765,25 @@ impl Simd for Neon {
         ))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn compress_merge_u64x8(
+        self,
+        values: u64x8<Self>,
+        mask: mask64x8<Self>,
+        merge: u64x8<Self>,
+    ) -> u64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.compress_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
     fn expand_u64x8(self, values: u64x8<Self>, mask: mask64x8<Self>) -> u64x8<Self> {
         let mask = mask8x64 {
             val: crate::transmute::checked_transmute_copy(&mask.val),
@@ -10089,6 +11792,34 @@ impl Simd for Neon {
         Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
     }
     #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
+    fn expand_u64x8(self, values: u64x8<Self>, mask: mask64x8<Self>) -> u64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_u8x64(Bytes::to_bytes(values), mask))
+    }
+    #[inline(always)]
+    #[cfg(feature = "compress-expand")]
+    fn expand_merge_u64x8(
+        self,
+        values: u64x8<Self>,
+        mask: mask64x8<Self>,
+        merge: u64x8<Self>,
+    ) -> u64x8<Self> {
+        let mask = mask8x64 {
+            val: crate::transmute::checked_transmute_copy(&mask.val),
+            simd: self,
+        };
+        Bytes::from_bytes(self.expand_merge_u8x64(
+            Bytes::to_bytes(values),
+            mask,
+            Bytes::to_bytes(merge),
+        ))
+    }
+    #[inline(always)]
+    #[cfg(not(feature = "compress-expand"))]
     fn expand_merge_u64x8(
         self,
         values: u64x8<Self>,

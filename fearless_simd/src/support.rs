@@ -69,6 +69,7 @@ pub(crate) fn cross_block_slide_blocks_at<const N: usize, Block: Copy>(
     dead_code,
     reason = "Used only by backends with native byte-table shuffles"
 )]
+#[cfg(feature = "compress-expand")]
 pub(crate) mod compact_128 {
     use super::Aligned128;
 
@@ -123,6 +124,7 @@ pub(crate) mod compact_128 {
 
 /// Dword-permutation controls for whole 32- or 64-bit elements in an AVX2 vector.
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(feature = "compress-expand")]
 pub(crate) mod compact_256 {
     use super::Aligned256;
 
@@ -200,6 +202,7 @@ pub(crate) mod compact_256 {
     pub(crate) static SHIFTS: [Aligned256<[i32; 8]>; 9] = shifts();
 }
 
+#[cfg(feature = "compress-expand")]
 const fn compact_control_table(expand: bool) -> [u64; 256] {
     // Expansion adds a lane offset to each byte of the packed control. Use 0x80
     // for inactive lanes so these additions preserve the zeroing bit without
@@ -231,6 +234,7 @@ const fn compact_control_table(expand: bool) -> [u64; 256] {
     table
 }
 
+#[cfg(feature = "compress-expand")]
 const fn compact_count_table() -> [u8; 256] {
     let mut table = [0; 256];
     let mut mask = 0_usize;
@@ -249,6 +253,7 @@ const fn compact_count_table() -> [u8; 256] {
     table
 }
 
+#[cfg(feature = "compress-expand")]
 const fn compact_splice_control_table() -> [u128; 9] {
     let mut table = [u128::MAX; 9];
     let mut low_count = 0;
@@ -279,6 +284,7 @@ const fn compact_splice_control_table() -> [u128; 9] {
     clippy::cast_possible_truncation,
     reason = "lane is bounded to 0..16 by the table-construction loop"
 )]
+#[cfg(feature = "compress-expand")]
 const fn compact_16_splice_control_table() -> [Aligned256<[u8; 32]>; 17] {
     let mut table = [Aligned256([0x80; 32]); 17];
     let mut low_count = 0;
@@ -296,6 +302,7 @@ const fn compact_16_splice_control_table() -> [Aligned256<[u8; 32]>; 17] {
     table
 }
 
+#[cfg(feature = "compress-expand")]
 const fn compact_prefix_mask_table() -> [Aligned256<[u8; 32]>; 33] {
     let mut table = [Aligned256([0; 32]); 33];
     let mut count = 0;
@@ -312,6 +319,7 @@ const fn compact_prefix_mask_table() -> [Aligned256<[u8; 32]>; 33] {
 
 #[derive(Clone, Copy)]
 #[repr(C, align(32))]
+#[cfg(feature = "compress-expand")]
 pub(crate) struct Compact32StitchControls {
     pub(crate) left_same: [u8; 32],
     pub(crate) left_cross: [u8; 32],
@@ -329,6 +337,7 @@ pub(crate) struct Compact32StitchControls {
     clippy::cast_possible_truncation,
     reason = "shuffle indices are reduced modulo 16"
 )]
+#[cfg(feature = "compress-expand")]
 const fn compact_32_stitch_control_table() -> [Compact32StitchControls; 33] {
     const EMPTY: Compact32StitchControls = Compact32StitchControls {
         left_same: [0x80; 32],
@@ -371,6 +380,7 @@ const fn compact_32_stitch_control_table() -> [Compact32StitchControls; 33] {
     dead_code,
     reason = "Used only by SIMD backends with byte-table shuffles"
 )]
+#[cfg(feature = "compress-expand")]
 pub(crate) const COMPRESS_8_CONTROLS: [u64; 256] = compact_control_table(false);
 
 /// Eight-byte inverse-shuffle controls indexed by an eight-bit selection mask.
@@ -378,6 +388,7 @@ pub(crate) const COMPRESS_8_CONTROLS: [u64; 256] = compact_control_table(false);
     dead_code,
     reason = "Used only by SIMD backends with byte-table shuffles"
 )]
+#[cfg(feature = "compress-expand")]
 pub(crate) const EXPAND_8_CONTROLS: [u64; 256] = compact_control_table(true);
 
 /// Population counts indexed by an eight-bit selection mask.
@@ -385,22 +396,27 @@ pub(crate) const EXPAND_8_CONTROLS: [u64; 256] = compact_control_table(true);
     dead_code,
     reason = "Used only by SIMD backends with byte-table shuffles"
 )]
+#[cfg(feature = "compress-expand")]
 pub(crate) const COMPACT_8_COUNTS: [u8; 256] = compact_count_table();
 
 /// Shuffle controls that splice two independently compacted eight-byte halves.
 #[allow(dead_code, reason = "Used only by x86 byte compression")]
+#[cfg(feature = "compress-expand")]
 pub(crate) const COMPACT_8_SPLICE_CONTROLS: [u128; 9] = compact_splice_control_table();
 
 /// Shuffle controls that append a compacted 16-byte high lane after a compacted low lane.
 #[allow(dead_code, reason = "Used only by AVX2 byte compression")]
+#[cfg(feature = "compress-expand")]
 pub(crate) const COMPACT_16_SPLICE_CONTROLS: [Aligned256<[u8; 32]>; 17] =
     compact_16_splice_control_table();
 
 /// Shuffle controls that concatenate two independently compacted 32-byte vectors.
 #[allow(dead_code, reason = "Used only by AVX2 64-byte compression")]
+#[cfg(feature = "compress-expand")]
 pub(crate) const COMPACT_32_STITCH_CONTROLS: [Compact32StitchControls; 33] =
     compact_32_stitch_control_table();
 
 /// Byte prefix masks indexed by the number of active lanes.
 #[allow(dead_code, reason = "Used only by x86 byte compression")]
+#[cfg(feature = "compress-expand")]
 pub(crate) const COMPACT_PREFIX_MASKS: [Aligned256<[u8; 32]>; 33] = compact_prefix_mask_table();

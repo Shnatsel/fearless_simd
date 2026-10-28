@@ -33,6 +33,10 @@ std = []
 # Use floating point implementations from libm
 libm = ["dep:libm"]
 
+# Enable optimized compress/expand emulation on SSE4.2, AVX2, NEON, and WASM SIMD.
+# Without this feature these backends use scalar fallback; AVX-512 stays native.
+compress-expand = []
+
 # Force the "fallback" SIMD level to be supported, even if SIMD is always available.
 # This is primarily used for tests
 force_support_fallback = []
