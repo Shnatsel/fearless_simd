@@ -605,11 +605,21 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn round_ties_even_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
-        let abs = a.abs();
-        let bias = f32x4::splat(a.simd, 8388608.0_f32);
-        let mask = abs.simd_lt(bias);
-        let res = ((abs + bias) - bias).copysign(a);
-        mask.select(res, a)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: f32x4<Sse2>) -> f32x4<Sse2> {
+                let a = a.into();
+                let abs = _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(i32::MAX)));
+                let bias = _mm_set1_ps(8388608.0);
+                let mask = _mm_castsi128_ps(_mm_cmpgt_epi32(
+                    _mm_castps_si128(bias),
+                    _mm_castps_si128(abs),
+                ));
+                let rounded = _mm_sub_ps(_mm_add_ps(abs, bias), bias);
+                _mm_xor_ps(a, _mm_and_ps(mask, _mm_xor_ps(rounded, abs))).simd_into(token)
+            }
+        );
+        kernel(self, a)
     }
     #[inline(always)]
     fn round_f32x4(self, a: f32x4<Self>) -> f32x4<Self> {
@@ -6446,11 +6456,21 @@ impl Simd for Sse2 {
     }
     #[inline(always)]
     fn round_ties_even_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {
-        let abs = a.abs();
-        let bias = f64x2::splat(a.simd, 4503599627370496.0_f64);
-        let mask = abs.simd_lt(bias);
-        let res = ((abs + bias) - bias).copysign(a);
-        mask.select(res, a)
+        crate::kernel!(
+            #[inline(always)]
+            fn kernel(token: Sse2, a: f64x2<Sse2>) -> f64x2<Sse2> {
+                let a = a.into();
+                let abs = _mm_and_pd(a, _mm_castsi128_pd(_mm_set1_epi64x(i64::MAX)));
+                let bias = _mm_set1_pd(4503599627370496.0);
+                let mask = _mm_castsi128_pd({
+                    let high = _mm_shuffle_epi32::<0b11_11_01_01>(_mm_castpd_si128(abs));
+                    _mm_cmpgt_epi32(high, _mm_set1_epi32(0x432f_ffff))
+                });
+                let rounded = _mm_sub_pd(_mm_add_pd(abs, bias), bias);
+                _mm_xor_pd(a, _mm_andnot_pd(mask, _mm_xor_pd(rounded, abs))).simd_into(token)
+            }
+        );
+        kernel(self, a)
     }
     #[inline(always)]
     fn round_f64x2(self, a: f64x2<Self>) -> f64x2<Self> {

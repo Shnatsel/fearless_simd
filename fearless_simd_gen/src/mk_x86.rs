@@ -2815,7 +2815,7 @@ impl X86 {
         }
         if *self == Self::Sse2 && vec_ty.scalar == ScalarType::Float && method == "round_ties_even"
         {
-            return self.see2_round_ties_even_fallback(op, vec_ty);
+            return self.sse2_round_ties_even_fallback(op, vec_ty);
         }
 
         match method {
@@ -6863,41 +6863,66 @@ impl X86 {
         }
     }
 
-    /// SSE2 doesn't have have a native round-to-nearest-even instruction and the sclarized
-    /// fallback easily takes 300+ cycles per vector. This fallback emulates `fN::round_ties_even`.
+    /// Emulate round-to-nearest-even using SSE2 integer comparisons and floating-point addition.
     ///
     /// ## How it works
     ///
-    /// The main trick is the old "add a large bias and subtract it" method. This almost works but
-    /// has two issues that keep it from being bit-exact:
+    /// Adding and subtracting 2^23 (f32) or 2^52 (f64) rounds smaller magnitudes to an integer.
+    /// Integer comparisons identify those magnitudes, leaving larger values, infinities, and
+    /// NaNs unchanged. With the sign bit cleared, float bit patterns have signed integer order.
     ///
-    /// 1. Signed zero. `(-0.0 + bias) - bias == +0.0` which is incorrect. This is solved by adding
-    ///    the bias to the absolute value and restoring the original sign at the end.
-    /// 2. Large integers. Certain large integers are incorrectly "rounded" due to limited
-    ///    precision. E.g. let `x = bias + 1.0`, then `(x + bias) - bias == bias` even though x is
-    ///    an integer and `x > bias`. This is fixed by returning all values smaller than the bias as is.
-    fn see2_round_ties_even_fallback(&self, op: Op, vec_ty: &VecType) -> TokenStream {
-        assert_eq!(vec_ty.scalar, ScalarType::Float);
+    /// For selected lanes, `rounded ^ abs` changes only magnitude bits. Applying this masked
+    /// difference to the original input with XOR restores its sign, including negative zero, without
+    /// a separate copysign and select.
+    fn sse2_round_ties_even_fallback(&self, op: Op, vec_ty: &VecType) -> TokenStream {
+        use ScalarType::{Float, Int};
+
+        assert_eq!(vec_ty.scalar, Float);
         assert_eq!(vec_ty.n_bits(), 128);
 
-        // This is 2^23 for f32 and 2^52 for f64
-        let bias = match vec_ty.scalar_bits {
-            32 => quote! { 8388608.0_f32 },
-            64 => quote! { 4503599627370496.0_f64 },
+        let lane_bits = vec_ty.scalar_bits;
+        let to_float = cast_ident(Int, Float, lane_bits, lane_bits, 128);
+        let to_int = cast_ident(Float, Int, lane_bits, lane_bits, 128);
+        let set1 = set1_intrinsic(vec_ty);
+        let and = simple_intrinsic("and", vec_ty);
+        let add = simple_intrinsic("add", vec_ty);
+        let sub = simple_intrinsic("sub", vec_ty);
+        let xor = simple_intrinsic("xor", vec_ty);
+
+        let (abs_mask, bias, mask, mask_op) = match lane_bits {
+            32 => (
+                quote! { _mm_set1_epi32(i32::MAX) },
+                quote! { 8388608.0 },
+                quote! { _mm_cmpgt_epi32(#to_int(bias), #to_int(abs)) },
+                "and",
+            ),
+            64 => {
+                // The low word of 2^52 is zero, so only the high word is needed to compare.
+                // Replicate each lane's high word to obtain a mask covering both words.
+                // Comparing against one less than 0x4330_0000 identifies abs >= 2^52.
+                (
+                    quote! { _mm_set1_epi64x(i64::MAX) },
+                    quote! { 4503599627370496.0 },
+                    quote! {{
+                        let high = _mm_shuffle_epi32::<0b11_11_01_01>(#to_int(abs));
+                        _mm_cmpgt_epi32(high, _mm_set1_epi32(0x432f_ffff))
+                    }},
+                    "andnot",
+                )
+            }
             _ => panic!("Unsupported float bit width"),
         };
+        let mask_op = simple_intrinsic(mask_op, vec_ty);
 
-        let float_ident = vec_ty.rust();
-        let method_sig = op.simd_trait_method_sig(vec_ty);
-
-        quote! {
-            #method_sig {
-                let abs = a.abs();
-                let bias = #float_ident::splat(a.simd, #bias);
-                let mask = abs.simd_lt(bias);
-                let res = ((abs + bias) - bias).copysign(a);
-                mask.select(res, a)
+        self.kernel_method(op, vec_ty, |token| {
+            quote! {
+                let a = a.into();
+                let abs = #and(a, #to_float(#abs_mask));
+                let bias = #set1(#bias);
+                let mask = #to_float(#mask);
+                let rounded = #sub(#add(abs, bias), bias);
+                #xor(a, #mask_op(mask, #xor(rounded, abs))).simd_into(#token)
             }
-        }
+        })
     }
 }
